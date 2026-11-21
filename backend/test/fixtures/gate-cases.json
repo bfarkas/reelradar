@@ -1,0 +1,32 @@
+[
+  {
+    "name": "English original with matching TMDB language",
+    "original_language": "en",
+    "candidate": {"key":"en-match","source":"tmdb","tmdb_lang":"en","kc_lang":null,"type":"Trailer","site":"YouTube","name":"Official Trailer"},
+    "playable": true
+  },
+  {
+    "name": "English original with German TMDB language",
+    "original_language": "en",
+    "candidate": {"key":"de-mismatch","source":"tmdb","tmdb_lang":"de","kc_lang":null,"type":"Trailer","site":"YouTube","name":"Official Trailer"},
+    "playable": false
+  },
+  {
+    "name": "Korean original with English TMDB language",
+    "original_language": "ko",
+    "candidate": {"key":"ko-tmdb-en","source":"tmdb","tmdb_lang":"en","kc_lang":null,"type":"Trailer","site":"YouTube","name":"Official Trailer"},
+    "playable": false
+  },
+  {
+    "name": "Korean original with English KinoCheck label",
+    "original_language": "ko",
+    "candidate": {"key":"ko-kc-en","source":"kinocheck","tmdb_lang":null,"kc_lang":"en","type":"Trailer","site":"YouTube","name":"Official Trailer"},
+    "playable": false
+  },
+  {
+    "name": "KinoCheck English trailer for English original",
+    "original_language": "en",
+    "candidate": {"key":"kc-en","source":"kinocheck","tmdb_lang":null,"kc_lang":"en","type":"Trailer","site":"YouTube","name":"Official Trailer"},
+    "playable": true
+  }
+]

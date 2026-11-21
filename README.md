@@ -13,6 +13,22 @@ curl http://127.0.0.1:8180/api/health
 
 Frontend JS must stay ES5 (target: Tizen 4.0 / Chromium M56).
 
+## Proof of concept import
+
+Set `TMDB_API_KEY` in `.env`, rebuild the stack, then run:
+
+```sh
+docker compose exec backend node import.js
+```
+
+`IMPORT_LIMIT` controls how many discover results are imported (default 20),
+`IMPORT_EXTRA_IDS` is a comma-separated list of extra TMDB movie IDs, and
+`IMPORT_ON_START=1` runs one import whenever the backend starts. `KINOCHECK_API_KEY`
+is optional. Allow/deny overrides live in `backend/lists.json`.
+
+This product uses the TMDB API but is not endorsed or certified by TMDB.
+KinoCheck trailers link back to KinoCheck as their source.
+
 ## Reverse proxy (existing Caddy, host network)
 
 `deploy/Caddyfile.example` serves the app on plain HTTP at `http://<lan-ip>:8095`, LAN/private ranges only:

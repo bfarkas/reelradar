@@ -5,27 +5,92 @@
 <title>ReelRadar</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-body { margin: 0; background: #101418; color: #eee; font-family: sans-serif; text-align: center; padding-top: 120px; }
-h1 { font-size: 64px; margin: 0 0 24px; }
-#s { font-size: 32px; }
+body { background: #101418; color: #eee; font-family: sans-serif; margin: 2em auto; max-width: 900px; padding: 0 1em; }
+article { border-bottom: 1px solid #777; padding: 1em 0; }
+h1, h2 { margin-bottom: 0.3em; }
+.dates, .decision { color: #ccc; }
+.decision { font-size: 0.85em; margin: 0.25em 0; }
+button { font-size: 1.1em; margin: 0.75em 0; padding: 0.6em 1em; }
+iframe { border: 0; display: block; height: 360px; max-width: 100%; width: 640px; }
+a { color: #9cf; }
+footer { margin-top: 2em; }
 </style>
 </head>
 <body>
 <h1>ReelRadar</h1>
-<div id="s">checking backend...</div>
+<main id="titles">Loading titles...</main>
+<footer>This product uses the TMDB API but is not endorsed or certified by TMDB.</footer>
 <script>
 // ES5 only (Tizen 4.0 / Chromium M56)
-var el = document.getElementById('s');
-var x = new XMLHttpRequest();
-x.open('GET', '/api/health');
-x.onload = function () {
+function text(tag, value, className) {
+  var element = document.createElement(tag);
+  element.textContent = value;
+  if (className) element.className = className;
+  return element;
+}
+
+function playTrailer(event) {
+  var button = event.currentTarget;
+  var iframe = document.createElement('iframe');
+  iframe.src = 'https://www.youtube.com/embed/' + encodeURIComponent(button.getAttribute('data-key'));
+  iframe.title = 'Trailer';
+  iframe.setAttribute('allowfullscreen', 'allowfullscreen');
+  button.parentNode.replaceChild(iframe, button);
+}
+
+function render(titles) {
+  var root = document.getElementById('titles');
+  root.textContent = '';
+  if (!titles.length) root.appendChild(text('p', 'No titles imported yet.'));
+
+  for (var i = 0; i < titles.length; i += 1) {
+    var title = titles[i];
+    var article = document.createElement('article');
+    var dates = title.de_theatrical ? 'German theatrical: ' + title.de_theatrical : 'no German date';
+    if (title.de_digital) dates += ' · digital: ' + title.de_digital;
+    article.appendChild(text('h2', title.title));
+    article.appendChild(text('div', dates, 'dates'));
+
+    if (title.trailer) {
+      var button = text('button', 'Play trailer');
+      button.setAttribute('type', 'button');
+      button.setAttribute('data-key', title.trailer.key);
+      button.onclick = playTrailer;
+      article.appendChild(button);
+      if (title.trailer.kinocheck_url) {
+        var source = document.createElement('div');
+        var link = text('a', 'Trailer: KinoCheck');
+        link.href = title.trailer.kinocheck_url;
+        source.appendChild(link);
+        article.appendChild(source);
+      }
+    } else {
+      article.appendChild(text('p', 'no trailer'));
+    }
+
+    for (var j = 0; j < title.decisions.length; j += 1) {
+      var decision = title.decisions[j];
+      article.appendChild(text('div', decision.key + ' (' + decision.source + '): ' +
+        (decision.playable ? 'playable — ' : 'hidden — ') + decision.reason, 'decision'));
+    }
+    root.appendChild(article);
+  }
+}
+
+var request = new XMLHttpRequest();
+request.open('GET', '/api/titles');
+request.onload = function () {
   try {
-    var d = JSON.parse(x.responseText);
-    el.textContent = 'backend ' + d.status + ' (boot #' + d.bootCount + ')';
-  } catch (e) { el.textContent = 'bad response'; }
+    if (request.status < 200 || request.status >= 300) throw new Error('HTTP ' + request.status);
+    render(JSON.parse(request.responseText));
+  } catch (error) {
+    document.getElementById('titles').textContent = 'Could not load titles.';
+  }
 };
-x.onerror = function () { el.textContent = 'backend unreachable'; };
-x.send();
+request.onerror = function () {
+  document.getElementById('titles').textContent = 'Backend unreachable.';
+};
+request.send();
 </script>
 </body>
 </html>
