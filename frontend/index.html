@@ -20,11 +20,14 @@ footer { margin-top: 2em; }
 .tag[aria-pressed="true"] { background: #2d6cdf; border-color: #9cf; }
 #keyword-search { font-size: 1.1em; padding: 0.4em; width: 20em; max-width: 100%; }
 #count { color: #ccc; }
+#views button[aria-pressed="true"] { background: #2d6cdf; color: #fff; }
+h2.shelf { border-bottom: 2px solid #2d6cdf; margin-top: 1.5em; }
 .seerr { color: #9c9; margin: 0.25em 0; }
 </style>
 </head>
 <body>
 <h1>ReelRadar</h1>
+<nav id="views"></nav>
 <button type="button" id="filter-toggle">Filter</button>
 <button type="button" id="filter-clear">Clear filter</button>
 <span id="count"></span>
@@ -111,6 +114,54 @@ function matchesFilter(title, chosen) {
   return hasAny(title.genres || [], chosen.genres) || hasAny(title.keywords || [], chosen.keywords);
 }
 
+// ---- views (same logic in frontend/index.html and tv-app/index.html) ----
+var VIEWS = [['upcoming', 'Upcoming'], ['trailers', 'New trailers'], ['recent', 'Recently released'], ['genres', 'Genres'], ['all', 'All']];
+var WINDOW_DAYS = 90; // "upcoming" and "recently released" look three months ahead/back
+
+function isoDay(offsetDays) {
+  var d = new Date(Date.now() + offsetDays * 86400000);
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+}
+
+// German theatrical or digital dates inside [from, to); both count (cinema and streaming premieres).
+function datesIn(title, from, to) {
+  return [title.de_theatrical, title.de_digital].filter(function (date) { return date && date >= from && date < to; }).sort();
+}
+
+// -> [{heading, titles}] for the chosen view; titles are already filtered.
+function viewSections(view, titles) {
+  var today = isoDay(0);
+  if (view === 'upcoming' || view === 'recent') {
+    var from = view === 'upcoming' ? today : isoDay(-WINDOW_DAYS);
+    var to = view === 'upcoming' ? isoDay(WINDOW_DAYS + 1) : today;
+    var hits = titles.filter(function (title) { return datesIn(title, from, to).length; });
+    hits.sort(function (a, b) {
+      var x = datesIn(a, from, to), y = datesIn(b, from, to);
+      return view === 'upcoming' ? (x[0] < y[0] ? -1 : x[0] > y[0] ? 1 : 0) : (x[x.length - 1] > y[y.length - 1] ? -1 : 1);
+    });
+    return [{ heading: '', titles: hits }];
+  }
+  if (view === 'trailers') {
+    var withTrailer = titles.filter(function (title) { return title.trailer; });
+    withTrailer.sort(function (a, b) { return (b.trailer.published_at || '') > (a.trailer.published_at || '') ? 1 : -1; });
+    return [{ heading: '', titles: withTrailer }];
+  }
+  if (view === 'genres') {
+    var byName = {}, names = [];
+    titles.forEach(function (title) {
+      (title.genres || []).forEach(function (genre) {
+        if (!byName[genre.name]) { byName[genre.name] = []; names.push(genre.name); }
+        byName[genre.name].push(title);
+      });
+    });
+    return names.sort().map(function (name) { return { heading: name, titles: byName[name] }; });
+  }
+  return [{ heading: '', titles: titles }];
+}
+
+var currentView = 'upcoming';
+
 // All tags of one kind on the loaded titles, with how many titles carry each.
 function collectTags(kind) {
   var byId = {};
@@ -165,9 +216,24 @@ function renderKeywords() {
 
 function renderTitles() {
   var shown = allTitles.filter(function (title) { return matchesFilter(title, selection); });
-  document.getElementById('count').textContent = 'Showing ' + shown.length + ' of ' + allTitles.length + ' titles';
-  render(shown);
+  var sections = viewSections(currentView, shown);
+  var count = currentView === 'genres' ? shown.length : sections[0].titles.length;
+  document.getElementById('count').textContent = 'Showing ' + count + ' of ' + allTitles.length + ' titles';
+  render(sections);
 }
+
+function renderViews() {
+  var nav = document.getElementById('views');
+  nav.textContent = '';
+  VIEWS.forEach(function (view) {
+    var button = text('button', view[1]);
+    button.setAttribute('type', 'button');
+    button.setAttribute('aria-pressed', view[0] === currentView ? 'true' : 'false');
+    button.onclick = function () { currentView = view[0]; renderViews(); renderTitles(); };
+    nav.appendChild(button);
+  });
+}
+renderViews();
 
 document.getElementById('filter-toggle').onclick = function () {
   var panel = document.getElementById('filter');
@@ -182,11 +248,18 @@ document.getElementById('filter-clear').onclick = function () {
 };
 document.getElementById('keyword-search').oninput = renderKeywords;
 
-function render(titles) {
+function render(sections) {
   var root = document.getElementById('titles');
   root.textContent = '';
-  if (!titles.length) root.appendChild(text('p', allTitles.length ? 'No titles match the filter.' : 'No titles imported yet.'));
+  var empty = !sections.length || (sections.length === 1 && !sections[0].titles.length);
+  if (empty) root.appendChild(text('p', allTitles.length ? 'No titles in this view match the filter.' : 'No titles imported yet.'));
+  sections.forEach(function (section) {
+    if (section.heading) root.appendChild(text('h2', section.heading, 'shelf'));
+    renderArticles(root, section.titles);
+  });
+}
 
+function renderArticles(root, titles) {
   for (var i = 0; i < titles.length; i += 1) {
     var title = titles[i];
     var article = document.createElement('article');

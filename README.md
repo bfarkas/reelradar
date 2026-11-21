@@ -87,3 +87,16 @@ The backend talks to Seerr with `SEERR_URL` and `SEERR_API_KEY` from `.env`; the
 - `POST /api/request/<tmdb_id>` sends the request. A title that is already requested counts as success.
 
 The backend refuses POSTs whose `Origin` is another website. Allowed are the page itself and the TV app (file origin). Requests are made as the key's user (admin, auto-approved).
+
+## Views
+
+Both the web page and the TV app have five views, and each one respects the genre/keyword filter:
+- **Upcoming** (default): German theatrical or digital release in the next 90 days, soonest first.
+- **New trailers**: most recently published trailers first.
+- **Recently released**: German release in the last 90 days, newest first.
+- **Genres**: one shelf per genre. On the TV the shelves are horizontal rows: Left/Right moves along a shelf, Up/Down moves between shelves.
+- **All**: everything, in German theatrical date order.
+
+## Scheduled import
+
+The backend imports once a day at `IMPORT_TIME`, set in `.env` (default `04:00`, local time: compose sets `TZ=Europe/Berlin`). After each successful import it caches the newly picked trailers (prefetch). Runs never overlap, and `IMPORT_ON_START=1` uses the same guarded job. A failed import keeps the previous catalogue and is logged. Scheduled runs read `IMPORT_EXTRA_IDS` from `.env`.

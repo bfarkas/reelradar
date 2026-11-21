@@ -9,10 +9,19 @@ html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; backgro
 .layer { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
 .hidden { display: none; }
 header { height: 140px; padding: 40px 80px 0; box-sizing: border-box; }
-header h1 { display: inline-block; margin: 0 60px 0 0; font-size: 56px; vertical-align: middle; }
-#count { color: #aaa; font-size: 30px; margin-left: 30px; vertical-align: middle; }
-.btn { display: inline-block; vertical-align: middle; margin-right: 20px; padding: 14px 34px; font-size: 32px; background: #2a3038; border: 4px solid #2a3038; border-radius: 10px; }
-#list { position: absolute; left: 80px; top: 160px; width: 1760px; height: 880px; overflow: hidden; }
+header h1 { display: inline-block; margin: 0 40px 0 0; font-size: 52px; vertical-align: middle; }
+#views { display: inline-block; vertical-align: middle; margin-right: 30px; }
+.btn.on { background: #2d6cdf; border-color: #2d6cdf; }
+#count { position: absolute; left: 80px; top: 140px; color: #aaa; font-size: 28px; }
+.btn { display: inline-block; vertical-align: middle; margin-right: 14px; padding: 12px 24px; font-size: 28px; background: #2a3038; border: 4px solid #2a3038; border-radius: 10px; }
+#list { position: absolute; left: 80px; top: 190px; width: 1760px; height: 850px; overflow: hidden; }
+.shelf-title { margin: 20px 0 10px; font-size: 34px; }
+.shelf { white-space: nowrap; overflow: hidden; padding: 6px 4px; }
+.card { display: inline-block; vertical-align: top; white-space: normal; width: 400px; height: 150px; margin-right: 20px; padding: 16px 20px; box-sizing: border-box; background: #1a2027; border: 4px solid #1a2027; border-radius: 12px; }
+.card h2 { margin: 0 0 8px; font-size: 30px; overflow: hidden; height: 72px; }
+.card .meta { font-size: 24px; color: #bbb; }
+.card .none { color: #e88; }
+.card .seerr { color: #9c9; }
 .row { padding: 22px 30px; margin-bottom: 14px; background: #1a2027; border: 4px solid #1a2027; border-radius: 12px; }
 .row h2 { margin: 0 0 8px; font-size: 40px; }
 .row .meta { color: #bbb; font-size: 28px; }
@@ -30,13 +39,14 @@ header h1 { display: inline-block; margin: 0 60px 0 0; font-size: 56px; vertical
 #player { background: #000; }
 #video { width: 1920px; height: 1080px; }
 #status { position: absolute; left: 0; top: 480px; width: 1920px; text-align: center; font-size: 44px; color: #ddd; }
-#message { position: absolute; left: 80px; top: 160px; font-size: 36px; color: #ddd; }
+#message { position: absolute; left: 80px; top: 200px; font-size: 36px; color: #ddd; }
 </style>
 </head>
 <body>
 <div id="main" class="layer">
   <header>
     <h1>ReelRadar</h1>
+    <div id="views"></div>
     <span class="btn" id="open-filter">Filter</span>
     <span class="btn" id="clear-filter">Clear filter</span>
     <span id="count"></span>
@@ -61,6 +71,53 @@ var API = 'http://192.168.42.57:8095';
 var KEYS = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, ENTER: 13, BACK: 10009, ESC: 27, BACKSPACE: 8,
   PLAY: 415, PAUSE: 19, PLAY_PAUSE: 10252, STOP: 413, FF: 417, RW: 412 };
 var FILTER_KEY = 'reelradar.filter';
+// ---- views (same logic in frontend/index.html and tv-app/index.html) ----
+var VIEWS = [['upcoming', 'Upcoming'], ['trailers', 'New trailers'], ['recent', 'Recently released'], ['genres', 'Genres'], ['all', 'All']];
+var WINDOW_DAYS = 90; // "upcoming" and "recently released" look three months ahead/back
+
+function isoDay(offsetDays) {
+  var d = new Date(Date.now() + offsetDays * 86400000);
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+}
+
+// German theatrical or digital dates inside [from, to); both count (cinema and streaming premieres).
+function datesIn(title, from, to) {
+  return [title.de_theatrical, title.de_digital].filter(function (date) { return date && date >= from && date < to; }).sort();
+}
+
+// -> [{heading, titles}] for the chosen view; titles are already filtered.
+function viewSections(view, titles) {
+  var today = isoDay(0);
+  if (view === 'upcoming' || view === 'recent') {
+    var from = view === 'upcoming' ? today : isoDay(-WINDOW_DAYS);
+    var to = view === 'upcoming' ? isoDay(WINDOW_DAYS + 1) : today;
+    var hits = titles.filter(function (title) { return datesIn(title, from, to).length; });
+    hits.sort(function (a, b) {
+      var x = datesIn(a, from, to), y = datesIn(b, from, to);
+      return view === 'upcoming' ? (x[0] < y[0] ? -1 : x[0] > y[0] ? 1 : 0) : (x[x.length - 1] > y[y.length - 1] ? -1 : 1);
+    });
+    return [{ heading: '', titles: hits }];
+  }
+  if (view === 'trailers') {
+    var withTrailer = titles.filter(function (title) { return title.trailer; });
+    withTrailer.sort(function (a, b) { return (b.trailer.published_at || '') > (a.trailer.published_at || '') ? 1 : -1; });
+    return [{ heading: '', titles: withTrailer }];
+  }
+  if (view === 'genres') {
+    var byName = {}, names = [];
+    titles.forEach(function (title) {
+      (title.genres || []).forEach(function (genre) {
+        if (!byName[genre.name]) { byName[genre.name] = []; names.push(genre.name); }
+        byName[genre.name].push(title);
+      });
+    });
+    return names.sort().map(function (name) { return { heading: name, titles: byName[name] }; });
+  }
+  return [{ heading: '', titles: titles }];
+}
+
+var currentView = 'upcoming';
 var allTitles = [];
 var seerrStatus = null; // tmdb_id -> none|requested|partial|available
 var SEERR_LABELS = { requested: 'Requested in Seerr', partial: 'Partly in the library', available: 'In the library' };
@@ -123,12 +180,17 @@ function setFocus(target) {
   ensureVisible(target);
 }
 function ensureVisible(target) {
-  var box = target.parentNode;
-  while (box && box !== document.body && box.scrollHeight <= box.clientHeight) box = box.parentNode;
-  if (!box || box === document.body) return;
-  var t = target.getBoundingClientRect(), b = box.getBoundingClientRect();
-  if (t.top < b.top) box.scrollTop -= b.top - t.top + 20;
-  else if (t.bottom > b.bottom) box.scrollTop += t.bottom - b.bottom + 20;
+  for (var box = target.parentNode; box && box !== document.body; box = box.parentNode) {
+    var t = target.getBoundingClientRect(), b = box.getBoundingClientRect();
+    if (box.scrollHeight > box.clientHeight) {
+      if (t.top < b.top) box.scrollTop -= b.top - t.top + 20;
+      else if (t.bottom > b.bottom) box.scrollTop += t.bottom - b.bottom + 20;
+    }
+    if (box.scrollWidth > box.clientWidth) {
+      if (t.left < b.left) box.scrollLeft -= b.left - t.left + 20;
+      else if (t.right > b.right) box.scrollLeft += t.right - b.right + 20;
+    }
+  }
 }
 function move(dx, dy) {
   var current = $(layer).querySelector('.focus');
@@ -157,27 +219,69 @@ function renderList() {
   var list = $('list');
   var shown = allTitles.filter(matchesFilter);
   var active = selection.genres.length + selection.keywords.length;
+  var sections = viewSections(currentView, shown);
+  var count = currentView === 'genres' ? shown.length : sections[0].titles.length;
   list.textContent = '';
   list.scrollTop = 0;
-  $('count').textContent = shown.length + ' of ' + allTitles.length + ' titles' + (active ? ' · ' + active + ' filter' + (active > 1 ? 's' : '') + ' on' : '');
-  $('message').textContent = shown.length ? '' : (allTitles.length ? 'No titles match the filter.' : 'No titles imported yet.');
-  shown.forEach(function (title) {
-    var row = el('div', 'row focusable');
-    row.setAttribute('data-id', title.tmdb_id);
-    var status = seerrStatus && seerrStatus[title.tmdb_id];
-    if (status === 'none') row.appendChild(requestButton(title));
-    var dates = title.de_theatrical ? 'In cinemas (DE): ' + title.de_theatrical : 'No German cinema date';
-    if (title.de_digital) dates += '  ·  digital: ' + title.de_digital;
-    var genres = (title.genres || []).map(function (g) { return g.name; }).join(', ');
-    row.appendChild(el('h2', '', title.title));
-    row.appendChild(el('div', 'meta', dates + (genres ? '  ·  ' + genres : '')));
-    if (!title.trailer) row.appendChild(el('div', 'meta none', 'No trailer'));
-    if (SEERR_LABELS[status]) row.appendChild(el('div', 'meta seerr', SEERR_LABELS[status]));
-    row.onactivate = function () { if (title.trailer) play(title); };
-    list.appendChild(row);
+  $('count').textContent = count + ' of ' + allTitles.length + ' titles' + (active ? ' · ' + active + ' filter' + (active > 1 ? 's' : '') + ' on' : '');
+  $('message').textContent = count ? '' : (allTitles.length ? 'No titles in this view match the filter.' : 'No titles imported yet.');
+  sections.forEach(function (section) {
+    if (!section.heading) { section.titles.forEach(function (title) { list.appendChild(titleRow(title)); }); return; }
+    // Genres: one horizontal shelf per genre.
+    list.appendChild(el('h3', 'shelf-title', section.heading));
+    var shelf = el('div', 'shelf');
+    section.titles.forEach(function (title) { shelf.appendChild(titleCard(title)); });
+    list.appendChild(shelf);
   });
   var first = list.querySelector('.focusable');
   setFocus(first || $('open-filter'));
+}
+
+function datesText(title) {
+  var dates = title.de_theatrical ? 'In cinemas (DE): ' + title.de_theatrical : 'No German cinema date';
+  return title.de_digital ? dates + '  ·  digital: ' + title.de_digital : dates;
+}
+
+function titleRow(title) {
+  var row = el('div', 'row focusable');
+  row.setAttribute('data-id', title.tmdb_id);
+  var status = seerrStatus && seerrStatus[title.tmdb_id];
+  if (status === 'none') row.appendChild(requestButton(title));
+  var genres = (title.genres || []).map(function (g) { return g.name; }).join(', ');
+  row.appendChild(el('h2', '', title.title));
+  row.appendChild(el('div', 'meta', datesText(title) + (genres ? '  ·  ' + genres : '')));
+  if (!title.trailer) row.appendChild(el('div', 'meta none', 'No trailer'));
+  if (SEERR_LABELS[status]) row.appendChild(el('div', 'meta seerr', SEERR_LABELS[status]));
+  row.onactivate = function () { if (title.trailer) play(title); };
+  return row;
+}
+
+// shortcut: shelf cards have no Request button; request from a list view.
+function titleCard(title) {
+  var card = el('span', 'card focusable');
+  var status = seerrStatus && seerrStatus[title.tmdb_id];
+  card.setAttribute('data-id', title.tmdb_id);
+  card.appendChild(el('h2', '', title.title));
+  card.appendChild(el('div', 'meta', title.de_theatrical || title.de_digital || 'no German date'));
+  if (!title.trailer) card.appendChild(el('div', 'meta none', 'No trailer'));
+  if (SEERR_LABELS[status]) card.appendChild(el('div', 'meta seerr', SEERR_LABELS[status]));
+  card.onactivate = function () { if (title.trailer) play(title); };
+  return card;
+}
+
+function renderViews() {
+  var nav = $('views');
+  nav.textContent = '';
+  VIEWS.forEach(function (view) {
+    var button = el('span', 'btn focusable' + (view[0] === currentView ? ' on' : ''), view[1]);
+    button.onactivate = function () {
+      currentView = view[0];
+      renderViews();
+      renderList();
+      setFocus($('views').querySelector('.on'));
+    };
+    nav.appendChild(button);
+  });
 }
 // Right from a row reaches its Request button; OK sends the request to Seerr through the backend.
 function requestButton(title) {
@@ -199,6 +303,7 @@ function requestButton(title) {
   return button;
 }
 
+renderViews();
 $('open-filter').className += ' focusable';
 $('open-filter').onactivate = openFilter;
 $('clear-filter').className += ' focusable';

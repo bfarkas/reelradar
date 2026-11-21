@@ -3,6 +3,8 @@ services:
     build: ./backend
     restart: unless-stopped
     env_file: .env
+    environment:
+      TZ: Europe/Berlin # IMPORT_TIME is local time
     volumes:
       - reelradar-data:/data
   frontend:

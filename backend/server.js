@@ -6,6 +6,7 @@ var path = require('path');
 var DatabaseSync = require('node:sqlite').DatabaseSync;
 var importer = require('./import');
 var media = require('./media');
+var scheduler = require('./scheduler');
 var seerr = require('./seerr').createClient({});
 var seerrCache = { at: 0, value: null };
 
@@ -26,7 +27,7 @@ function sendJson(res, status, value) {
 
 function getTitles() {
   var rows = db.prepare([
-    'SELECT t.*, c.kinocheck_url FROM titles t',
+    'SELECT t.*, c.kinocheck_url, c.published_at AS trailer_published_at FROM titles t',
     'LEFT JOIN candidates c ON c.tmdb_id = t.tmdb_id AND c.key = t.trailer_key',
     'ORDER BY t.de_theatrical IS NULL, t.de_theatrical, t.title'
   ].join(' ')).all();
@@ -46,7 +47,8 @@ function getTitles() {
       de_digital: row.de_digital,
       trailer: row.trailer_key ? {
         key: row.trailer_key,
-        kinocheck_url: row.kinocheck_url || null
+        kinocheck_url: row.kinocheck_url || null,
+        published_at: row.trailer_published_at || null
       } : null,
       genres: tagStatement.all(row.tmdb_id, 'genre'),
       keywords: tagStatement.all(row.tmdb_id, 'keyword'),
@@ -129,11 +131,13 @@ http.createServer(function (req, res) {
   }
 }).listen(3000, '0.0.0.0', function () {
   console.log('reelradar backend on :3000, boot #' + boots);
-  if (process.env.IMPORT_ON_START === '1') {
-    importer.runImport({ dbPath: dbPath }).then(function (result) {
-      console.log('startup import ' + result.importId + ' stored ' + result.titles + ' titles');
-    }).catch(function (error) {
-      console.error('startup import failed: ' + error.message);
-    });
-  }
+  // Daily import (IMPORT_TIME, default 04:00 container time), then cache the trailers it picked.
+  var runImportJob = scheduler.daily(process.env.IMPORT_TIME || '04:00', async function () {
+    var result = await importer.runImport({ dbPath: dbPath });
+    console.log('import ' + result.importId + ' stored ' + result.titles + ' titles');
+    seerrCache.value = null;
+    var cached = await media.prefetchAll(db);
+    console.log('prefetch: ' + cached.ready + ' of ' + cached.titles + ' titles have a cached trailer');
+  }, console);
+  if (process.env.IMPORT_ON_START === '1') runImportJob();
 });
