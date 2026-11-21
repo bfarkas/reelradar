@@ -60,7 +60,7 @@ The list page has a Filter panel listing the TMDB genres and keywords of the imp
 
 **Stream approach.** The TV app doesn't use a YouTube player. The backend downloads each picked trailer once with yt-dlp as an H.264/AAC MP4 (up to 1080p) into `/data/media/`. The frontend nginx serves those files at `/media/<key>.mp4`, with Range support. `GET /api/stream/<tmdb_id>` returns `{key, url}`. On a title's first request, it downloads the file before answering.
 
-If YouTube refuses a video (private, removed, geo-blocked), the backend marks that candidate unplayable with the yt-dlp error as the reason and tries the next playable candidate. If no original-language trailer is playable (or downloadable), candidates that were hidden only for language stand in, English first, then any other language (owner rule, 2026-11-22). Only when none of those is left does the title have no trailer.
+If YouTube refuses a video (private, removed, geo-blocked), the backend marks that candidate unplayable with the yt-dlp error as the reason and tries the next playable candidate. If no original-language trailer is playable (or downloadable), candidates hidden only for language stand in (owner rule, 2026-11-22). The order is: subtitled versions first (original audio), then dubbed ones; within each group, English, then German, then others. Subtitled vs. dubbed is guessed from the video name (Subtitled, OmU, UT, ...). Only when none of those is left does the title have no trailer.
 
 These are cached copies of YouTube videos for private household use on the LAN only. Never expose `/media/` or `/api/stream/` beyond the LAN.
 
@@ -77,3 +77,13 @@ sdb connect 192.168.42.54:26101
 tizen install -n ReelRadar.wgt -s 192.168.42.54:26101 -- out
 ```
 Launch it from Apps, or from here with `cd spikes/tv && node remote.mjs launch reelradar1.ReelRadar`. The API address is fixed at the top of `tv-app/index.html` (`API`).
+
+## Seerr requests
+
+Each title shows its Seerr state: requested, partly in the library, or in the library. Titles that aren't requested yet get a request button. On the TV, press Right on a row to reach **Request**, then OK.
+
+The backend talks to Seerr with `SEERR_URL` and `SEERR_API_KEY` from `.env`; the key never reaches the browser. Writes fetch Seerr's CSRF cookie pair first.
+- `GET /api/seerr` returns `{tmdb_id: none|requested|partial|available}`, cached for a minute.
+- `POST /api/request/<tmdb_id>` sends the request. A title that is already requested counts as success.
+
+The backend refuses POSTs whose `Origin` is another website. Allowed are the page itself and the TV app (file origin). Requests are made as the key's user (admin, auto-approved).

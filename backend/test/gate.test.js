@@ -62,16 +62,23 @@ test('picker prefers Trailer over a newer Teaser', function () {
   assert.equal(gate.pickTrailer(candidates, decisions).key, 'trailer');
 });
 
-test('without a playable original-language trailer, the picker falls back to English, then any language', function () {
+test('without a playable original-language trailer: subtitled before dubbed, English before German', function () {
+  function c(key, lang, name, reason) {
+    return { key: key, tmdb_lang: lang, name: name, type: 'Trailer', published_at: '2024-01-01', playable: 0, reason: reason };
+  }
   var candidates = [
-    { key: 'deTrailer01', tmdb_lang: 'de', type: 'Trailer', published_at: '2024-03-01', playable: 0, reason: 'suspected dub/subtitled locale version' },
-    { key: 'enTrailer01', tmdb_lang: 'en', type: 'Trailer', published_at: '2024-01-01', playable: 0, reason: 'TMDB language en does not match original ja' },
-    { key: 'enClip00001', tmdb_lang: 'en', type: 'Clip', published_at: '2024-04-01', playable: 0, reason: 'not a trailer or teaser' },
-    { key: 'privateJa01', tmdb_lang: 'ja', type: 'Trailer', published_at: '2024-05-01', playable: 0, reason: 'unavailable for download: ERROR: Private video' }
+    c('deDub000001', 'de', 'Film Trailer Deutsch', 'suspected dub/subtitled locale version'),
+    c('enDub000001', 'en', 'Official Trailer', 'TMDB language en does not match original ja'),
+    c('deOmU000001', 'de', 'Film Trailer OmU', 'suspected dub/subtitled locale version'),
+    c('enSub000001', 'en', 'Official Trailer [Subtitled]', 'TMDB language en does not match original ja'),
+    { key: 'enClip00001', tmdb_lang: 'en', type: 'Clip', playable: 0, reason: 'not a trailer or teaser' },
+    c('privateJa01', 'ja', 'Trailer', 'unavailable for download: ERROR: Private video')
   ];
-  assert.equal(gate.pickTrailer(candidates).key, 'enTrailer01');
-  candidates[1].reason = 'unavailable for download: ERROR: geo-blocked';
-  assert.equal(gate.pickTrailer(candidates).key, 'deTrailer01');
-  candidates[0].reason = 'deny list';
-  assert.equal(gate.pickTrailer(candidates), null);
+  var order = [];
+  var picked;
+  while ((picked = gate.pickTrailer(candidates))) {
+    order.push(picked.key);
+    picked.reason = 'unavailable for download: test';
+  }
+  assert.deepEqual(order, ['enSub000001', 'deOmU000001', 'enDub000001', 'deDub000001']);
 });

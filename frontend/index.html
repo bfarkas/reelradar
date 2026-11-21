@@ -20,6 +20,7 @@ footer { margin-top: 2em; }
 .tag[aria-pressed="true"] { background: #2d6cdf; border-color: #9cf; }
 #keyword-search { font-size: 1.1em; padding: 0.4em; width: 20em; max-width: 100%; }
 #count { color: #ccc; }
+.seerr { color: #9c9; margin: 0.25em 0; }
 </style>
 </head>
 <body>
@@ -83,6 +84,8 @@ function playTrailer(event) {
 // Selection: {v:1, genres:[ids], keywords:[ids]} in localStorage; storage may be missing or throw.
 var FILTER_KEY = 'reelradar.filter';
 var allTitles = [];
+var seerrStatus = null; // tmdb_id -> none|requested|partial|available; null while unknown
+var SEERR_LABELS = { requested: 'Requested in Seerr', partial: 'Partly in the library', available: 'In the library' };
 var selection = loadSelection();
 
 function loadSelection() {
@@ -192,6 +195,8 @@ function render(titles) {
     article.appendChild(text('h2', title.title));
     article.appendChild(text('div', dates, 'dates'));
 
+    if (seerrStatus && seerrStatus[title.tmdb_id]) article.appendChild(seerrLine(title));
+
     if (title.trailer) {
       var button = text('button', 'Play trailer');
       button.setAttribute('type', 'button');
@@ -218,6 +223,47 @@ function render(titles) {
   }
 }
 
+function seerrLine(title) {
+  var status = seerrStatus[title.tmdb_id];
+  var line = text('div', SEERR_LABELS[status] || '', 'seerr');
+  if (status === 'none') {
+    var button = text('button', 'Request in Seerr');
+    button.setAttribute('type', 'button');
+    button.onclick = function () {
+      button.disabled = true;
+      button.textContent = 'Requesting...';
+      var post = new XMLHttpRequest();
+      post.open('POST', '/api/request/' + title.tmdb_id);
+      post.onload = function () {
+        try {
+          if (post.status !== 200) throw new Error();
+          seerrStatus[title.tmdb_id] = JSON.parse(post.responseText).status;
+          line.parentNode.replaceChild(seerrLine(title), line);
+        } catch (error) {
+          button.disabled = false;
+          button.textContent = 'Request failed - try again';
+        }
+      };
+      post.onerror = post.onload;
+      post.send();
+    };
+    line.appendChild(button);
+  }
+  return line;
+}
+
+// Seerr state loads after the list; without it the page simply shows no status.
+function loadSeerr() {
+  var statusRequest = new XMLHttpRequest();
+  statusRequest.open('GET', '/api/seerr');
+  statusRequest.onload = function () {
+    if (statusRequest.status !== 200) return;
+    try { seerrStatus = JSON.parse(statusRequest.responseText); } catch (error) { return; }
+    renderTitles();
+  };
+  statusRequest.send();
+}
+
 var request = new XMLHttpRequest();
 request.open('GET', '/api/titles');
 request.onload = function () {
@@ -227,6 +273,7 @@ request.onload = function () {
     renderGenres();
     renderKeywords();
     renderTitles();
+    loadSeerr();
   } catch (error) {
     document.getElementById('titles').textContent = 'Could not load titles.';
   }

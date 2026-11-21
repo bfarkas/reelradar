@@ -6,6 +6,8 @@ var path = require('path');
 var DatabaseSync = require('node:sqlite').DatabaseSync;
 var importer = require('./import');
 var media = require('./media');
+var seerr = require('./seerr').createClient({});
+var seerrCache = { at: 0, value: null };
 
 var dbPath = process.env.DB_PATH || '/data/reelradar.db';
 fs.mkdirSync(path.dirname(dbPath), { recursive: true });
@@ -76,6 +78,24 @@ function getReport() {
   ].join(' ')).all();
 }
 
+// Seerr state of every title; cached for a minute so page loads don't hammer Seerr.
+async function getSeerrStatuses() {
+  if (seerrCache.value && Date.now() - seerrCache.at < 60000) return seerrCache.value;
+  var ids = db.prepare('SELECT tmdb_id FROM titles').all();
+  var statuses = await Promise.all(ids.map(function (row) { return seerr.movieStatus(row.tmdb_id); }));
+  var value = {};
+  ids.forEach(function (row, i) { value[row.tmdb_id] = statuses[i]; });
+  seerrCache = { at: Date.now(), value: value };
+  return value;
+}
+
+// Writes only from our own page or the TV app (file origin), so another website can't make the
+// browser file requests. nginx forwards the original Host.
+function trustedOrigin(req) {
+  var origin = req.headers.origin;
+  return !origin || origin === 'null' || origin === 'file://' || origin === 'http://' + req.headers.host;
+}
+
 http.createServer(function (req, res) {
   var pathname = req.url.split('?')[0];
   if (req.method === 'GET' && pathname === '/api/health') {
@@ -84,6 +104,18 @@ http.createServer(function (req, res) {
     sendJson(res, 200, getTitles());
   } else if (req.method === 'GET' && pathname === '/api/report') {
     sendJson(res, 200, getReport());
+  } else if (req.method === 'GET' && pathname === '/api/seerr') {
+    getSeerrStatuses().then(function (value) { sendJson(res, 200, value); })
+      .catch(function (error) { sendJson(res, 502, { error: error.message }); });
+  } else if (req.method === 'POST' && /^\/api\/request\/\d+$/.test(pathname)) {
+    var tmdbId = Number(pathname.split('/')[3]);
+    if (!trustedOrigin(req)) return sendJson(res, 403, { error: 'foreign origin' });
+    if (!db.prepare('SELECT 1 FROM titles WHERE tmdb_id = ?').get(tmdbId)) return sendJson(res, 404, { error: 'unknown title' });
+    seerr.requestMovie(tmdbId).then(function (status) {
+      seerrCache.value = null;
+      console.log('seerr request ' + tmdbId + ' -> ' + status);
+      sendJson(res, 200, { status: status });
+    }).catch(function (error) { sendJson(res, 502, { error: error.message }); });
   } else if (req.method === 'GET' && /^\/api\/stream\/\d+$/.test(pathname)) {
     // TV app: the title's trailer as a cached MP4 (downloads on first request, falls back past dead videos).
     media.ensureTitleTrailer(db, Number(pathname.split('/')[3])).then(function (key) {

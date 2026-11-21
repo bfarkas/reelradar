@@ -17,6 +17,8 @@ header h1 { display: inline-block; margin: 0 60px 0 0; font-size: 56px; vertical
 .row h2 { margin: 0 0 8px; font-size: 40px; }
 .row .meta { color: #bbb; font-size: 28px; }
 .row .none { color: #e88; }
+.row .seerr { color: #9c9; }
+.row .btn { float: right; margin: 12px 0 0 20px; font-size: 28px; padding: 10px 26px; }
 #filter { background: rgba(16, 20, 24, 0.97); }
 #filter h2 { margin: 40px 80px 10px; font-size: 40px; }
 #filter-hint { margin: 0 80px; color: #aaa; font-size: 28px; }
@@ -60,6 +62,8 @@ var KEYS = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, ENTER: 13, BACK: 10009, ESC:
   PLAY: 415, PAUSE: 19, PLAY_PAUSE: 10252, STOP: 413, FF: 417, RW: 412 };
 var FILTER_KEY = 'reelradar.filter';
 var allTitles = [];
+var seerrStatus = null; // tmdb_id -> none|requested|partial|available
+var SEERR_LABELS = { requested: 'Requested in Seerr', partial: 'Partly in the library', available: 'In the library' };
 var selection = loadSelection();
 var layer = 'main';           // main | filter | player
 var focused = { main: null, filter: null };
@@ -159,18 +163,42 @@ function renderList() {
   $('message').textContent = shown.length ? '' : (allTitles.length ? 'No titles match the filter.' : 'No titles imported yet.');
   shown.forEach(function (title) {
     var row = el('div', 'row focusable');
+    row.setAttribute('data-id', title.tmdb_id);
+    var status = seerrStatus && seerrStatus[title.tmdb_id];
+    if (status === 'none') row.appendChild(requestButton(title));
     var dates = title.de_theatrical ? 'In cinemas (DE): ' + title.de_theatrical : 'No German cinema date';
     if (title.de_digital) dates += '  ·  digital: ' + title.de_digital;
     var genres = (title.genres || []).map(function (g) { return g.name; }).join(', ');
     row.appendChild(el('h2', '', title.title));
     row.appendChild(el('div', 'meta', dates + (genres ? '  ·  ' + genres : '')));
     if (!title.trailer) row.appendChild(el('div', 'meta none', 'No trailer'));
+    if (SEERR_LABELS[status]) row.appendChild(el('div', 'meta seerr', SEERR_LABELS[status]));
     row.onactivate = function () { if (title.trailer) play(title); };
     list.appendChild(row);
   });
   var first = list.querySelector('.focusable');
   setFocus(first || $('open-filter'));
 }
+// Right from a row reaches its Request button; OK sends the request to Seerr through the backend.
+function requestButton(title) {
+  var button = el('span', 'btn focusable', 'Request');
+  button.onactivate = function () {
+    if (button.busy) return;
+    button.busy = true;
+    button.textContent = 'Requesting...';
+    sendJson('POST', API + '/api/request/' + title.tmdb_id, function (error, result) {
+      button.busy = false;
+      if (error) { button.textContent = 'Failed - OK retries'; return; }
+      seerrStatus[title.tmdb_id] = result.status;
+      var row = button.parentNode;
+      row.removeChild(button);
+      row.appendChild(el('div', 'meta seerr', SEERR_LABELS[result.status] || result.status));
+      setFocus(row);
+    });
+  };
+  return button;
+}
+
 $('open-filter').className += ' focusable';
 $('open-filter').onactivate = openFilter;
 $('clear-filter').className += ' focusable';
@@ -293,9 +321,10 @@ try {
   });
 } catch (error) {}
 
-function getJson(url, callback) {
+function getJson(url, callback) { sendJson('GET', url, callback); }
+function sendJson(method, url, callback) {
   var request = new XMLHttpRequest();
-  request.open('GET', url);
+  request.open(method, url);
   request.timeout = 5 * 60 * 1000; // first play of a title may wait for the download
   request.onload = function () {
     var body;
@@ -312,6 +341,14 @@ getJson(API + '/api/titles', function (error, titles) {
   if (error) { $('message').textContent = 'Could not load titles: ' + error; setFocus($('open-filter')); return; }
   allTitles = titles;
   renderList();
+  // Seerr state comes second; without it the list just shows no status.
+  getJson(API + '/api/seerr', function (seerrError, statuses) {
+    if (seerrError || layer !== 'main') return;
+    seerrStatus = statuses;
+    var id = focused.main && focused.main.getAttribute('data-id');
+    renderList();
+    if (id) setFocus($('list').querySelector('[data-id="' + id + '"]') || focused.main);
+  });
 });
 </script>
 </body>

@@ -77,6 +77,16 @@ function typeRank(type) {
 // Rejected only because of language: these may stand in when no original-language trailer is playable.
 var LANGUAGE_REASON = /^(TMDB language .* does not match|suspected dub|KinoCheck label cannot verify|missing or unknown language)/;
 
+// Owner order (2026-11-22) when no original-language trailer plays: subtitled versions (original
+// audio) before dubbed ones; within each, English before German before anything else.
+function subtitled(name) {
+  return /subtitled|untertitel|\bOmd?U\b|\bsubs?\b/i.test(name || '') || /\bUT\b/.test(name || '');
+}
+function fallbackRank(candidate) {
+  var language = candidate.tmdb_lang || candidate.kc_lang;
+  return (subtitled(candidate.name) ? 0 : 3) + (language === 'en' ? 0 : language === 'de' ? 1 : 2);
+}
+
 function pickTrailer(candidates, decisions) {
   var byKey = Object.create(null);
   (decisions || []).forEach(function (decision) { byKey[decision.key] = decision; });
@@ -84,7 +94,6 @@ function pickTrailer(candidates, decisions) {
 
   var playable = (candidates || []).filter(function (candidate) { return decisionOf(candidate).playable; });
   var fallback = !playable.length;
-  // Owner rule: if no original-language trailer can be played, take what is available, English first.
   if (fallback) {
     playable = (candidates || []).filter(function (candidate) {
       return LANGUAGE_REASON.test(decisionOf(candidate).reason || '');
@@ -95,8 +104,8 @@ function pickTrailer(candidates, decisions) {
     var aTime;
     var bTime;
     if (fallback) {
-      var languageDifference = Number((a.tmdb_lang || a.kc_lang) !== 'en') - Number((b.tmdb_lang || b.kc_lang) !== 'en');
-      if (languageDifference) return languageDifference;
+      var fallbackDifference = fallbackRank(a) - fallbackRank(b);
+      if (fallbackDifference) return fallbackDifference;
     }
     var typeDifference = typeRank(a.type) - typeRank(b.type);
     if (typeDifference) return typeDifference;
