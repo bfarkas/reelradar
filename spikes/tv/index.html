@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>TV spike OS-T-4REBM</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+body{margin:0;padding:30px 50px;background:#111;color:#eee;font:28px/1.4 Arial,sans-serif}
+h1{font-size:40px;margin:0 0 10px}h2{font-size:32px;margin:0 0 10px;color:#7cf}
+.s{border:2px solid #444;padding:16px 24px;margin:0 0 26px}
+pre{font:24px/1.4 monospace;white-space:pre-wrap;word-wrap:break-word;margin:6px 0}
+button,a.b{font-size:28px;padding:12px 26px;margin:6px 12px 6px 0;background:#333;color:#fff;border:3px solid #666;display:inline-block;text-decoration:none;cursor:pointer}
+button:focus,a.b:focus{outline:6px solid #fc0;background:#555}
+iframe{width:960px;height:540px;border:2px solid #666;background:#000;display:block;margin:10px 0}
+canvas{background:#fff;display:block;margin:10px 0}
+#sum{background:#000;border-color:#fc0}
+</style></head><body>
+<h1>TV spike OS-T-4REBM</h1>
+<div>Remote: arrows move, OK/Enter presses. Page v1.</div>
+
+<div class="s"><h2>1. Environment</h2><pre id="env"></pre></div>
+
+<div class="s"><h2>2. localStorage</h2>
+<pre id="ls"></pre>
+<button id="bw">write</button><button id="bc">clear</button></div>
+
+<div class="s"><h2>3. YouTube embed (Big Buck Bunny, Blender Foundation, id aqz-KE-bpKQ)</h2>
+<iframe id="yt" src="https://www.youtube.com/embed/aqz-KE-bpKQ?enablejsapi=1" allowfullscreen></iframe>
+<button id="bp">play via API</button>
+<div>Did it play with sound?</div>
+<button data-obs="embed:yes">yes</button><button data-obs="embed:shows but no play">shows but no play</button><button data-obs="embed:fails">fails</button>
+<pre id="embedlog"></pre></div>
+
+<div class="s"><h2>4. Fallbacks</h2>
+<div>Scan with phone (QR = watch URL) or open the plain link:</div>
+<canvas id="qr"></canvas>
+<a class="b" id="lnk" href="https://www.youtube.com/watch?v=aqz-KE-bpKQ">Open watch link</a>
+<div>Fallback result:</div>
+<button data-obs="fallback:link works">link works</button><button data-obs="fallback:QR scanned ok">QR scanned ok</button><button data-obs="fallback:fails">fails</button>
+<pre id="fblog"></pre></div>
+
+<div class="s" id="sum"><h2>5. Summary (photograph this)</h2><pre id="sumtxt"></pre></div>
+
+<script>
+var KEY='rr_tv_spike_v1', OKEY='rr_tv_spike_v1_obs';
+var URL_='https://www.youtube.com/watch?v=aqz-KE-bpKQ';
+function $(i){return document.getElementById(i);}
+function lsOk(){try{localStorage.setItem('rr_probe','1');var v=localStorage.getItem('rr_probe')==='1';localStorage.removeItem('rr_probe');return v;}catch(e){return false;}}
+function get(k){try{var v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch(e){return null;}}
+function put(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){return false;}}
+function age(t){var s=Math.round((new Date().getTime()-t)/1000);return s<120?s+' s':s<7200?Math.round(s/60)+' min':(s/3600).toFixed(1)+' h';}
+function iso(t){return new Date(t).toISOString();}
+
+function lines(kind){var o=get(OKEY)||[],r=[],i;for(i=0;i<o.length;i++){if(o[i].k===kind){r.push(iso(o[i].t)+'  '+o[i].r);}}return r.join('\n')||'(none)';}
+function render(){
+  var ok=lsOk(),v=get(KEY),sc=window.screen||{};
+  var env='UA: '+navigator.userAgent+'\nscreen: '+sc.width+'x'+sc.height+'  window: '+window.innerWidth+'x'+window.innerHeight+'  dpr: '+(window.devicePixelRatio||1)+'\nlocalStorage works: '+ok;
+  $('env').textContent=env;
+  var st=v?'stored: '+JSON.stringify(v)+'\nage: '+age(v.t)+' (written '+iso(v.t)+')':'stored: (nothing)';
+  $('ls').textContent='key '+KEY+'\n'+st;
+  $('embedlog').textContent=lines('embed');
+  $('fblog').textContent=lines('fallback');
+  $('sumtxt').textContent=env+'\nnow: '+iso(new Date().getTime())+'\n'+st+'\nEMBED:\n'+lines('embed')+'\nFALLBACK:\n'+lines('fallback');
+}
+$('bw').onclick=function(){var t=new Date().getTime();put(KEY,{v:1,t:t,note:'hello tv'});render();};
+$('bc').onclick=function(){try{localStorage.removeItem(KEY);}catch(e){}render();};
+var bs=document.getElementsByTagName('button'),i;
+for(i=0;i<bs.length;i++){if(bs[i].getAttribute('data-obs')){bs[i].onclick=function(){
+  var p=this.getAttribute('data-obs').split(':'),o=get(OKEY)||[];
+  o.push({k:p[0],r:p[1],t:new Date().getTime()});put(OKEY,o);render();};}}
+
+/* QR: byte mode, version 3-L (29x29), mask 0. Fixed to URLs <= 53 bytes. */
+function qr(text){
+  var N=29,m=[],f=[],r,c,i,j;
+  for(r=0;r<N;r++){m.push([]);f.push([]);for(c=0;c<N;c++){m[r].push(0);f[r].push(0);}}
+  function setf(r,c,v){m[r][c]=v?1:0;f[r][c]=1;}
+  function finder(r0,c0){for(r=-1;r<=7;r++){for(c=-1;c<=7;c++){var rr=r0+r,cc=c0+c;if(rr<0||cc<0||rr>=N||cc>=N){continue;}
+    var d=(r>=0&&r<=6&&(c===0||c===6))||(c>=0&&c<=6&&(r===0||r===6))||(r>=2&&r<=4&&c>=2&&c<=4);setf(rr,cc,d);}}}
+  finder(0,0);finder(0,N-7);finder(N-7,0);
+  for(i=8;i<N-8;i++){setf(6,i,i%2===0);setf(i,6,i%2===0);}
+  for(r=-2;r<=2;r++){for(c=-2;c<=2;c++){var a=Math.max(Math.abs(r),Math.abs(c));setf(22+r,22+c,a!==1);}}
+  setf(N-8,8,1);
+  for(i=0;i<15;i++){ /* reserve format areas */
+    if(i<6){f[i][8]=1;}else if(i<8){f[i+1][8]=1;}else{f[N-15+i][8]=1;}
+    if(i<8){f[8][N-i-1]=1;}else if(i<9){f[8][15-i]=1;}else{f[8][14-i]=1;}}
+  /* data codewords: 55 for v3-L */
+  var b=[],bytes=[];for(i=0;i<text.length;i++){bytes.push(text.charCodeAt(i)&255);}
+  function bits(v,n){for(var k=n-1;k>=0;k--){b.push((v>>k)&1);}}
+  bits(4,4);bits(bytes.length,8);for(i=0;i<bytes.length;i++){bits(bytes[i],8);}
+  bits(0,Math.min(4,55*8-b.length));while(b.length%8){b.push(0);}
+  var d=[];for(i=0;i<b.length;i+=8){d.push(parseInt(b.slice(i,i+8).join(''),2));}
+  for(i=0;d.length<55;i++){d.push(i%2?17:236);}
+  /* Reed-Solomon, 15 EC codewords */
+  var ex=[],lg=[],x=1;for(i=0;i<512;i++){ex[i]=x;if(i<255){lg[x]=i;}x<<=1;if(x&256){x^=285;}}
+  function mul(p,q){return(p&&q)?ex[lg[p]+lg[q]]:0;}
+  var g=[1];for(i=0;i<15;i++){var ng=[];for(j=0;j<=g.length;j++){ng.push(0);}
+    for(j=0;j<g.length;j++){ng[j]^=g[j];ng[j+1]^=mul(g[j],ex[i]);}g=ng;}
+  var e=d.slice();for(i=0;i<15;i++){e.push(0);}
+  for(i=0;i<55;i++){var co=e[i];if(co){for(j=0;j<g.length;j++){e[i+j]^=mul(g[j],co);}}}
+  var cw=d.concat(e.slice(55)),bb=[];
+  for(i=0;i<cw.length;i++){for(j=7;j>=0;j--){bb.push((cw[i]>>j)&1);}}
+  /* place data, zigzag, mask 0 */
+  var bi=0,dir=-1;r=N-1;
+  for(c=N-1;c>0;c-=2){if(c===6){c--;}
+    for(;;){for(j=0;j<2;j++){var cc2=c-j;if(!f[r][cc2]){var v=bi<bb.length?bb[bi]:0;bi++;if((r+cc2)%2===0){v^=1;}m[r][cc2]=v;}}
+      r+=dir;if(r<0||r>=N){r-=dir;dir=-dir;break;}}}
+  /* format info: L=01, mask 0 */
+  var fd=(1<<3)|0,rem=fd<<10;for(i=14;i>=10;i--){if((rem>>i)&1){rem^=0x537<<(i-10);}}
+  var fb=((fd<<10)|rem)^0x5412;
+  for(i=0;i<15;i++){var bit=(fb>>i)&1;
+    if(i<6){m[i][8]=bit;}else if(i<8){m[i+1][8]=bit;}else{m[N-15+i][8]=bit;}
+    if(i<8){m[8][N-i-1]=bit;}else if(i<9){m[8][15-i]=bit;}else{m[8][14-i]=bit;}}
+  return m;
+}
+(function(){
+  var m=qr(URL_),N=m.length,s=8,q=4,cv=$('qr'),x=cv.getContext('2d'),r,c;
+  cv.width=cv.height=(N+2*q)*s;x.fillStyle='#fff';x.fillRect(0,0,cv.width,cv.height);x.fillStyle='#000';
+  for(r=0;r<N;r++){for(c=0;c<N;c++){if(m[r][c]){x.fillRect((c+q)*s,(r+q)*s,s,s);}}}
+})();
+
+/* remote nav: arrows cycle through buttons/links */
+document.onkeydown=function(ev){
+  var k=ev.keyCode,dir=(k===37||k===38)?-1:(k===39||k===40)?1:0;if(!dir){return;}
+  var els=[],all=document.querySelectorAll('button,a.b'),n;
+  for(n=0;n<all.length;n++){els.push(all[n]);}
+  var cur=-1;for(n=0;n<els.length;n++){if(els[n]===document.activeElement){cur=n;}}
+  var nx=cur<0?0:(cur+dir+els.length)%els.length;els[nx].focus();
+  if(els[nx].scrollIntoView){els[nx].scrollIntoView(false);}
+  ev.preventDefault();
+};
+/* beacon: reports to the serving machine's access log as GET /log?{json}, so the run can be read without photographing the screen */
+function beacon(o){o.at=new Date().getTime();new Image().src='/log?'+encodeURIComponent(JSON.stringify(o));}
+var _render=render;render=function(){_render();beacon({ev:'state',ua:navigator.userAgent,ls:lsOk(),stored:get(KEY),obs:get(OKEY)});};
+/* YouTube iframe postMessage protocol (no external script): listen, then forward player events */
+function yt(msg){$('yt').contentWindow.postMessage(JSON.stringify(msg),'*');}
+$('yt').onload=function(){yt({event:'listening',id:1,channel:'widget'});};
+var lastState=null;
+window.addEventListener('message',function(e){
+  if(String(e.origin).indexOf('youtube')<0){return;}
+  var d;try{d=JSON.parse(e.data);}catch(x){return;}
+  var i=d.info||{};
+  if(d.event==='infoDelivery'&&i.playerState===undefined&&i.muted===undefined){return;}
+  if(d.event==='infoDelivery'&&i.playerState===lastState&&i.muted===undefined){return;}
+  if(i.playerState!==undefined){lastState=i.playerState;}
+  beacon({ev:'yt',event:d.event,state:i.playerState,t:i.currentTime,muted:i.muted,volume:i.volume,err:d.event==='onError'?d.info:undefined});
+});
+$('bp').onclick=function(){yt({event:'command',func:'playVideo',args:[],id:1,channel:'widget'});beacon({ev:'playclick'});};
+/* ?write=1 does the same as the write button, so a remote-driven run does not depend on where the browser's pointer is */
+if(/[?&]write=1/.test(location.search)&&!get(KEY)){put(KEY,{v:1,t:new Date().getTime(),note:'hello tv'});}
+render();$('bw').focus();
+</script></body></html>
