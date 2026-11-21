@@ -1,22 +1,87 @@
 {
-  "discover": {"results":[{"id":101}]},
-  "detail": {"id":101,"title":"Fixture Film","original_title":"Fixture Film","original_language":"en"},
-  "release_dates": {
-    "results":[
-      {"iso_3166_1":"US","release_dates":[{"type":3,"release_date":"2026-01-01T00:00:00.000Z"}]},
-      {"iso_3166_1":"DE","release_dates":[
-        {"type":3,"release_date":"2026-12-10T00:00:00.000Z"},
-        {"type":4,"release_date":"2027-01-15T00:00:00.000Z"}
-      ]}
+  "discover": {
+    "results": [
+      {
+        "id": 101
+      }
     ]
   },
-  "videos": {"results":[
-    {"key":"fixture-video","iso_639_1":"en","type":"Trailer","site":"YouTube","name":"Fixture Film Trailer","published_at":"2026-10-01T10:00:00Z","official":true}
-  ]},
+  "detail": {
+    "id": 101,
+    "title": "Fixture Film",
+    "original_title": "Fixture Film",
+    "original_language": "en",
+    "genres": [
+      {
+        "id": 18,
+        "name": "Drama"
+      }
+    ],
+    "keywords": {
+      "keywords": [
+        {
+          "id": 9715,
+          "name": "superhero"
+        },
+        {
+          "id": 818,
+          "name": "based on novel"
+        }
+      ]
+    }
+  },
+  "release_dates": {
+    "results": [
+      {
+        "iso_3166_1": "US",
+        "release_dates": [
+          {
+            "type": 3,
+            "release_date": "2026-01-01T00:00:00.000Z"
+          }
+        ]
+      },
+      {
+        "iso_3166_1": "DE",
+        "release_dates": [
+          {
+            "type": 3,
+            "release_date": "2026-12-10T00:00:00.000Z"
+          },
+          {
+            "type": 4,
+            "release_date": "2027-01-15T00:00:00.000Z"
+          }
+        ]
+      }
+    ]
+  },
+  "videos": {
+    "results": [
+      {
+        "key": "fixture-video",
+        "iso_639_1": "en",
+        "type": "Trailer",
+        "site": "YouTube",
+        "name": "Fixture Film Trailer",
+        "published_at": "2026-10-01T10:00:00Z",
+        "official": true
+      }
+    ]
+  },
   "kinocheck": {
-    "language":"en",
-    "videos":[
-      {"youtube_video_id":"fixture-video","language":"en","categories":["Trailer"],"title":"Fixture Film Trailer","published":"2026-10-01T10:00:00Z","url":"https://kinocheck.com/trailer/fixture"}
+    "language": "en",
+    "videos": [
+      {
+        "youtube_video_id": "fixture-video",
+        "language": "en",
+        "categories": [
+          "Trailer"
+        ],
+        "title": "Fixture Film Trailer",
+        "published": "2026-10-01T10:00:00Z",
+        "url": "https://kinocheck.com/trailer/fixture"
+      }
     ]
   }
 }

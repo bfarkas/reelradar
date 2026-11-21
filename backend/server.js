@@ -31,6 +31,7 @@ function getTitles() {
     'SELECT key, source, playable, reason FROM candidates',
     'WHERE tmdb_id = ? ORDER BY key'
   ].join(' '));
+  var tagStatement = db.prepare('SELECT tag_id AS id, name FROM title_tags WHERE tmdb_id = ? AND kind = ? ORDER BY name');
 
   return rows.map(function (row) {
     return {
@@ -44,6 +45,8 @@ function getTitles() {
         key: row.trailer_key,
         kinocheck_url: row.kinocheck_url || null
       } : null,
+      genres: tagStatement.all(row.tmdb_id, 'genre'),
+      keywords: tagStatement.all(row.tmdb_id, 'keyword'),
       decisions: decisionStatement.all(row.tmdb_id).map(function (decision) {
         return {
           key: decision.key,

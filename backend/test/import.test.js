@@ -75,6 +75,9 @@ test('failed import preserves titles and candidates and records failure', async 
   var db = new DatabaseSync(dbPath);
   var titlesBefore = db.prepare('SELECT * FROM titles ORDER BY tmdb_id').all();
   var candidatesBefore = db.prepare('SELECT * FROM candidates ORDER BY tmdb_id, key').all();
+  var tagsBefore = db.prepare('SELECT kind, tag_id, name FROM title_tags ORDER BY kind, tag_id').all();
+  assert.deepEqual(tagsBefore.map(function (row) { return row.kind + ':' + row.name; }),
+    ['genre:Drama', 'keyword:based on novel', 'keyword:superhero']);
   assert.equal(titlesBefore.length, 1);
   assert.equal(titlesBefore[0].trailer_key, 'fixture-video');
   assert.equal(candidatesBefore[0].source, 'both');
@@ -99,6 +102,7 @@ test('failed import preserves titles and candidates and records failure', async 
   db = new DatabaseSync(dbPath);
   assert.deepEqual(db.prepare('SELECT * FROM titles ORDER BY tmdb_id').all(), titlesBefore);
   assert.deepEqual(db.prepare('SELECT * FROM candidates ORDER BY tmdb_id, key').all(), candidatesBefore);
+  assert.deepEqual(db.prepare('SELECT kind, tag_id, name FROM title_tags ORDER BY kind, tag_id').all(), tagsBefore);
   var imports = db.prepare('SELECT status FROM imports ORDER BY id').all();
   assert.deepEqual(imports.map(function (row) { return row.status; }), ['success', 'failed']);
   db.close();

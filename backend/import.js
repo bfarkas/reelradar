@@ -20,7 +20,10 @@ function ensureSchema(db) {
     'PRIMARY KEY (tmdb_id, key))',
     ';CREATE TABLE IF NOT EXISTS imports (',
     'id INTEGER PRIMARY KEY AUTOINCREMENT, started TEXT NOT NULL, finished TEXT,',
-    'status TEXT NOT NULL, error TEXT)'
+    'status TEXT NOT NULL, error TEXT)',
+    ';CREATE TABLE IF NOT EXISTS title_tags (',
+    'tmdb_id INTEGER NOT NULL, kind TEXT NOT NULL, tag_id INTEGER NOT NULL, name TEXT NOT NULL,',
+    'PRIMARY KEY (tmdb_id, kind, tag_id))'
   ].join(' '));
 }
 
@@ -214,7 +217,7 @@ async function runImport(options) {
     for (var i = 0; i < ids.length; i += 1) {
       var id = ids[i];
       await sleep(250);
-      var detail = await requestJson(fetchFn, TMDB_BASE + '/movie/' + id + '?language=de-DE',
+      var detail = await requestJson(fetchFn, TMDB_BASE + '/movie/' + id + '?language=de-DE&append_to_response=keywords',
         { headers: tmdbHeaders }, 'TMDB');
       await sleep(250);
       var releaseDates = await requestJson(fetchFn, TMDB_BASE + '/movie/' + id + '/release_dates',
@@ -250,6 +253,8 @@ async function runImport(options) {
         de_theatrical: dates.theatrical,
         de_digital: dates.digital,
         trailer_key: picked ? picked.key : null,
+        genres: detail.genres || [],
+        keywords: (detail.keywords && detail.keywords.keywords) || [],
         candidates: candidates.map(function (candidate) {
           var decision = decisions.find(function (item) { return item.key === candidate.key; });
           return Object.assign({}, candidate, decision);
@@ -259,7 +264,8 @@ async function runImport(options) {
 
     db.exec('BEGIN IMMEDIATE');
     try {
-      db.exec('DELETE FROM candidates; DELETE FROM titles');
+      db.exec('DELETE FROM candidates; DELETE FROM title_tags; DELETE FROM titles');
+      var insertTag = db.prepare('INSERT OR IGNORE INTO title_tags VALUES (?, ?, ?, ?)');
       var insertTitle = db.prepare('INSERT INTO titles VALUES (?, ?, ?, ?, ?, ?, ?)');
       var insertCandidate = db.prepare([
         'INSERT INTO candidates (tmdb_id, key, source, tmdb_lang, kc_lang, type, site, name,',
@@ -269,6 +275,8 @@ async function runImport(options) {
       titles.forEach(function (title) {
         insertTitle.run(title.tmdb_id, title.title, title.original_title, title.original_language,
           title.de_theatrical, title.de_digital, title.trailer_key);
+        title.genres.forEach(function (tag) { insertTag.run(title.tmdb_id, 'genre', tag.id, tag.name); });
+        title.keywords.forEach(function (tag) { insertTag.run(title.tmdb_id, 'keyword', tag.id, tag.name); });
         title.candidates.forEach(function (candidate) {
           insertCandidate.run(title.tmdb_id, candidate.key, candidate.source, candidate.tmdb_lang,
             candidate.kc_lang, candidate.type, candidate.site, candidate.name,

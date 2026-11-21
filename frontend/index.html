@@ -14,10 +14,26 @@ button { font-size: 1.1em; margin: 0.75em 0; padding: 0.6em 1em; }
 iframe { border: 0; display: block; height: 360px; max-width: 100%; width: 640px; }
 a { color: #9cf; }
 footer { margin-top: 2em; }
+#filter { border: 1px solid #777; margin: 0.5em 0; padding: 0.5em 1em; }
+#filter h2 { font-size: 1.1em; }
+.tag { background: #2a3038; border: 2px solid #555; color: #eee; font-size: 1.1em; margin: 0.25em; padding: 0.4em 0.8em; }
+.tag[aria-pressed="true"] { background: #2d6cdf; border-color: #9cf; }
+#keyword-search { font-size: 1.1em; padding: 0.4em; width: 20em; max-width: 100%; }
+#count { color: #ccc; }
 </style>
 </head>
 <body>
 <h1>ReelRadar</h1>
+<button type="button" id="filter-toggle">Filter</button>
+<button type="button" id="filter-clear">Clear filter</button>
+<span id="count"></span>
+<section id="filter" hidden>
+<h2>Genres</h2>
+<div id="genres"></div>
+<h2>Keywords</h2>
+<input type="search" id="keyword-search" placeholder="Search keywords" aria-label="Search keywords">
+<div id="keywords"></div>
+</section>
 <main id="titles">Loading titles...</main>
 <footer>This product uses the TMDB API but is not endorsed or certified by TMDB.</footer>
 <script>
@@ -64,10 +80,109 @@ function playTrailer(event) {
   button.parentNode.replaceChild(iframe, button);
 }
 
+// Selection: {v:1, genres:[ids], keywords:[ids]} in localStorage; storage may be missing or throw.
+var FILTER_KEY = 'reelradar.filter';
+var allTitles = [];
+var selection = loadSelection();
+
+function loadSelection() {
+  try {
+    var value = JSON.parse(window.localStorage.getItem(FILTER_KEY));
+    if (value && value.v === 1 && value.genres instanceof Array && value.keywords instanceof Array) return value;
+  } catch (error) {}
+  return { v: 1, genres: [], keywords: [] };
+}
+
+function saveSelection() {
+  try { window.localStorage.setItem(FILTER_KEY, JSON.stringify(selection)); } catch (error) {}
+}
+
+function hasAny(tags, ids) {
+  for (var i = 0; i < tags.length; i += 1) if (ids.indexOf(tags[i].id) !== -1) return true;
+  return false;
+}
+
+// Match rule: ANY selected genre or keyword; nothing selected shows everything.
+function matchesFilter(title, chosen) {
+  if (!chosen.genres.length && !chosen.keywords.length) return true;
+  return hasAny(title.genres || [], chosen.genres) || hasAny(title.keywords || [], chosen.keywords);
+}
+
+// All tags of one kind on the loaded titles, with how many titles carry each.
+function collectTags(kind) {
+  var byId = {};
+  var list = [];
+  for (var i = 0; i < allTitles.length; i += 1) {
+    var tags = allTitles[i][kind] || [];
+    for (var j = 0; j < tags.length; j += 1) {
+      if (!byId[tags[j].id]) {
+        byId[tags[j].id] = { id: tags[j].id, name: tags[j].name, count: 0 };
+        list.push(byId[tags[j].id]);
+      }
+      byId[tags[j].id].count += 1;
+    }
+  }
+  return list;
+}
+
+function toggleButton(kind, tag) {
+  var ids = selection[kind];
+  var button = text('button', tag.name + (kind === 'keywords' ? ' (' + tag.count + ')' : ''), 'tag');
+  button.setAttribute('type', 'button');
+  button.setAttribute('aria-pressed', ids.indexOf(tag.id) !== -1 ? 'true' : 'false');
+  button.onclick = function () {
+    var index = ids.indexOf(tag.id);
+    if (index === -1) ids.push(tag.id); else ids.splice(index, 1);
+    button.setAttribute('aria-pressed', index === -1 ? 'true' : 'false');
+    saveSelection();
+    renderTitles();
+  };
+  return button;
+}
+
+function renderGenres() {
+  var root = document.getElementById('genres');
+  var genres = collectTags('genres').sort(function (a, b) { return a.name < b.name ? -1 : a.name > b.name ? 1 : 0; });
+  root.textContent = '';
+  for (var i = 0; i < genres.length; i += 1) root.appendChild(toggleButton('genres', genres[i]));
+}
+
+function renderKeywords() {
+  var root = document.getElementById('keywords');
+  var query = document.getElementById('keyword-search').value.toLowerCase();
+  var keywords = collectTags('keywords').filter(function (tag) {
+    return tag.name.toLowerCase().indexOf(query) !== -1;
+  }).sort(function (a, b) {
+    return b.count - a.count || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
+  });
+  root.textContent = '';
+  for (var i = 0; i < keywords.length && i < 40; i += 1) root.appendChild(toggleButton('keywords', keywords[i]));
+  if (keywords.length > 40) root.appendChild(text('p', (keywords.length - 40) + ' more: search to narrow down.'));
+}
+
+function renderTitles() {
+  var shown = allTitles.filter(function (title) { return matchesFilter(title, selection); });
+  document.getElementById('count').textContent = 'Showing ' + shown.length + ' of ' + allTitles.length + ' titles';
+  render(shown);
+}
+
+document.getElementById('filter-toggle').onclick = function () {
+  var panel = document.getElementById('filter');
+  panel.hidden = !panel.hidden;
+};
+document.getElementById('filter-clear').onclick = function () {
+  selection = { v: 1, genres: [], keywords: [] };
+  saveSelection();
+  renderGenres();
+  renderKeywords();
+  renderTitles();
+};
+document.getElementById('keyword-search').oninput = renderKeywords;
+
 function render(titles) {
   var root = document.getElementById('titles');
   root.textContent = '';
-  if (!titles.length) root.appendChild(text('p', 'No titles imported yet.'));
+  if (!titles.length) root.appendChild(text('p', allTitles.length ? 'No titles match the filter.' : 'No titles imported yet.'));
 
   for (var i = 0; i < titles.length; i += 1) {
     var title = titles[i];
@@ -108,7 +223,10 @@ request.open('GET', '/api/titles');
 request.onload = function () {
   try {
     if (request.status < 200 || request.status >= 300) throw new Error('HTTP ' + request.status);
-    render(JSON.parse(request.responseText));
+    allTitles = JSON.parse(request.responseText);
+    renderGenres();
+    renderKeywords();
+    renderTitles();
   } catch (error) {
     document.getElementById('titles').textContent = 'Could not load titles.';
   }

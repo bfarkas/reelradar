@@ -49,3 +49,7 @@ cat <path-to-reelradar>/deploy/Caddyfile.example >> Caddyfile
 docker exec caddy caddy validate --config /etc/caddy/Caddyfile
 docker exec caddy caddy reload --config /etc/caddy/Caddyfile
 ```
+
+## Genre and keyword filter
+
+The list page has a Filter panel listing the TMDB genres and keywords of the imported titles; keywords are ordered by how many titles carry them, with a search box. A title is shown if it has **any** selected genre or keyword; with nothing selected, everything is shown. The selection lives only in the browser, in localStorage key `reelradar.filter` as `{"v":1,"genres":[ids],"keywords":[ids]}`; the server stores no per-user data. If localStorage is unavailable or holds something else, the page shows everything. The import stores genres and keywords in the `title_tags` table (via `append_to_response=keywords`).
