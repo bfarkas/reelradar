@@ -60,7 +60,7 @@ The list page has a Filter panel listing the TMDB genres and keywords of the imp
 
 **Stream approach.** The TV app doesn't use a YouTube player. The backend downloads each picked trailer once with yt-dlp as an H.264/AAC MP4 (up to 1080p) into `/data/media/`. The frontend nginx serves those files at `/media/<key>.mp4`, with Range support. `GET /api/stream/<tmdb_id>` returns `{key, url}`. On a title's first request, it downloads the file before answering.
 
-If YouTube refuses a video (private, removed, geo-blocked), the backend marks that candidate unplayable with the yt-dlp error as the reason and tries the next playable candidate. When none is left, the title has no trailer.
+If YouTube refuses a video (private, removed, geo-blocked), the backend marks that candidate unplayable with the yt-dlp error as the reason and tries the next playable candidate. If no original-language trailer is playable (or downloadable), candidates that were hidden only for language stand in, English first, then any other language (owner rule, 2026-11-22). Only when none of those is left does the title have no trailer.
 
 These are cached copies of YouTube videos for private household use on the LAN only. Never expose `/media/` or `/api/stream/` beyond the LAN.
 

@@ -74,19 +74,31 @@ function typeRank(type) {
   return type === 'Trailer' ? 0 : 1;
 }
 
+// Rejected only because of language: these may stand in when no original-language trailer is playable.
+var LANGUAGE_REASON = /^(TMDB language .* does not match|suspected dub|KinoCheck label cannot verify|missing or unknown language)/;
+
 function pickTrailer(candidates, decisions) {
   var byKey = Object.create(null);
   (decisions || []).forEach(function (decision) { byKey[decision.key] = decision; });
+  function decisionOf(candidate) { return byKey[candidate.key] || candidate; }
 
-  var playable = (candidates || []).filter(function (candidate) {
-    var decision = byKey[candidate.key];
-    return decision ? decision.playable : candidate.playable;
-  });
+  var playable = (candidates || []).filter(function (candidate) { return decisionOf(candidate).playable; });
+  var fallback = !playable.length;
+  // Owner rule: if no original-language trailer can be played, take what is available, English first.
+  if (fallback) {
+    playable = (candidates || []).filter(function (candidate) {
+      return LANGUAGE_REASON.test(decisionOf(candidate).reason || '');
+    });
+  }
 
   playable.sort(function (a, b) {
-    var typeDifference = typeRank(a.type) - typeRank(b.type);
     var aTime;
     var bTime;
+    if (fallback) {
+      var languageDifference = Number((a.tmdb_lang || a.kc_lang) !== 'en') - Number((b.tmdb_lang || b.kc_lang) !== 'en');
+      if (languageDifference) return languageDifference;
+    }
+    var typeDifference = typeRank(a.type) - typeRank(b.type);
     if (typeDifference) return typeDifference;
     aTime = Date.parse(a.published_at || '') || 0;
     bTime = Date.parse(b.published_at || '') || 0;

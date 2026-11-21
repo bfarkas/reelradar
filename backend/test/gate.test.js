@@ -61,3 +61,17 @@ test('picker prefers Trailer over a newer Teaser', function () {
   ];
   assert.equal(gate.pickTrailer(candidates, decisions).key, 'trailer');
 });
+
+test('without a playable original-language trailer, the picker falls back to English, then any language', function () {
+  var candidates = [
+    { key: 'deTrailer01', tmdb_lang: 'de', type: 'Trailer', published_at: '2024-03-01', playable: 0, reason: 'suspected dub/subtitled locale version' },
+    { key: 'enTrailer01', tmdb_lang: 'en', type: 'Trailer', published_at: '2024-01-01', playable: 0, reason: 'TMDB language en does not match original ja' },
+    { key: 'enClip00001', tmdb_lang: 'en', type: 'Clip', published_at: '2024-04-01', playable: 0, reason: 'not a trailer or teaser' },
+    { key: 'privateJa01', tmdb_lang: 'ja', type: 'Trailer', published_at: '2024-05-01', playable: 0, reason: 'unavailable for download: ERROR: Private video' }
+  ];
+  assert.equal(gate.pickTrailer(candidates).key, 'enTrailer01');
+  candidates[1].reason = 'unavailable for download: ERROR: geo-blocked';
+  assert.equal(gate.pickTrailer(candidates).key, 'deTrailer01');
+  candidates[0].reason = 'deny list';
+  assert.equal(gate.pickTrailer(candidates), null);
+});
