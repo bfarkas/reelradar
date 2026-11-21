@@ -53,3 +53,27 @@ docker exec caddy caddy reload --config /etc/caddy/Caddyfile
 ## Genre and keyword filter
 
 The list page has a Filter panel listing the TMDB genres and keywords of the imported titles; keywords are ordered by how many titles carry them, with a search box. A title is shown if it has **any** selected genre or keyword; with nothing selected, everything is shown. The selection lives only in the browser, in localStorage key `reelradar.filter` as `{"v":1,"genres":[ids],"keywords":[ids]}`; the server stores no per-user data. If localStorage is unavailable or holds something else, the page shows everything. The import stores genres and keywords in the `title_tags` table (via `append_to_response=keywords`).
+
+## TV app (Tizen) and trailer streams
+
+`tv-app/` is a fullscreen Tizen 4.0 web app for the Samsung TV (package `reelradar1`, app id `reelradar1.ReelRadar`). It shows the title list with German dates and the genre/keyword filter, and it plays trailers fullscreen itself. Navigation uses only arrows, OK and Back. Back closes the player, then the filter, then the app. The filter is stored in the app's localStorage, so it survives a restart. In the player, OK and Play/Pause pause, and Left/Right seek ±10 s.
+
+**Stream approach.** The TV app doesn't use a YouTube player. The backend downloads each picked trailer once with yt-dlp as an H.264/AAC MP4 (up to 1080p) into `/data/media/`. The frontend nginx serves those files at `/media/<key>.mp4`, with Range support. `GET /api/stream/<tmdb_id>` returns `{key, url}`. On a title's first request, it downloads the file before answering.
+
+If YouTube refuses a video (private, removed, geo-blocked), the backend marks that candidate unplayable with the yt-dlp error as the reason and tries the next playable candidate. When none is left, the title has no trailer.
+
+These are cached copies of YouTube videos for private household use on the LAN only. Never expose `/media/` or `/api/stream/` beyond the LAN.
+
+Fill the cache after an import (takes a few minutes; about 30 MB per trailer):
+```
+docker compose exec -T backend node prefetch.js
+```
+shortcut: a re-import resets candidates, so a dead video is tried once more on its next stream or prefetch request. The cache is never pruned. Delete `/data/media/*.mp4` by hand if the disk fills.
+
+**Build and install** (Tizen Studio CLI, certificate profile `hideki`, TV in developer mode pointing at this Mac):
+```
+tizen package -t wgt -s hideki -o out -- tv-app/
+sdb connect 192.168.42.54:26101
+tizen install -n ReelRadar.wgt -s 192.168.42.54:26101 -- out
+```
+Launch it from Apps, or from here with `cd spikes/tv && node remote.mjs launch reelradar1.ReelRadar`. The API address is fixed at the top of `tv-app/index.html` (`API`).

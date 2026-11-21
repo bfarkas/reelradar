@@ -1,5 +1,6 @@
 // Samsung TV network remote (2018+ sets, secure port 8002). Needs `npm install` in this folder.
 //   node remote.mjs open <url>             open the TV browser (org.tizen.browser) at <url>
+//   node remote.mjs launch <appId>         start an installed app (e.g. reelradar1.ReelRadar)
 //   node remote.mjs KEY_ENTER KEY_DOWN ... send key clicks, 700 ms apart
 //   node remote.mjs hold KEY_POWER [ms]    press and hold a key (Power for 6 s switches the TV off)
 // TV_IP (default 192.168.42.54). TV_TOKEN: the token printed on first connect; reuse it so the TV does not ask again.
@@ -16,6 +17,10 @@ ws.onmessage = async (m) => {
   if (args[0] === 'open') {
     ws.send(JSON.stringify({ method: 'ms.channel.emit', params: { event: 'ed.apps.launch', to: 'host',
       data: { appId: 'org.tizen.browser', action_type: 'NATIVE_LAUNCH', metaTag: args[1] } } }));
+    await wait(2000);
+  } else if (args[0] === 'launch') {
+    ws.send(JSON.stringify({ method: 'ms.channel.emit', params: { event: 'ed.apps.launch', to: 'host',
+      data: { appId: args[1], action_type: 'DEEP_LINK' } } }));
     await wait(2000);
   } else if (args[0] === 'hold') {
     const k = (c) => ws.send(JSON.stringify({ method: 'ms.remote.control', params: { Cmd: c, DataOfCmd: args[1], Option: 'false', TypeOfRemote: 'SendRemoteKey' } }));

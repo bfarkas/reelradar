@@ -9,6 +9,8 @@ services:
     build: ./frontend
     restart: unless-stopped
     depends_on: [backend]
+    volumes:
+      - reelradar-data:/srv/data:ro # trailer cache at /media/
     ports:
       - "127.0.0.1:8180:80" # only the host's Caddy reaches this
 volumes:

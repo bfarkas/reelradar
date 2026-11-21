@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>ReelRadar</title>
+<style>
+/* Fixed 1920x1080 stage, Tizen 4.0 (Chromium M56): no flex gap, no inset. */
+html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #101418; color: #eee; font-family: sans-serif; }
+.layer { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
+.hidden { display: none; }
+header { height: 140px; padding: 40px 80px 0; box-sizing: border-box; }
+header h1 { display: inline-block; margin: 0 60px 0 0; font-size: 56px; vertical-align: middle; }
+#count { color: #aaa; font-size: 30px; margin-left: 30px; vertical-align: middle; }
+.btn { display: inline-block; vertical-align: middle; margin-right: 20px; padding: 14px 34px; font-size: 32px; background: #2a3038; border: 4px solid #2a3038; border-radius: 10px; }
+#list { position: absolute; left: 80px; top: 160px; width: 1760px; height: 880px; overflow: hidden; }
+.row { padding: 22px 30px; margin-bottom: 14px; background: #1a2027; border: 4px solid #1a2027; border-radius: 12px; }
+.row h2 { margin: 0 0 8px; font-size: 40px; }
+.row .meta { color: #bbb; font-size: 28px; }
+.row .none { color: #e88; }
+#filter { background: rgba(16, 20, 24, 0.97); }
+#filter h2 { margin: 40px 80px 10px; font-size: 40px; }
+#filter-hint { margin: 0 80px; color: #aaa; font-size: 28px; }
+.tags { margin: 0 70px; }
+#keywords { height: 520px; overflow: hidden; }
+.tag { display: inline-block; margin: 10px; padding: 12px 26px; font-size: 30px; background: #2a3038; border: 4px solid #2a3038; border-radius: 30px; }
+.tag.on { background: #2d6cdf; border-color: #2d6cdf; }
+.focus { border-color: #fff !important; box-shadow: 0 0 24px rgba(255, 255, 255, 0.5); }
+#player { background: #000; }
+#video { width: 1920px; height: 1080px; }
+#status { position: absolute; left: 0; top: 480px; width: 1920px; text-align: center; font-size: 44px; color: #ddd; }
+#message { position: absolute; left: 80px; top: 160px; font-size: 36px; color: #ddd; }
+</style>
+</head>
+<body>
+<div id="main" class="layer">
+  <header>
+    <h1>ReelRadar</h1>
+    <span class="btn" id="open-filter">Filter</span>
+    <span class="btn" id="clear-filter">Clear filter</span>
+    <span id="count"></span>
+  </header>
+  <div id="message">Loading titles...</div>
+  <div id="list"></div>
+</div>
+<div id="filter" class="layer hidden">
+  <h2>Genres</h2>
+  <div class="tags" id="genres"></div>
+  <h2>Keywords</h2>
+  <div id="filter-hint">OK toggles · Back closes · shows titles matching ANY choice</div>
+  <div class="tags" id="keywords"></div>
+</div>
+<div id="player" class="layer hidden">
+  <video id="video"></video>
+  <div id="status"></div>
+</div>
+<script>
+// ES5 only. API on rei3 (LAN, behind Caddy).
+var API = 'http://192.168.42.57:8095';
+var KEYS = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, ENTER: 13, BACK: 10009, ESC: 27, BACKSPACE: 8,
+  PLAY: 415, PAUSE: 19, PLAY_PAUSE: 10252, STOP: 413, FF: 417, RW: 412 };
+var FILTER_KEY = 'reelradar.filter';
+var allTitles = [];
+var selection = loadSelection();
+var layer = 'main';           // main | filter | player
+var focused = { main: null, filter: null };
+var playToken = 0;
+
+function $(id) { return document.getElementById(id); }
+function el(tag, className, text) {
+  var e = document.createElement(tag);
+  if (className) e.className = className;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+function loadSelection() {
+  try {
+    var value = JSON.parse(window.localStorage.getItem(FILTER_KEY));
+    if (value && value.v === 1 && value.genres instanceof Array && value.keywords instanceof Array) return value;
+  } catch (error) {}
+  return { v: 1, genres: [], keywords: [] };
+}
+function saveSelection() {
+  try { window.localStorage.setItem(FILTER_KEY, JSON.stringify(selection)); } catch (error) {}
+}
+function hasAny(tags, ids) {
+  for (var i = 0; i < tags.length; i += 1) if (ids.indexOf(tags[i].id) !== -1) return true;
+  return false;
+}
+// Same rule as the web page: ANY selected genre or keyword; nothing selected shows everything.
+function matchesFilter(title) {
+  if (!selection.genres.length && !selection.keywords.length) return true;
+  return hasAny(title.genres || [], selection.genres) || hasAny(title.keywords || [], selection.keywords);
+}
+function collectTags(kind) {
+  var byId = {}, list = [];
+  allTitles.forEach(function (title) {
+    (title[kind] || []).forEach(function (tag) {
+      if (!byId[tag.id]) { byId[tag.id] = { id: tag.id, name: tag.name, count: 0 }; list.push(byId[tag.id]); }
+      byId[tag.id].count += 1;
+    });
+  });
+  return list;
+}
+
+// ---- focus: spatial navigation over the .focusable elements of the current layer ----
+function focusables() {
+  return Array.prototype.slice.call($(layer).querySelectorAll('.focusable'));
+}
+function removeClass(e, name) {
+  e.className = e.className.replace(new RegExp('(^| )' + name + '(?= |$)', 'g'), '');
+}
+function setFocus(target) {
+  var old = $(layer).querySelector('.focus');
+  if (old) removeClass(old, 'focus');
+  if (!target) return;
+  target.className += ' focus';
+  focused[layer] = target;
+  ensureVisible(target);
+}
+function ensureVisible(target) {
+  var box = target.parentNode;
+  while (box && box !== document.body && box.scrollHeight <= box.clientHeight) box = box.parentNode;
+  if (!box || box === document.body) return;
+  var t = target.getBoundingClientRect(), b = box.getBoundingClientRect();
+  if (t.top < b.top) box.scrollTop -= b.top - t.top + 20;
+  else if (t.bottom > b.bottom) box.scrollTop += t.bottom - b.bottom + 20;
+}
+function move(dx, dy) {
+  var current = $(layer).querySelector('.focus');
+  var items = focusables();
+  if (!current) { setFocus(items[0]); return; }
+  var a = current.getBoundingClientRect();
+  var ax = a.left + a.width / 2, ay = a.top + a.height / 2;
+  var best = null, bestScore = Infinity;
+  items.forEach(function (item) {
+    if (item === current) return;
+    var b = item.getBoundingClientRect();
+    var bx = b.left + b.width / 2, by = b.top + b.height / 2;
+    var along = dx ? (bx - ax) * dx : (by - ay) * dy;
+    var across = dx ? Math.abs(by - ay) : Math.abs(bx - ax);
+    // must lie in the pressed direction; on the same line for left/right
+    if (along <= 1) return;
+    if (dx && across > a.height / 2 + b.height / 2) return;
+    var score = along + across * 3;
+    if (score < bestScore) { bestScore = score; best = item; }
+  });
+  if (best) setFocus(best);
+}
+
+// ---- main list ----
+function renderList() {
+  var list = $('list');
+  var shown = allTitles.filter(matchesFilter);
+  var active = selection.genres.length + selection.keywords.length;
+  list.textContent = '';
+  list.scrollTop = 0;
+  $('count').textContent = shown.length + ' of ' + allTitles.length + ' titles' + (active ? ' · ' + active + ' filter' + (active > 1 ? 's' : '') + ' on' : '');
+  $('message').textContent = shown.length ? '' : (allTitles.length ? 'No titles match the filter.' : 'No titles imported yet.');
+  shown.forEach(function (title) {
+    var row = el('div', 'row focusable');
+    var dates = title.de_theatrical ? 'In cinemas (DE): ' + title.de_theatrical : 'No German cinema date';
+    if (title.de_digital) dates += '  ·  digital: ' + title.de_digital;
+    var genres = (title.genres || []).map(function (g) { return g.name; }).join(', ');
+    row.appendChild(el('h2', '', title.title));
+    row.appendChild(el('div', 'meta', dates + (genres ? '  ·  ' + genres : '')));
+    if (!title.trailer) row.appendChild(el('div', 'meta none', 'No trailer'));
+    row.onactivate = function () { if (title.trailer) play(title); };
+    list.appendChild(row);
+  });
+  var first = list.querySelector('.focusable');
+  setFocus(first || $('open-filter'));
+}
+$('open-filter').className += ' focusable';
+$('open-filter').onactivate = openFilter;
+$('clear-filter').className += ' focusable';
+$('clear-filter').onactivate = function () {
+  selection = { v: 1, genres: [], keywords: [] };
+  saveSelection();
+  renderList();
+};
+
+// ---- filter panel ----
+function tagButton(kind, tag) {
+  var ids = selection[kind];
+  var button = el('span', 'tag focusable' + (ids.indexOf(tag.id) !== -1 ? ' on' : ''),
+    tag.name + (kind === 'keywords' ? ' (' + tag.count + ')' : ''));
+  button.onactivate = function () {
+    var index = ids.indexOf(tag.id);
+    if (index === -1) ids.push(tag.id); else ids.splice(index, 1);
+    if (index === -1) button.className = button.className.replace('tag', 'tag on');
+    else removeClass(button, 'on');
+    saveSelection();
+  };
+  return button;
+}
+function byName(a, b) { return a.name < b.name ? -1 : a.name > b.name ? 1 : 0; }
+function openFilter() {
+  var genres = $('genres'), keywords = $('keywords');
+  genres.textContent = '';
+  keywords.textContent = '';
+  collectTags('genres').sort(byName).forEach(function (tag) { genres.appendChild(tagButton('genres', tag)); });
+  // shortcut: top 60 keywords by count, no text search (typing with the remote is painful); add paging if users miss some.
+  collectTags('keywords').sort(function (a, b) { return b.count - a.count || byName(a, b); }).slice(0, 60)
+    .forEach(function (tag) { keywords.appendChild(tagButton('keywords', tag)); });
+  keywords.scrollTop = 0;
+  showLayer('filter');
+  setFocus(genres.querySelector('.focusable') || keywords.querySelector('.focusable'));
+}
+function closeFilter() {
+  showLayer('main');
+  renderList();
+}
+
+// ---- player: fullscreen <video> on the backend's cached MP4 ----
+function play(title) {
+  var token = ++playToken;
+  var video = $('video');
+  showLayer('player');
+  $('status').textContent = 'Loading trailer: ' + title.title;
+  getJson(API + '/api/stream/' + title.tmdb_id, function (error, stream) {
+    if (token !== playToken) return;
+    if (error) { $('status').textContent = 'Trailer unavailable (' + error + '). Back returns.'; return; }
+    video.src = API + stream.url;
+    video.play();
+  });
+}
+function closePlayer() {
+  var video = $('video');
+  playToken += 1;
+  video.pause();
+  video.removeAttribute('src');
+  video.load();
+  showLayer('main');
+  setFocus(focused.main);
+}
+$('video').addEventListener('playing', function () { $('status').textContent = ''; });
+$('video').addEventListener('ended', closePlayer);
+$('video').addEventListener('error', function () {
+  if ($('video').getAttribute('src')) $('status').textContent = 'Playback failed. Back returns.';
+});
+function playerKey(code) {
+  var video = $('video');
+  if (code === KEYS.ENTER || code === KEYS.PLAY_PAUSE || code === KEYS.PLAY || code === KEYS.PAUSE) {
+    if (video.paused) video.play(); else video.pause();
+    $('status').textContent = video.paused ? 'Paused' : '';
+  } else if (code === KEYS.RIGHT || code === KEYS.FF) {
+    video.currentTime = Math.min(video.duration || 0, video.currentTime + 10);
+  } else if (code === KEYS.LEFT || code === KEYS.RW) {
+    video.currentTime = Math.max(0, video.currentTime - 10);
+  } else if (code === KEYS.STOP) {
+    closePlayer();
+  }
+}
+
+function showLayer(name) {
+  ['main', 'filter', 'player'].forEach(function (id) {
+    $(id).className = 'layer' + (id === name ? '' : ' hidden');
+  });
+  layer = name;
+}
+
+function exitApp() {
+  try { tizen.application.getCurrentApplication().exit(); } catch (error) {}
+}
+
+document.addEventListener('keydown', function (event) {
+  var code = event.keyCode;
+  var back = code === KEYS.BACK || code === KEYS.ESC || code === KEYS.BACKSPACE;
+  if (back) {
+    event.preventDefault();
+    if (layer === 'player') closePlayer();
+    else if (layer === 'filter') closeFilter();
+    else exitApp();
+    return;
+  }
+  if (layer === 'player') { playerKey(code); event.preventDefault(); return; }
+  if (code === KEYS.LEFT) move(-1, 0);
+  else if (code === KEYS.RIGHT) move(1, 0);
+  else if (code === KEYS.UP) move(0, -1);
+  else if (code === KEYS.DOWN) move(0, 1);
+  else if (code === KEYS.ENTER) {
+    var current = $(layer).querySelector('.focus');
+    if (current && current.onactivate) current.onactivate();
+  } else return;
+  event.preventDefault();
+});
+
+// Media keys are only delivered after registration; arrows/OK/Back need none.
+try {
+  ['MediaPlay', 'MediaPause', 'MediaPlayPause', 'MediaStop', 'MediaFastForward', 'MediaRewind'].forEach(function (name) {
+    tizen.tvinputdevice.registerKey(name);
+  });
+} catch (error) {}
+
+function getJson(url, callback) {
+  var request = new XMLHttpRequest();
+  request.open('GET', url);
+  request.timeout = 5 * 60 * 1000; // first play of a title may wait for the download
+  request.onload = function () {
+    var body;
+    try { body = JSON.parse(request.responseText); } catch (error) { return callback('bad response'); }
+    if (request.status < 200 || request.status >= 300) return callback(body.error || 'HTTP ' + request.status);
+    callback(null, body);
+  };
+  request.onerror = function () { callback('backend unreachable'); };
+  request.ontimeout = function () { callback('timeout'); };
+  request.send();
+}
+
+getJson(API + '/api/titles', function (error, titles) {
+  if (error) { $('message').textContent = 'Could not load titles: ' + error; setFocus($('open-filter')); return; }
+  allTitles = titles;
+  renderList();
+});
+</script>
+</body>
+</html>

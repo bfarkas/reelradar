@@ -5,6 +5,7 @@ var fs = require('fs');
 var path = require('path');
 var DatabaseSync = require('node:sqlite').DatabaseSync;
 var importer = require('./import');
+var media = require('./media');
 
 var dbPath = process.env.DB_PATH || '/data/reelradar.db';
 fs.mkdirSync(path.dirname(dbPath), { recursive: true });
@@ -83,6 +84,14 @@ http.createServer(function (req, res) {
     sendJson(res, 200, getTitles());
   } else if (req.method === 'GET' && pathname === '/api/report') {
     sendJson(res, 200, getReport());
+  } else if (req.method === 'GET' && /^\/api\/stream\/\d+$/.test(pathname)) {
+    // TV app: the title's trailer as a cached MP4 (downloads on first request, falls back past dead videos).
+    media.ensureTitleTrailer(db, Number(pathname.split('/')[3])).then(function (key) {
+      if (key) sendJson(res, 200, { key: key, url: media.mediaUrl(key) });
+      else sendJson(res, 404, { error: 'no playable trailer' });
+    }).catch(function (error) {
+      sendJson(res, 502, { error: error.message });
+    });
   } else {
     sendJson(res, 404, { error: 'not found' });
   }
