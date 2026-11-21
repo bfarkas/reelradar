@@ -29,12 +29,38 @@ function text(tag, value, className) {
   return element;
 }
 
+// If the player reports an error (101/150 = embedding disabled), open the watch page instead.
+function openOnYouTube(iframe, key) {
+  var url = 'https://www.youtube.com/watch?v=' + encodeURIComponent(key);
+  var link = text('a', 'Open trailer on YouTube');
+  link.href = url;
+  link.target = '_blank';
+  iframe.parentNode.replaceChild(link, iframe);
+  // The error arrives after the click, so a popup blocker may stop this; the link stays as a fallback.
+  window.open(url, '_blank');
+}
+
 function playTrailer(event) {
   var button = event.currentTarget;
+  var key = button.getAttribute('data-key');
   var iframe = document.createElement('iframe');
-  iframe.src = 'https://www.youtube.com/embed/' + encodeURIComponent(button.getAttribute('data-key'));
+  var failed = false;
+  iframe.src = 'https://www.youtube.com/embed/' + encodeURIComponent(key) + '?enablejsapi=1';
   iframe.title = 'Trailer';
   iframe.setAttribute('allowfullscreen', 'allowfullscreen');
+  iframe.onload = function () {
+    iframe.contentWindow.postMessage(JSON.stringify({ event: 'listening', id: key }), '*');
+  };
+  window.addEventListener('message', function onMessage(message) {
+    if (failed || message.source !== iframe.contentWindow) return;
+    var data;
+    try { data = JSON.parse(message.data); } catch (error) { return; }
+    if (data && data.event === 'onError') {
+      failed = true;
+      window.removeEventListener('message', onMessage);
+      openOnYouTube(iframe, key);
+    }
+  });
   button.parentNode.replaceChild(iframe, button);
 }
 
