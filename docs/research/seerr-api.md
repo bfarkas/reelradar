@@ -37,7 +37,7 @@ The ReelRadar backend must do this: one GET (e.g. `/api/v1/status`) to get the p
 Test with the owner's go-ahead: movie "Ebenezer" (TMDB 1567605).
 - `POST /api/v1/request`, body `{"mediaType":"movie","mediaId":1567605,"is4k":false}`, with key and CSRF pair -> **201**, MediaRequest `id 387, status 2 (approved), requestedBy 1, media.status 2`. Seconds later `GET /movie/1567605` shows `mediaInfo.status 3` (processing) and `externalServiceId 479` (the Radarr id).
 - Same POST again -> **409** `{"message":"Request for this media already exists."}`.
-- `DELETE /api/v1/request/387` (with CSRF pair) -> **204**. Then `GET /request/387` -> 404, and the movie shows `mediaInfo.status 1` with no requests. **Deleting the request does not remove the movie from Radarr**; the download continues.
+- `DELETE /api/v1/request/387` (with CSRF pair) -> **204**. Then `GET /request/387` -> 404, and the movie shows `mediaInfo.status 1` with no requests. Deleting a request only removes Seerr's record; it sends nothing to Radarr, so movie 479 stays there (Radarr itself not checked).
 - Spec body for TV: `"seasons":[1,2]|"all"`; optional `tvdbId,serverId,profileId,rootFolder,languageProfileId,userId,ignoreQuota`. Untested.
 
 ## Reachability from backend container
