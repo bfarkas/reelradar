@@ -103,3 +103,11 @@ test('failed import preserves titles and candidates and records failure', async 
   assert.deepEqual(imports.map(function (row) { return row.status; }), ['success', 'failed']);
   db.close();
 });
+
+test('KinoCheck clips tagged Trailer are not treated as trailers', function () {
+  var out = importer.kinoCheckCandidates({ language: 'en', videos: [
+    { youtube_video_id: 'clip1', categories: ['Trailer', 'Clip'] },
+    { youtube_video_id: 'tr1', categories: ['Trailer'] }
+  ] });
+  assert.deepEqual(out.map(function (c) { return [c.key, c.type]; }), [['clip1', 'Clip'], ['tr1', 'Trailer']]);
+});

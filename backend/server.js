@@ -56,16 +56,19 @@ function getTitles() {
   });
 }
 
+// Per title: does any playable candidate come from TMDB, from KinoCheck? (ADR OS-D-51H34 asks for this split.)
 function getReport() {
   return db.prepare([
-    'SELECT t.original_language, COUNT(*) AS titles,',
-    'SUM(CASE WHEN c.key IS NOT NULL THEN 1 ELSE 0 END) AS with_playable_trailer,',
-    "SUM(CASE WHEN c.source = 'tmdb' THEN 1 ELSE 0 END) AS playable_from_tmdb_only,",
-    "SUM(CASE WHEN c.source = 'kinocheck' THEN 1 ELSE 0 END) AS playable_from_kinocheck_only,",
-    "SUM(CASE WHEN c.source = 'both' THEN 1 ELSE 0 END) AS playable_from_both",
-    'FROM titles t LEFT JOIN candidates c',
-    'ON c.tmdb_id = t.tmdb_id AND c.key = t.trailer_key',
-    'GROUP BY t.original_language ORDER BY t.original_language'
+    'SELECT original_language, COUNT(*) AS titles,',
+    'SUM(tm OR kc) AS with_playable_trailer,',
+    'SUM(tm AND NOT kc) AS playable_from_tmdb_only,',
+    'SUM(kc AND NOT tm) AS playable_from_kinocheck_only,',
+    'SUM(tm AND kc) AS playable_from_both',
+    'FROM (SELECT t.original_language,',
+    "  EXISTS (SELECT 1 FROM candidates c WHERE c.tmdb_id = t.tmdb_id AND c.playable = 1 AND c.source IN ('tmdb','both')) AS tm,",
+    "  EXISTS (SELECT 1 FROM candidates c WHERE c.tmdb_id = t.tmdb_id AND c.playable = 1 AND c.source IN ('kinocheck','both')) AS kc",
+    '  FROM titles t)',
+    'GROUP BY original_language ORDER BY original_language'
   ].join(' ')).all();
 }
 

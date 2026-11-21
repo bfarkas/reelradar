@@ -93,7 +93,11 @@ function kinoCheckCandidates(payload) {
   if (!payload) return [];
   return (payload.videos || []).map(function (video) {
     var categories = video.categories || [];
-    var accepted = categories.find(function (category) {
+    // KinoCheck tags clips and specials with "Trailer" too (seen live 2026-11-21), so any non-trailer category disqualifies.
+    var other = categories.find(function (category) {
+      return ['Clip', 'Special', 'Compilation', 'Talk', 'Original', 'Featurette'].indexOf(category) >= 0;
+    });
+    var accepted = other ? null : categories.find(function (category) {
       return category === 'Trailer' || category === 'Teaser' || category === 'Teaser Trailer';
     });
     return {
@@ -101,7 +105,7 @@ function kinoCheckCandidates(payload) {
       source: 'kinocheck',
       tmdb_lang: null,
       kc_lang: video.language || payload.language || null,
-      type: accepted || categories[0] || null,
+      type: other || accepted || categories[0] || null,
       site: 'YouTube',
       name: video.title || '',
       published_at: video.published || null,
@@ -301,6 +305,7 @@ if (require.main === module) {
 module.exports = {
   ensureSchema: ensureSchema,
   germanDates: germanDates,
+  kinoCheckCandidates: kinoCheckCandidates,
   mergeCandidates: mergeCandidates,
   runImport: runImport
 };
