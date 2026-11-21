@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>ReelRadar</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body { margin: 0; background: #101418; color: #eee; font-family: sans-serif; text-align: center; padding-top: 120px; }
+h1 { font-size: 64px; margin: 0 0 24px; }
+#s { font-size: 32px; }
+</style>
+</head>
+<body>
+<h1>ReelRadar</h1>
+<div id="s">checking backend...</div>
+<script>
+// ES5 only (Tizen 4.0 / Chromium M56)
+var el = document.getElementById('s');
+var x = new XMLHttpRequest();
+x.open('GET', '/api/health');
+x.onload = function () {
+  try {
+    var d = JSON.parse(x.responseText);
+    el.textContent = 'backend ' + d.status + ' (boot #' + d.bootCount + ')';
+  } catch (e) { el.textContent = 'bad response'; }
+};
+x.onerror = function () { el.textContent = 'backend unreachable'; };
+x.send();
+</script>
+</body>
+</html>

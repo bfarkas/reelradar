@@ -1,0 +1,15 @@
+services:
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - reelradar-data:/data
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    depends_on: [backend]
+    ports:
+      - "127.0.0.1:8180:80" # only the host's Caddy reaches this
+volumes:
+  reelradar-data:

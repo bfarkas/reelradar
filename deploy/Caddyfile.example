@@ -1,0 +1,6 @@
+# Append to the existing Caddyfile. Explicit http:// + own port: no HTTPS redirect, no DNS/cert needed.
+http://:8095 {
+	@outside not remote_ip private_ranges
+	abort @outside
+	reverse_proxy 127.0.0.1:8180
+}
