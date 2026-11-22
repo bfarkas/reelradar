@@ -135,12 +135,21 @@ http.createServer(function (req, res) {
 }).listen(3000, '0.0.0.0', function () {
   console.log('reelradar backend on :3000, boot #' + boots);
   // Daily import (IMPORT_TIME, default 04:00 container time), then cache the trailers it picked.
-  var runImportJob = scheduler.daily(process.env.IMPORT_TIME || '04:00', async function () {
-    var result = await importer.runImport({ dbPath: dbPath });
-    console.log('import ' + result.importId + ' stored ' + result.titles + ' titles');
-    seerrCache.value = null;
-    var cached = await media.prefetchAll(db);
-    console.log('prefetch: ' + cached.ready + ' of ' + cached.titles + ' titles have a cached trailer');
+  var runImportJob = scheduler.daily(process.env.IMPORT_TIME || '04:00', function () {
+    return media.working(async function () {
+      var result = await importer.runImport({ dbPath: dbPath });
+      console.log('import ' + result.importId + ' stored ' + result.titles + ' titles');
+      seerrCache.value = null;
+      var cached = await media.prefetchAll(db);
+      console.log('prefetch: ' + cached.ready + ' of ' + cached.titles + ' titles have a cached trailer');
+    }).then(reprocess);
   }, console);
+  // Low-priority, one-at-a-time HEVC pass over trailers cached before transcoding existed.
+  function reprocess() {
+    return media.reprocessCached(db, { logger: console }).then(function (done) {
+      console.log('reprocess: ' + done.replaced + ' trailers transcoded, ' + done.kept + ' kept as they were');
+    }).catch(function (error) { console.error('reprocess failed: ' + error.message); });
+  }
+  reprocess();
   if (process.env.IMPORT_ON_START === '1') runImportJob();
 });
