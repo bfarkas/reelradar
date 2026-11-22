@@ -12,7 +12,8 @@ var seerrCache = { at: 0, value: null };
 
 var dbPath = process.env.DB_PATH || '/data/reelradar.db';
 fs.mkdirSync(path.dirname(dbPath), { recursive: true });
-var db = new DatabaseSync(dbPath);
+var db = new DatabaseSync(dbPath, { timeout: 15000 }); // import and prefetch write from other processes
+db.exec('PRAGMA journal_mode = WAL'); // persists in the file; readers no longer block writers
 db.exec('CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value INTEGER NOT NULL)');
 db.exec("INSERT INTO meta (key, value) VALUES ('boot_count', 1) " +
   'ON CONFLICT(key) DO UPDATE SET value = value + 1');

@@ -213,7 +213,7 @@ async function runImport(options) {
   }
   if (ownsDb) {
     fs.mkdirSync(path.dirname(dbPath), { recursive: true });
-    db = new DatabaseSync(dbPath);
+    db = new DatabaseSync(dbPath, { timeout: 15000 }); // wait for the server's writes instead of failing
   } else {
     db = options.db;
   }

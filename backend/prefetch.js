@@ -5,7 +5,7 @@
 var DatabaseSync = require('node:sqlite').DatabaseSync;
 var media = require('./media');
 
-var db = new DatabaseSync(process.env.DB_PATH || '/data/reelradar.db');
+var db = new DatabaseSync(process.env.DB_PATH || '/data/reelradar.db', { timeout: 15000 }); // server writes too
 media.prefetchAll(db).then(function (result) {
   console.log('prefetch: ' + result.ready + ' of ' + result.titles + ' titles have a cached trailer');
 }).catch(function (error) {
