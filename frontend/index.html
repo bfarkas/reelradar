@@ -412,24 +412,36 @@ function renderKinds() {
   });
 }
 
+// Items the current view lists for each service (0 = none) under the other filters, so a chip's number is what picking it shows.
+function serviceCounts(view, chosen) {
+  var counts = {};
+  collectTags('providers').forEach(function (service) {
+    var shown = allTitles.filter(function (title) {
+      return matchesFilter(title, { genres: chosen.genres, keywords: chosen.keywords, service: service.id });
+    });
+    counts[service.id] = viewCount(view, viewSections(view, shown, chosen.kind));
+  });
+  return counts;
+}
+
 function renderServices() {
   var select = document.getElementById('service');
   var services = collectTags('providers').sort(byName);
+  var counts = serviceCounts(currentView, selection);
   select.textContent = '';
   var all = text('option', 'All services');
   all.value = '0';
   select.appendChild(all);
   services.forEach(function (service) {
-    var option = text('option', service.name + ' (' + service.count + ')');
+    var option = text('option', service.name + ' (' + counts[service.id] + ')');
     option.value = String(service.id);
     select.appendChild(option);
   });
   select.value = String(selection.service);
-  if (select.value !== String(selection.service)) { selection.service = 0; select.value = '0'; }
+  if (allTitles.length && select.value !== String(selection.service)) { selection.service = 0; select.value = '0'; }
   select.setAttribute('aria-pressed', selection.service ? 'true' : 'false');
   select.onchange = function () {
     selection.service = Number(select.value);
-    select.setAttribute('aria-pressed', selection.service ? 'true' : 'false');
     saveSelection();
     renderTitles();
   };
@@ -460,20 +472,47 @@ document.getElementById('filter-clear').onclick = function () {
   renderGenres();
   renderKeywords();
   renderKinds();
-  renderServices();
   renderTitles();
 };
 document.getElementById('keyword-search').oninput = renderKeywords;
 
 // ---- list ----
+// Entries a calendar lists, titles otherwise; genre shelves repeat a title, so count it once.
+function viewCount(view, sections) {
+  var count = 0, seen = {};
+  sections.forEach(function (section) {
+    section.items.forEach(function (item) {
+      if (view !== 'genres') count += 1;
+      else if (!seen[item.title.tmdb_id]) { seen[item.title.tmdb_id] = true; count += 1; }
+    });
+  });
+  return count;
+}
+
+// Why a view is empty. A service is only known once a title is available on it, so an upcoming premiere carries none yet.
+function emptyMessage(view, chosen) {
+  if (!allTitles.length) return 'No titles imported yet.';
+  if (chosen.service && (view === 'upcoming' || view === 'recent')) {
+    var service = collectTags('providers').filter(function (tag) { return tag.id === chosen.service; })[0];
+    var name = service ? service.name : 'This service';
+    var serviceOnly = { genres: [], keywords: [], service: chosen.service };
+    var onService = allTitles.filter(function (title) { return matchesFilter(title, serviceOnly); });
+    if (!viewCount(view, viewSections(view, onService, 'all'))) {
+      return name + ' has no ' + (view === 'upcoming' ? 'upcoming' : 'recent') + ' releases in Germany. ' +
+        (view === 'upcoming' ? 'TMDB lists a service only once a title is available on it, so a premiere shows up here after it starts streaming. ' : '') +
+        onService.length + (onService.length === 1 ? ' title is' : ' titles are') + ' on ' + name + ' now: see All titles.';
+    }
+  }
+  return 'No titles in this view match the filter.';
+}
+
 function renderTitles() {
+  renderServices();
   var shown = allTitles.filter(function (title) { return matchesFilter(title, selection); });
   var sections = viewSections(currentView, shown, selection.kind);
-  var count = 0;
-  sections.forEach(function (section) { count += section.items.length; });
+  var count = viewCount(currentView, sections);
   var noun = currentView === 'upcoming' || currentView === 'recent' ? ' releases' : ' titles';
-  document.getElementById('count').textContent = (currentView === 'genres' ? shown.length + ' titles' : count + noun) +
-    ' of ' + allTitles.length + ' titles';
+  document.getElementById('count').textContent = count + noun + ' of ' + allTitles.length + ' titles';
   setHeroImage(sections);
   render(sections);
 }
@@ -490,7 +529,7 @@ function render(sections) {
   var root = document.getElementById('titles');
   root.textContent = '';
   if (!sections.length || (sections.length === 1 && !sections[0].items.length)) {
-    root.appendChild(text('p', allTitles.length ? 'No titles in this view match the filter.' : 'No titles imported yet.', 'empty'));
+    root.appendChild(text('p', emptyMessage(currentView, selection), 'empty'));
     return;
   }
   if (layout === 'wall') { renderWall(root, sections); return; }
@@ -678,7 +717,6 @@ getJson('/api/titles', function (error, titles) {
   allTitles = titles;
   renderGenres();
   renderKeywords();
-  renderServices();
   renderTitles();
   getJson('/api/seerr', function (seerrError, statuses) {
     if (seerrError) return;
