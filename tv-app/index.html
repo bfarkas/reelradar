@@ -688,6 +688,13 @@ document.addEventListener('keydown', function (event) {
       // A wall poster waits for keyup (short = play) or the hold time (long = info); everything else acts at once.
       okPress.target = wall && layer === 'main' && current && current.onlongpress ? current : null;
       if (!okPress.target && current && current.onactivate) current.onactivate();
+      // The timer works whether or not the TV repeats keydown while OK is held.
+      if (okPress.target) {
+        var press = okPress;
+        press.timer = setTimeout(function () {
+          if (okPress === press && !press.long && layer === 'main') { press.long = true; press.target.onlongpress(); }
+        }, LONG_PRESS_MS);
+      }
     } else if (step.event === 'long' && okPress.target) okPress.target.onlongpress();
   } else return;
   event.preventDefault();
@@ -696,6 +703,7 @@ document.addEventListener('keyup', function (event) {
   if (event.keyCode !== KEYS.ENTER) return;
   var press = okPress;
   okPress = null;
+  if (press) clearTimeout(press.timer);
   if (press && press.target && !press.long && layer === 'main') press.target.onactivate();
 });
 
