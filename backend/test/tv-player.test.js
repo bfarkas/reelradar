@@ -57,3 +57,25 @@ test('overlayState gives the "m:ss / m:ss" text and the played percentage', func
   assert.equal(ctx.overlayState(30, NaN).percent, 0);
   assert.equal(ctx.overlayState(500, 120).percent, 100);
 });
+
+test('okDown: a quick release is a start only, a hold fires "long" once after 600 ms', function () {
+  var ctx = load();
+  var step = ctx.okDown(null, 1000);
+  assert.equal(step.event, 'start');
+  assert.equal(step.press.long, false); // keyup before this point = short press
+  assert.equal(ctx.okDown(step.press, 1100).event, 'hold'); // Tizen's repeated keydowns
+  assert.equal(ctx.okDown(step.press, 1500).event, 'hold');
+  assert.equal(ctx.okDown(step.press, 1600).event, 'long'); // 600 ms after the first keydown
+  assert.equal(step.press.long, true); // keyup now: no playback
+  assert.equal(ctx.okDown(step.press, 1700).event, 'hold'); // never fires twice
+});
+
+test('okDown: a keydown long after the last one is a new press (lost keyup)', function () {
+  var ctx = load();
+  var first = ctx.okDown(null, 0);
+  ctx.okDown(first.press, 100);
+  var next = ctx.okDown(first.press, 5000);
+  assert.equal(next.event, 'start');
+  assert.equal(next.press.start, 5000);
+  assert.equal(next.press.long, false);
+});
