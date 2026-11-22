@@ -23,7 +23,8 @@ docker compose exec backend node import.js
 
 The import takes every German theatrical, digital and TV release from 30 days ago
 to 6 months ahead (all TMDB discover pages), plus the movies behind KinoCheck's
-100 latest trailers. `IMPORT_EXTRA_IDS` is a comma-separated list of extra TMDB movie IDs, and
+100 latest trailers. Titles, synopses and genres are in English; release dates
+and streaming services are German. `IMPORT_EXTRA_IDS` is a comma-separated list of extra TMDB movie IDs, and
 `IMPORT_ON_START=1` runs one import whenever the backend starts. `KINOCHECK_API_KEY`
 is optional but needed at this volume (1,000 requests/day without it). Allow/deny overrides live in `backend/lists.json`.
 
@@ -92,7 +93,7 @@ The backend refuses POSTs whose `Origin` is another website. Allowed are the pag
 ## Views
 
 Both the web page and the TV app follow the "Screening room" design (Concept 03). They have five views, and each one respects the genre/keyword filter:
-- **Release calendar** (default): German cinema and streaming releases in the next 90 days. The web page groups them by day; each cinema or streaming release is its own entry.
+- **Release calendar** (default): German cinema and streaming releases in the next 6 months. The web page groups them by day; each cinema or streaming release is its own entry.
 - **New trailers**: most recently published trailers first.
 - **Recently released**: German releases in the last 90 days, newest first.
 - **Genres**: one shelf per genre.

@@ -234,7 +234,7 @@ async function runImport(options) {
       discoverUrl.searchParams.set('release_date.gte', shiftedDate(now, -30));
       discoverUrl.searchParams.set('release_date.lte', shiftedDate(now, 183));
       discoverUrl.searchParams.set('sort_by', 'popularity.desc');
-      discoverUrl.searchParams.set('language', 'de-DE');
+      discoverUrl.searchParams.set('language', 'en-US'); // English titles and texts; dates stay German (region, release_dates)
       discoverUrl.searchParams.set('page', String(page));
       if (page > 1) await sleep(250);
       var discover = await requestJson(fetchFn, discoverUrl.toString(), { headers: tmdbHeaders }, 'TMDB');
@@ -260,7 +260,7 @@ async function runImport(options) {
     for (var i = 0; i < ids.length; i += 1) {
       var id = ids[i];
       await sleep(250);
-      var detail = await requestJson(fetchFn, TMDB_BASE + '/movie/' + id + '?language=de-DE&append_to_response=keywords,watch/providers',
+      var detail = await requestJson(fetchFn, TMDB_BASE + '/movie/' + id + '?language=en-US&append_to_response=keywords,watch/providers',
         { headers: tmdbHeaders }, 'TMDB');
       await sleep(250);
       var releaseDates = await requestJson(fetchFn, TMDB_BASE + '/movie/' + id + '/release_dates',
