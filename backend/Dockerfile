@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg python3 
   && chmod +x /usr/local/bin/yt-dlp
 WORKDIR /app
 COPY server.js .
-COPY gate.js import.js kinocheck.js media.js prefetch.js scheduler.js seerr.js lists.json expected-providers.json ./
+COPY gate.js import.js kinocheck.js media.js prefetch.js probe-providers.js scheduler.js seerr.js lists.json expected-providers.json ./
 RUN mkdir /data && chown node /data
 USER node
 CMD ["node", "server.js"]
