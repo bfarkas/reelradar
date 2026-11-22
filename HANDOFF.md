@@ -45,3 +45,8 @@ Next:
 - Owner tests on the TV: Seerr request works, seeking works. Open: web-page request, wall info bar, HEVC check on trailers, DE badge, progress bar on the TV.
 - KinoCheck ident detector: blackdetect is unreliable on real files (Gatto xfPj0tSu7OM: intro logo 0-3 s then black 3.09-3.38 s; outro is a hard cut at ~144 s to a static red card with no black). A subagent is building a safer detector; keep `KINOCHECK_TRIM` off until it is checked.
 - Task follow-up for the pre-premiere service signal exists in OctoSprout.
+
+## 2026-11-22 (evening): KinoCheck detector deployed
+- Main e35f838 (backend/kinocheck.js signature detector) is deployed to rei3 and `KINOCHECK_TRIM=1` is set in ~/reelradar/.env. API 200 on :8180 (titles, seerr). BMGS7 and 8568R backend/web parts are live too.
+- Background reprocess is working through the cached files; Gatto (xfPj0tSu7OM) was still H.264 and uncut at deploy time, so it is trimmed only when its turn comes. Files that are already HEVC are not re-trimmed.
+- Still open: German-synopsis re-import (needs owner OK), installing tv-app on the TV (TV was off), owner checks of progress bar, DE badge, HEVC playback.
