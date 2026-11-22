@@ -50,3 +50,4 @@ Next:
 - Main e35f838 (backend/kinocheck.js signature detector) is deployed to rei3 and `KINOCHECK_TRIM=1` is set in ~/reelradar/.env. API 200 on :8180 (titles, seerr). BMGS7 and 8568R backend/web parts are live too.
 - Background reprocess is working through the cached files; Gatto (xfPj0tSu7OM) was still H.264 and uncut at deploy time, so it is trimmed only when its turn comes. Files that are already HEVC are not re-trimmed.
 - Still open: German-synopsis re-import (needs owner OK), installing tv-app on the TV (TV was off), owner checks of progress bar, DE badge, HEVC playback.
+- Re-import on rei3 done (625 titles): empty synopses 87 -> 17, 73 titles with `overview_lang='de'`. Gatto (xfPj0tSu7OM) was processed by hand (`media.processFile(path, true)` in the container): HEVC, 142.1 s, trimmed. Reprocess of the rest continues in the background.
