@@ -116,9 +116,16 @@ async function processFile(file, isKinoCheck, options) {
     var args = ['-i', file];
     if (cuts.start !== null) args.push('-ss', String(cuts.start));
     if (cuts.end !== null) args.push('-to', String(cuts.end));
-    args.push('-c:v', 'libx265', '-preset', 'fast', '-crf', '26', '-pix_fmt', 'yuv420p', '-tag:v', 'hvc1',
-      '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', '-f', 'mp4', temp);
-    await ffmpeg(run, args, TRANSCODE_TIMEOUT);
+    var tail = ['-pix_fmt', 'yuv420p', '-tag:v', 'hvc1', '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', '-f', 'mp4', temp];
+    // HEVC_ENCODER=nvenc encodes on the NVIDIA GPU; any GPU failure falls back to software x265.
+    var gpu = ['-c:v', 'hevc_nvenc', '-preset', 'p5', '-rc', 'vbr', '-cq', '27', '-b:v', '0'];
+    var cpu = ['-c:v', 'libx265', '-preset', 'fast', '-crf', '26'];
+    if ((options && options.env || process.env).HEVC_ENCODER === 'nvenc') {
+      try { await ffmpeg(run, args.concat(gpu, tail), TRANSCODE_TIMEOUT); } catch (error) {
+        logger.warn('nvenc failed for ' + path.basename(file) + ', using x265: ' + error.message);
+        await ffmpeg(run, args.concat(cpu, tail), TRANSCODE_TIMEOUT);
+      }
+    } else await ffmpeg(run, args.concat(cpu, tail), TRANSCODE_TIMEOUT);
     var after = await probe(run, temp);
     var expected = (cuts.end === null ? before.duration : cuts.end) - (cuts.start || 0);
     var ok = after.video && after.video.codec_name === 'hevc' && after.video.codec_tag_string === 'hvc1' &&

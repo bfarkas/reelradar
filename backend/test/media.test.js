@@ -151,7 +151,7 @@ function fakeToolchain(behavior) {
       var info = lines.join('\n');
       return callback(null, Buffer.concat(frames.map(function (f) { return f.data; })), info);
     }
-    if (behavior.ffmpegFails) return callback(new Error('ffmpeg exit 1'), '', 'boom');
+    if (behavior.ffmpegFails || (behavior.nvencFails && ffArgs.indexOf('hevc_nvenc') >= 0)) return callback(new Error('ffmpeg exit 1'), '', 'boom');
     var ss = ffArgs.indexOf('-ss') >= 0 ? Number(ffArgs[ffArgs.indexOf('-ss') + 1]) : 0;
     var to = ffArgs.indexOf('-to') >= 0 ? Number(ffArgs[ffArgs.indexOf('-to') + 1]) : input.duration;
     fs.writeFileSync(ffArgs[ffArgs.length - 1], JSON.stringify({ codec: 'hevc', tag: ffArgs[ffArgs.indexOf('-tag:v') + 1], audio: 'aac', duration: to - ss, ident: {} }));
@@ -328,4 +328,28 @@ test('outro: no cut without a static red card, a wipe and a hard cut', function 
   assert.equal(kinocheck.findOutroStart(fade), null, 'slow dissolve to red');
   var redScene = timeline(76, 100, function () { return rgbFrame(0.6, 90); });
   assert.equal(kinocheck.findOutroStart(redScene), null, 'a trailer that is red all along');
+});
+
+test('HEVC_ENCODER=nvenc encodes on the GPU, and the file is still hevc hvc1', async function () {
+  var s = kinoCheckSetup('tmdb'), tools = fakeToolchain({});
+  s.env.HEVC_ENCODER = 'nvenc';
+  await media.ensureTitleTrailer(s.db, 'movie', 1, { env: s.env, execFile: tools.run });
+  assert.ok(tools.log.some(function (l) { return /^ffmpeg .*-c:v hevc_nvenc /.test(l); }));
+  assert.ok(!tools.log.some(function (l) { return /libx265/.test(l); }));
+  assert.deepEqual([readVideo(s.dir, 'goodVideo_2').codec, readVideo(s.dir, 'goodVideo_2').tag], ['hevc', 'hvc1']);
+});
+
+test('a failing GPU encode falls back to software x265', async function () {
+  var s = kinoCheckSetup('tmdb'), tools = fakeToolchain({ nvencFails: true }), warnings = [];
+  s.env.HEVC_ENCODER = 'nvenc';
+  await media.ensureTitleTrailer(s.db, 'movie', 1, { env: s.env, execFile: tools.run, logger: { warn: function (m) { warnings.push(m); } } });
+  assert.ok(tools.log.some(function (l) { return /libx265/.test(l); }));
+  assert.equal(readVideo(s.dir, 'goodVideo_2').codec, 'hevc');
+  assert.ok(warnings.some(function (m) { return /nvenc failed/.test(m); }));
+});
+
+test('without HEVC_ENCODER the encoder stays libx265', async function () {
+  var s = kinoCheckSetup('tmdb'), tools = fakeToolchain({});
+  await media.ensureTitleTrailer(s.db, 'movie', 1, { env: s.env, execFile: tools.run });
+  assert.ok(!tools.log.some(function (l) { return /nvenc/.test(l); }));
 });

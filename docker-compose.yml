@@ -5,8 +5,16 @@ services:
     env_file: .env
     environment:
       TZ: Europe/Berlin # IMPORT_TIME is local time
+      HEVC_ENCODER: nvenc # trailer transcoding on the NVIDIA GPU (software x265 if that fails); remove on a host without one
     volumes:
       - reelradar-data:/data
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu, video, utility] # "video" is what NVENC needs
   frontend:
     build: ./frontend
     restart: unless-stopped
