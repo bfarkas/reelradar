@@ -250,3 +250,47 @@ test('tv: requests, Seerr state and playback address the series by media type', 
   ctx.play(series());
   assert.deepEqual(ctx.requests.map(function (r) { return r.replace('http://192.168.42.57:8095', ''); }), ['POST /api/request/tv/7', 'GET /api/stream/tv/7']);
 });
+
+// ---- "Premieres on X" in the TV app (OS-T-GMHY4): same wording as the web page ----
+var DISNEY = { id: 337, name: 'Disney+' };
+['frontend/index.html', 'tv-app/index.html'].forEach(function (file) {
+  test(file.split('/')[0] + ': an upcoming streaming title with only an expected service says "Premieres on X"', function () {
+    var ctx = load(file);
+    var d = ctx.isoDay;
+    var expected = movie({ de_digital: d(10), providers_expected: [NETFLIX, DISNEY] });
+    assert.equal(ctx.premiereText(expected, 'streaming', d(10)), 'Premieres on Netflix, Disney+');
+    assert.equal(ctx.whereText(expected, 'streaming', d(10)), 'Premieres on Netflix, Disney+');
+    assert.equal(ctx.premiereText(expected, 'streaming', d(0)), 'Premieres on Netflix, Disney+'); // today counts
+    // a current service wins
+    var current = movie({ de_digital: d(10), providers: [NETFLIX], providers_expected: [DISNEY] });
+    assert.equal(ctx.premiereText(current, 'streaming', d(10)), null);
+    assert.equal(ctx.whereText(current, 'streaming', d(10)), 'Netflix');
+    // a past date keeps the plain text
+    var past = movie({ de_digital: d(-3), providers_expected: [NETFLIX] });
+    assert.equal(ctx.premiereText(past, 'streaming', d(-3)), null);
+    assert.equal(ctx.whereText(past, 'streaming', d(-3)), 'Streaming');
+    // no data stays unknown
+    assert.equal(ctx.whereText(movie({ de_digital: d(10) }), 'streaming', d(10)), 'Streaming');
+    assert.equal(ctx.whereText(movie({ de_digital: d(10), providers_expected: [] }), 'streaming', d(10)), 'Streaming');
+    // cinema is unchanged
+    assert.equal(ctx.premiereText(expected, 'cinema', d(10)), null);
+    assert.equal(ctx.whereText(expected, 'cinema', d(10)), 'Cinema');
+  });
+});
+
+test('tv: hero, wall dialog and poster badge say "Premieres on X"; a series is unchanged', function () {
+  var ctx = load('tv-app/index.html');
+  var date = ctx.isoDay(10);
+  var item = { title: movie({ de_digital: date, providers_expected: [NETFLIX] }), kind: 'streaming', date: date };
+  ctx.showHero(item);
+  assert.match(ctx.byId['hero-date'].textContent, /  ·  Premieres on Netflix$/);
+  ctx.openDialog(item);
+  assert.match(ctx.byId['dlg-date'].textContent, /^Premieres on Netflix · /);
+  assert.deepEqual(badges(ctx.posterCard(item), 'badge').map(function (b) { return b.textContent; }), ['Premieres on Netflix']);
+  var cinema = { title: item.title, kind: 'cinema', date: date };
+  assert.deepEqual(badges(ctx.posterCard(cinema), 'badge').map(function (b) { return b.textContent; }), ['Cinema']);
+  var tv = { title: series({ providers_expected: [DISNEY] }), kind: null, date: null };
+  ctx.showHero(tv);
+  assert.equal(ctx.byId['hero-date'].textContent, 'Available on Netflix in Germany');
+  assert.deepEqual(badges(ctx.posterCard(tv), 'badge').map(function (b) { return b.textContent; }), ['Series']);
+});

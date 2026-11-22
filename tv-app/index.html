@@ -366,9 +366,15 @@ function itemRelease(item) {
 function releaseless(title) {
   return isSeries(title) ? availableText(title) || '' : 'No German release date';
 }
-function whereText(title, kind) {
+// "Premieres on Netflix": a streaming release whose service is only expected (TMDB's release note), not yet listed as streaming.
+function premiereText(title, kind, date) {
+  if (kind !== 'streaming' || (title.providers && title.providers.length) || date < isoDay(0)) return null;
+  var expected = title.providers_expected || [];
+  return expected.length ? 'Premieres on ' + expected.map(function (p) { return p.name; }).join(', ') : null;
+}
+function whereText(title, kind, date) {
   if (kind === 'cinema') return 'Cinema';
-  return title.providers && title.providers.length ? title.providers.map(function (p) { return p.name; }).join(', ') : 'Streaming';
+  return premiereText(title, kind, date) || (title.providers && title.providers.length ? title.providers.map(function (p) { return p.name; }).join(', ') : 'Streaming');
 }
 
 function renderList() {
@@ -408,7 +414,7 @@ function posterCard(item) {
   var release = itemRelease(item);
   if (isSeries(title)) frame.appendChild(el('div', 'badge series', 'Series'));
   else if (release) frame.appendChild(el('div', 'badge ' + release.kind, release.kind === 'cinema' ? 'Cinema' :
-    (title.providers && title.providers.length ? title.providers[0].name : 'Streaming')));
+    (premiereText(title, release.kind, release.date) || (title.providers && title.providers.length ? title.providers[0].name : 'Streaming'))));
   card.appendChild(el('div', 'cap', release ? shortDate(release.date).replace(/ \d{4}$/, '') + ' · ' + (release.kind === 'cinema' ? 'Cinema' : 'Streaming') : (availableText(title, true) || (title.trailer ? '' : 'No trailer'))));
   card.setAttribute('data-id', titleKey(title));
   card.item = item;
@@ -435,7 +441,7 @@ function showHero(item) {
   $('kicker').textContent = kicker;
   if (isSeries(title)) $('kicker').appendChild(el('span', 'kbadge', 'SERIES'));
   $('hero-title').textContent = title.title;
-  $('hero-date').textContent = release ? longDate(release.date) + '  ·  ' + whereText(title, release.kind) : releaseless(title);
+  $('hero-date').textContent = release ? longDate(release.date) + '  ·  ' + whereText(title, release.kind, release.date) : releaseless(title);
   fillSynopsis($('hero-text'), title);
   $('backdrop').style.backgroundImage = title.backdrop_path ? 'url(' + IMG + 'w1280' + title.backdrop_path + ')' : 'none';
 
@@ -543,7 +549,7 @@ function openDialog(item) {
   $('dlg-poster').textContent = '';
   if (isSeries(title)) $('dlg-poster').appendChild(el('div', 'badge series', 'Series'));
   $('dlg-title').textContent = title.title;
-  $('dlg-date').textContent = release ? whereText(title, release.kind) + ' · ' + shortDate(release.date) : releaseless(title);
+  $('dlg-date').textContent = release ? whereText(title, release.kind, release.date) + ' · ' + shortDate(release.date) : releaseless(title);
   fillSynopsis($('dlg-text'), title);
   var actions = $('dlg-actions');
   actions.textContent = '';
