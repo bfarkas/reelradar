@@ -27,7 +27,7 @@ function ensureSchema(db) {
   ].join(' '));
   // Columns added after the first release; ALTER on an existing database, no-op when present.
   var have = db.prepare('PRAGMA table_info(titles)').all().map(function (column) { return column.name; });
-  ['poster_path', 'backdrop_path', 'overview'].forEach(function (column) {
+  ['poster_path', 'backdrop_path', 'overview', 'overview_lang'].forEach(function (column) {
     if (have.indexOf(column) === -1) db.exec('ALTER TABLE titles ADD COLUMN ' + column + ' TEXT');
   });
 }
@@ -38,6 +38,15 @@ function germanProviders(detail) {
   // Drop resold channels and plan variants ("... Amazon Channel", "Netflix Standard with Ads", "Netflix Kids").
   return ((de && de.flatrate) || []).filter(function (p) { return !/channel|with ads|kids/i.test(p.provider_name); })
     .map(function (p) { return { id: p.provider_id, name: p.provider_name.trim() }; });
+}
+
+// English synopsis; when TMDB has none, the German translation (ADR OS-D-TMAG1). lang is 'de' only for the fallback.
+function synopsis(detail) {
+  if (detail.overview) return { text: detail.overview, lang: null };
+  var de = ((detail.translations && detail.translations.translations) || []).find(function (item) {
+    return item.iso_639_1 === 'de' && item.data && item.data.overview;
+  });
+  return de ? { text: de.data.overview, lang: 'de' } : { text: null, lang: null };
 }
 
 function delay(ms) {
@@ -260,7 +269,7 @@ async function runImport(options) {
     for (var i = 0; i < ids.length; i += 1) {
       var id = ids[i];
       await sleep(250);
-      var detail = await requestJson(fetchFn, TMDB_BASE + '/movie/' + id + '?language=en-US&append_to_response=keywords,watch/providers',
+      var detail = await requestJson(fetchFn, TMDB_BASE + '/movie/' + id + '?language=en-US&append_to_response=keywords,watch/providers,translations',
         { headers: tmdbHeaders }, 'TMDB');
       await sleep(250);
       var releaseDates = await requestJson(fetchFn, TMDB_BASE + '/movie/' + id + '/release_dates',
@@ -288,6 +297,7 @@ async function runImport(options) {
       });
       var picked = gate.pickTrailer(candidates, decisions);
       var dates = germanDates(releaseDates, today);
+      var text = synopsis(detail);
       titles.push({
         tmdb_id: id,
         title: detail.title,
@@ -298,7 +308,8 @@ async function runImport(options) {
         trailer_key: picked ? picked.key : null,
         poster_path: detail.poster_path || null,
         backdrop_path: detail.backdrop_path || null,
-        overview: detail.overview || null,
+        overview: text.text,
+        overview_lang: text.lang,
         providers: germanProviders(detail),
         genres: detail.genres || [],
         keywords: (detail.keywords && detail.keywords.keywords) || [],
@@ -315,7 +326,7 @@ async function runImport(options) {
       var insertTag = db.prepare('INSERT OR IGNORE INTO title_tags VALUES (?, ?, ?, ?)');
       var insertTitle = db.prepare([
         'INSERT INTO titles (tmdb_id, title, original_title, original_language, de_theatrical, de_digital,',
-        'trailer_key, poster_path, backdrop_path, overview) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        'trailer_key, poster_path, backdrop_path, overview, overview_lang) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
       ].join(' '));
       var insertCandidate = db.prepare([
         'INSERT INTO candidates (tmdb_id, key, source, tmdb_lang, kc_lang, type, site, name,',
@@ -325,7 +336,7 @@ async function runImport(options) {
       titles.forEach(function (title) {
         insertTitle.run(title.tmdb_id, title.title, title.original_title, title.original_language,
           title.de_theatrical, title.de_digital, title.trailer_key,
-          title.poster_path, title.backdrop_path, title.overview);
+          title.poster_path, title.backdrop_path, title.overview, title.overview_lang);
         title.providers.forEach(function (tag) { insertTag.run(title.tmdb_id, 'provider', tag.id, tag.name); });
         title.genres.forEach(function (tag) { insertTag.run(title.tmdb_id, 'genre', tag.id, tag.name); });
         title.keywords.forEach(function (tag) { insertTag.run(title.tmdb_id, 'keyword', tag.id, tag.name); });
@@ -368,5 +379,6 @@ module.exports = {
   kinoCheckCandidates: kinoCheckCandidates,
   latestTrailerIds: latestTrailerIds,
   mergeCandidates: mergeCandidates,
+  synopsis: synopsis,
   runImport: runImport
 };

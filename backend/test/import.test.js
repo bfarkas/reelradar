@@ -124,6 +124,75 @@ test('KinoCheck clips tagged Trailer are not treated as trailers', function () {
   assert.deepEqual(out.map(function (c) { return [c.key, c.type]; }), [['clip1', 'Clip'], ['tr1', 'Trailer']]);
 });
 
+// Runs one import against a detail response and returns the stored row plus the requested URLs.
+async function importWith(t, detail) {
+  var directory = fs.mkdtempSync(path.join(os.tmpdir(), 'reelradar-test-'));
+  var dbPath = path.join(directory, 'reelradar.db');
+  t.after(function () { fs.rmSync(directory, { recursive: true, force: true }); });
+  var urls = [];
+  await importer.runImport({
+    dbPath: dbPath,
+    fetch: function (url) {
+      urls.push(url);
+      return url.indexOf('/movie/101?') !== -1 ? response(200, detail) : successfulFetch(url);
+    },
+    sleep: function () { return Promise.resolve(); },
+    now: new Date('2026-11-21T12:00:00Z'),
+    env: { TMDB_API_KEY: 'fixture-token' },
+    logger: { log: function () {}, warn: function () {} }
+  });
+  var db = new DatabaseSync(dbPath);
+  var row = db.prepare('SELECT overview, overview_lang FROM titles').get();
+  db.close();
+  return { row: row, urls: urls };
+}
+
+function withTranslation(overview, deOverview) {
+  return Object.assign({}, fixture.detail, {
+    overview: overview,
+    translations: { translations: [
+      { iso_639_1: 'fr', data: { overview: 'Un film.' } },
+      { iso_639_1: 'de', data: { overview: deOverview } }
+    ] }
+  });
+}
+
+test('English synopsis is kept, German translation ignored', async function (t) {
+  var result = await importWith(t, withTranslation('English text.', 'Deutscher Text.'));
+  assert.equal(result.row.overview, 'English text.');
+  assert.equal(result.row.overview_lang, null);
+  var details = result.urls.filter(function (url) { return /\/movie\/101\?/.test(url); });
+  assert.equal(details.length, 1); // no extra request per title
+  assert.match(details[0], /append_to_response=keywords,watch\/providers,translations/);
+});
+
+test('empty English synopsis falls back to the German one, marked de', async function (t) {
+  var result = await importWith(t, withTranslation('', 'Deutscher Text.'));
+  assert.equal(result.row.overview, 'Deutscher Text.');
+  assert.equal(result.row.overview_lang, 'de');
+});
+
+test('no English and no German synopsis stays empty', async function (t) {
+  var result = await importWith(t, withTranslation('', ''));
+  assert.equal(result.row.overview, null);
+  assert.equal(result.row.overview_lang, null);
+  result = await importWith(t, Object.assign({}, fixture.detail, { overview: '' })); // translations missing altogether
+  assert.equal(result.row.overview, null);
+  assert.equal(result.row.overview_lang, null);
+});
+
+test('ensureSchema adds overview_lang to an existing database and keeps its rows', function () {
+  var db = new DatabaseSync(':memory:');
+  db.exec('CREATE TABLE titles (tmdb_id INTEGER PRIMARY KEY, title TEXT NOT NULL, original_title TEXT NOT NULL, ' +
+    'original_language TEXT NOT NULL, de_theatrical TEXT, de_digital TEXT, trailer_key TEXT, ' +
+    'poster_path TEXT, backdrop_path TEXT, overview TEXT)');
+  db.exec("INSERT INTO titles (tmdb_id, title, original_title, original_language, overview) VALUES (1, 'Old', 'Old', 'en', 'Kept.')");
+  importer.ensureSchema(db);
+  importer.ensureSchema(db); // idempotent
+  assert.deepEqual(Object.assign({}, db.prepare('SELECT overview, overview_lang FROM titles').get()), { overview: 'Kept.', overview_lang: null });
+  db.close();
+});
+
 test('latest trailers yield movie ids only, once each', function () {
   assert.deepEqual(importer.latestTrailerIds({
     0: { resource: { type: 'movie', tmdb_id: 7 } },

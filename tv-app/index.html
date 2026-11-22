@@ -35,6 +35,7 @@ header { position: absolute; left: 80px; top: 36px; width: 1760px; height: 80px;
 #hero-title { margin: 6px 0 14px; font-size: 76px; line-height: 1.05; max-height: 160px; overflow: hidden; }
 #hero-date { font-size: 30px; color: #e8dccd; height: 44px; }
 #hero-text { font-size: 27px; line-height: 1.4; color: #cfc3b5; width: 1000px; max-height: 114px; overflow: hidden; }
+#hero-text .lang { border: 2px solid #cfc3b5; border-radius: 5px; font-size: 18px; margin-right: 12px; padding: 0 7px; vertical-align: 3px; }
 #hero-actions { position: absolute; left: 0; top: 372px; white-space: nowrap; }
 .action { display: inline-block; margin-right: 22px; padding: 14px 34px; font-size: 28px; font-weight: bold; border-radius: 12px; border: 4px solid #f4ede3; }
 .action.solid { background: #f4ede3; color: #1d1712; }
@@ -388,6 +389,12 @@ function showHero(item) {
   $('hero-title').textContent = title.title;
   $('hero-date').textContent = release ? longDate(release.date) + '  ·  ' + whereText(title, release.kind) : 'No German release date';
   $('hero-text').textContent = title.overview || '';
+  if (title.overview && title.overview_lang === 'de') {
+    var deMark = document.createElement('span');
+    deMark.className = 'lang';
+    deMark.textContent = 'DE';
+    $('hero-text').insertBefore(deMark, $('hero-text').firstChild);
+  }
   $('backdrop').style.backgroundImage = !wall && title.backdrop_path ? 'url(' + IMG + 'w1280' + title.backdrop_path + ')' : 'none';
   $('info-name').textContent = title.title;
   $('info-date').textContent = release ? longDate(release.date) : 'No German date';

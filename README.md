@@ -24,7 +24,10 @@ docker compose exec backend node import.js
 The import takes every German theatrical, digital and TV release from 30 days ago
 to 6 months ahead (all TMDB discover pages), plus the movies behind KinoCheck's
 100 latest trailers. Titles, synopses and genres are in English; release dates
-and streaming services are German. `IMPORT_EXTRA_IDS` is a comma-separated list of extra TMDB movie IDs, and
+and streaming services are German. Where TMDB has no English synopsis, the German one
+is stored instead (taken from the `translations` appended to the same detail request, no
+extra call) and shown with a small "DE" marker (`overview_lang = 'de'` in the database and in `/api/titles`);
+titles with neither stay without a synopsis. `IMPORT_EXTRA_IDS` is a comma-separated list of extra TMDB movie IDs, and
 `IMPORT_ON_START=1` runs one import whenever the backend starts. `KINOCHECK_API_KEY`
 is optional but needed at this volume (1,000 requests/day without it). Allow/deny overrides live in `backend/lists.json`.
 

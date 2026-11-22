@@ -49,6 +49,7 @@ function getTitles() {
       poster_path: row.poster_path || null,
       backdrop_path: row.backdrop_path || null,
       overview: row.overview || null,
+      overview_lang: row.overview ? row.overview_lang || null : null, // 'de' = German fallback, null = English
       trailer: row.trailer_key ? {
         key: row.trailer_key,
         kinocheck_url: row.kinocheck_url || null,

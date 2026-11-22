@@ -91,6 +91,7 @@ body.wall-mode .hero p.lead { display: none; }
 #detail[hidden] { display: none; }
 #detail .card { box-shadow: 0 12px 40px rgba(0,0,0,0.35); max-width: 560px; position: relative; width: 100%; }
 #detail .card .poster { flex-basis: 150px; width: 150px; }
+.overview .lang { border: 1px solid currentColor; border-radius: 3px; font-size: 10px; margin-right: 6px; padding: 0 3px; }
 #detail .overview { -webkit-line-clamp: 8; }
 #detail .x { position: absolute; right: 10px; top: 8px; }
 #detail .card h3 { padding-right: 44px; }
@@ -662,7 +663,11 @@ function card(item) {
   if (meta) body.appendChild(text('p', meta, 'meta'));
   var line = releaseLine(item);
   if (line) body.appendChild(line);
-  if (title.overview) body.appendChild(text('p', title.overview, 'overview'));
+  if (title.overview) {
+    var synopsis = text('p', title.overview, 'overview');
+    if (title.overview_lang === 'de') synopsis.insertBefore(text('span', 'DE', 'lang'), synopsis.firstChild);
+    body.appendChild(synopsis);
+  }
 
   var actions = document.createElement('div');
   actions.className = 'actions';
