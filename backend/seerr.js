@@ -21,24 +21,30 @@ function createClient(options) {
       signal: AbortSignal.timeout(10000) });
   }
 
-  async function movieStatus(tmdbId) {
-    var response = await call('GET', '/api/v1/movie/' + tmdbId);
-    if (response.status === 404) return 'none';
+  // mediaType is 'movie' or 'tv': Seerr and TMDB reuse ids between the two.
+  async function mediaDetail(mediaType, tmdbId) {
+    var response = await call('GET', '/api/v1/' + mediaType + '/' + tmdbId);
+    if (response.status === 404) return null;
     if (!response.ok) throw new Error('Seerr HTTP ' + response.status);
-    var movie = await response.json();
-    return (movie.mediaInfo && STATUS[movie.mediaInfo.status]) || 'none';
+    return response.json();
   }
 
-  // Statuses for many titles through a small pool, so Seerr isn't hit with hundreds of parallel requests.
-  // A failing title is left out (unknown); after 5 failures in a row Seerr counts as down and the rest is skipped.
-  async function movieStatuses(ids) {
+  async function mediaStatus(mediaType, tmdbId) {
+    var detail = await mediaDetail(mediaType, tmdbId);
+    return (detail && detail.mediaInfo && STATUS[detail.mediaInfo.status]) || 'none';
+  }
+
+  // Statuses for many titles ([{media_type, tmdb_id}]) through a small pool, so Seerr isn't hit with hundreds of
+  // parallel requests; result is keyed 'movie:603' / 'tv:1396'. A failing title is left out (unknown); after 5
+  // failures in a row Seerr counts as down and the rest is skipped.
+  async function mediaStatuses(refs) {
     var result = {};
     var next = 0;
     var failedInRow = 0;
     async function worker() {
-      while (next < ids.length && failedInRow < 5) {
-        var id = ids[next++];
-        try { result[id] = await movieStatus(id); failedInRow = 0; } catch (error) { failedInRow++; }
+      while (next < refs.length && failedInRow < 5) {
+        var ref = refs[next++];
+        try { result[refKey(ref.media_type, ref.tmdb_id)] = await mediaStatus(ref.media_type, ref.tmdb_id); failedInRow = 0; } catch (error) { failedInRow++; }
       }
     }
     await Promise.all(Array.from({ length: 8 }, worker));
@@ -59,18 +65,36 @@ function createClient(options) {
     };
   }
 
-  // Requests a movie as the key's user (auto-approved for the admin key). An existing request is fine.
-  async function requestMovie(tmdbId) {
-    var response = await call('POST', '/api/v1/request', await csrfHeaders(),
-      { mediaType: 'movie', mediaId: tmdbId, is4k: false });
+  // First regular season of a series: the lowest number from 1 up (Seerr/TMDB number specials as season 0, and a
+  // series can start at season 2). Null when there are only specials, or no seasons are known.
+  function firstSeason(detail) {
+    var numbers = ((detail && detail.seasons) || []).map(function (season) { return season.seasonNumber; })
+      .filter(function (number) { return number >= 1; });
+    return numbers.length ? Math.min.apply(null, numbers) : null;
+  }
+
+  // Requests a movie, or the first season of a series, as the key's user (auto-approved for the admin key).
+  // An existing request is fine.
+  async function requestMedia(mediaType, tmdbId) {
+    var body = { mediaType: mediaType, mediaId: tmdbId, is4k: false };
+    if (mediaType === 'tv') {
+      var season = firstSeason(await mediaDetail('tv', tmdbId));
+      if (season === null) throw new Error('Seerr lists no regular season to request');
+      body.seasons = [season];
+    }
+    var response = await call('POST', '/api/v1/request', await csrfHeaders(), body);
     if (!response.ok && response.status !== 409) {
       var text = await response.text();
       throw new Error('Seerr HTTP ' + response.status + ' ' + text.slice(0, 200));
     }
-    return movieStatus(tmdbId);
+    return mediaStatus(mediaType, tmdbId);
   }
 
-  return { movieStatus: movieStatus, movieStatuses: movieStatuses, requestMovie: requestMovie };
+  return { mediaStatus: mediaStatus, mediaStatuses: mediaStatuses, requestMedia: requestMedia };
 }
 
-module.exports = { createClient: createClient, STATUS: STATUS };
+function refKey(mediaType, tmdbId) {
+  return mediaType + ':' + tmdbId;
+}
+
+module.exports = { createClient: createClient, refKey: refKey, STATUS: STATUS };

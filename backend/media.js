@@ -174,20 +174,20 @@ function download(key, options) {
 
 // Ensures a title has a downloadable trailer: tries the picked one, and if YouTube refuses it
 // (private, removed, region-locked), marks that candidate unplayable and picks the next one.
-async function ensureTitleTrailer(db, tmdbId, options) {
+async function ensureTitleTrailer(db, mediaType, tmdbId, options) {
   var logger = (options && options.logger) || console;
   for (;;) {
-    var candidates = db.prepare('SELECT * FROM candidates WHERE tmdb_id = ?').all(tmdbId);
+    var candidates = db.prepare('SELECT * FROM candidates WHERE media_type = ? AND tmdb_id = ?').all(mediaType, tmdbId);
     var picked = gate.pickTrailer(candidates);
-    db.prepare('UPDATE titles SET trailer_key = ? WHERE tmdb_id = ?').run(picked ? picked.key : null, tmdbId);
+    db.prepare('UPDATE titles SET trailer_key = ? WHERE media_type = ? AND tmdb_id = ?').run(picked ? picked.key : null, mediaType, tmdbId);
     if (!picked) return null;
     try {
       await download(picked.key, Object.assign({ db: db }, options));
       return picked.key;
     } catch (error) {
-      logger.warn('trailer ' + tmdbId + ' ' + picked.key + ' unavailable: ' + error.message);
-      db.prepare('UPDATE candidates SET playable = 0, reason = ? WHERE tmdb_id = ? AND key = ?')
-        .run('unavailable for download: ' + error.message, tmdbId, picked.key);
+      logger.warn('trailer ' + mediaType + ' ' + tmdbId + ' ' + picked.key + ' unavailable: ' + error.message);
+      db.prepare('UPDATE candidates SET playable = 0, reason = ? WHERE media_type = ? AND tmdb_id = ? AND key = ?')
+        .run('unavailable for download: ' + error.message, mediaType, tmdbId, picked.key);
     }
   }
 }
@@ -203,10 +203,10 @@ async function working(fn) {
 }
 
 async function prefetchTitles(db, options) {
-  var ids = db.prepare('SELECT tmdb_id FROM titles WHERE trailer_key IS NOT NULL ORDER BY tmdb_id').all();
+  var ids = db.prepare('SELECT media_type, tmdb_id FROM titles WHERE trailer_key IS NOT NULL ORDER BY media_type, tmdb_id').all();
   var ready = 0;
   for (var i = 0; i < ids.length; i += 1) {
-    if (await ensureTitleTrailer(db, ids[i].tmdb_id, options)) ready += 1;
+    if (await ensureTitleTrailer(db, ids[i].media_type, ids[i].tmdb_id, options)) ready += 1;
   }
   return { titles: ids.length, ready: ready };
 }

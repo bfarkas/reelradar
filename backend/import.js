@@ -8,28 +8,63 @@ var gate = require('./gate');
 var TMDB_BASE = 'https://api.themoviedb.org/3';
 var KINOCHECK_BASE = 'https://api.kinocheck.com';
 
-function ensureSchema(db) {
-  db.exec([
-    'CREATE TABLE IF NOT EXISTS titles (',
-    'tmdb_id INTEGER PRIMARY KEY, title TEXT NOT NULL, original_title TEXT NOT NULL,',
-    'original_language TEXT NOT NULL, de_theatrical TEXT, de_digital TEXT, trailer_key TEXT)',
-    ';CREATE TABLE IF NOT EXISTS candidates (',
-    'tmdb_id INTEGER NOT NULL, key TEXT NOT NULL, source TEXT NOT NULL, tmdb_lang TEXT,',
-    'kc_lang TEXT, type TEXT, site TEXT, name TEXT, published_at TEXT, official INTEGER,',
+var TABLES = {
+  titles: [
+    'media_type TEXT NOT NULL DEFAULT \'movie\', tmdb_id INTEGER NOT NULL, title TEXT NOT NULL,',
+    'original_title TEXT NOT NULL, original_language TEXT NOT NULL, de_theatrical TEXT, de_digital TEXT,',
+    'trailer_key TEXT, poster_path TEXT, backdrop_path TEXT, overview TEXT, overview_lang TEXT,',
+    'PRIMARY KEY (media_type, tmdb_id)'
+  ].join(' '),
+  candidates: [
+    'media_type TEXT NOT NULL DEFAULT \'movie\', tmdb_id INTEGER NOT NULL, key TEXT NOT NULL, source TEXT NOT NULL,',
+    'tmdb_lang TEXT, kc_lang TEXT, type TEXT, site TEXT, name TEXT, published_at TEXT, official INTEGER,',
     'kinocheck_url TEXT, playable INTEGER NOT NULL, reason TEXT NOT NULL,',
-    'PRIMARY KEY (tmdb_id, key))',
-    ';CREATE TABLE IF NOT EXISTS imports (',
-    'id INTEGER PRIMARY KEY AUTOINCREMENT, started TEXT NOT NULL, finished TEXT,',
-    'status TEXT NOT NULL, error TEXT)',
-    ';CREATE TABLE IF NOT EXISTS title_tags (',
-    'tmdb_id INTEGER NOT NULL, kind TEXT NOT NULL, tag_id INTEGER NOT NULL, name TEXT NOT NULL,',
-    'PRIMARY KEY (tmdb_id, kind, tag_id))'
-  ].join(' '));
-  // Columns added after the first release; ALTER on an existing database, no-op when present.
-  var have = db.prepare('PRAGMA table_info(titles)').all().map(function (column) { return column.name; });
-  ['poster_path', 'backdrop_path', 'overview', 'overview_lang'].forEach(function (column) {
-    if (have.indexOf(column) === -1) db.exec('ALTER TABLE titles ADD COLUMN ' + column + ' TEXT');
+    'PRIMARY KEY (media_type, tmdb_id, key)'
+  ].join(' '),
+  title_tags: [
+    'media_type TEXT NOT NULL DEFAULT \'movie\', tmdb_id INTEGER NOT NULL, kind TEXT NOT NULL, tag_id INTEGER NOT NULL,',
+    'name TEXT NOT NULL, PRIMARY KEY (media_type, tmdb_id, kind, tag_id)'
+  ].join(' ')
+};
+
+function columnNames(db, table) {
+  return db.prepare('PRAGMA table_info(' + table + ')').all().map(function (column) { return column.name; });
+}
+
+function createTables(db) {
+  Object.keys(TABLES).forEach(function (table) {
+    db.exec('CREATE TABLE IF NOT EXISTS ' + table + ' (' + TABLES[table] + ')');
   });
+  db.exec('CREATE TABLE IF NOT EXISTS imports (id INTEGER PRIMARY KEY AUTOINCREMENT, started TEXT NOT NULL, ' +
+    'finished TEXT, status TEXT NOT NULL, error TEXT)');
+}
+
+// Identity is (media_type, tmdb_id): TMDB reuses ids between movies and series (OS-T-J0NCM). A database from before has
+// tmdb_id alone as the key, which SQLite cannot alter, so its tables are rebuilt and every existing row becomes a movie.
+function migrateToMediaType(db) {
+  if (!columnNames(db, 'titles').length || columnNames(db, 'titles').indexOf('media_type') !== -1) return;
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    if (columnNames(db, 'titles').indexOf('media_type') !== -1) { db.exec('COMMIT'); return; } // another process was first
+    var legacy = Object.keys(TABLES).filter(function (table) { return columnNames(db, table).length; });
+    legacy.forEach(function (table) { db.exec('ALTER TABLE ' + table + ' RENAME TO ' + table + '_v1'); });
+    createTables(db);
+    legacy.forEach(function (table) {
+      var old = columnNames(db, table + '_v1');
+      var shared = columnNames(db, table).filter(function (name) { return name !== 'media_type' && old.indexOf(name) !== -1; }).join(', ');
+      db.exec('INSERT INTO ' + table + " (media_type, " + shared + ") SELECT 'movie', " + shared + ' FROM ' + table + '_v1');
+      db.exec('DROP TABLE ' + table + '_v1');
+    });
+    db.exec('COMMIT');
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+}
+
+function ensureSchema(db) {
+  migrateToMediaType(db);
+  createTables(db);
 }
 
 // German flatrate (subscription) services, e.g. Netflix; stored as 'provider' tags.
@@ -215,12 +250,12 @@ function parseExtraIds(value) {
     .filter(function (item) { return Number.isInteger(item) && item > 0; });
 }
 
-// /trailers/latest answers with an object keyed "0", "1", ...; keep movies only
-function latestTrailerIds(body) {
+// /trailers/latest answers with an object keyed "0", "1", ...; keep one resource type ('movie' or 'show')
+function latestTrailerIds(body, type) {
   var ids = [];
   Object.keys(body || {}).forEach(function (key) {
     var resource = body[key] && body[key].resource;
-    var id = resource && resource.type === 'movie' && Number(resource.tmdb_id);
+    var id = resource && resource.type === (type || 'movie') && Number(resource.tmdb_id);
     if (Number.isInteger(id) && id > 0 && ids.indexOf(id) === -1) ids.push(id);
   });
   return ids;
@@ -263,74 +298,94 @@ async function runImport(options) {
     if (!token) throw new Error('TMDB_API_KEY is required');
     lists = JSON.parse(fs.readFileSync(listsPath, 'utf8'));
 
-    var ids = [];
-    // TMDB caps discover at 500 pages
-    for (var page = 1, pages = 1; page <= pages && page <= 500; page += 1) {
-      var discoverUrl = new URL(TMDB_BASE + '/discover/movie');
-      discoverUrl.searchParams.set('region', 'DE');
-      discoverUrl.searchParams.set('with_release_type', '3|4|6'); // theatrical, digital, TV
-      discoverUrl.searchParams.set('release_date.gte', shiftedDate(now, -30));
-      discoverUrl.searchParams.set('release_date.lte', shiftedDate(now, 183));
-      discoverUrl.searchParams.set('sort_by', 'popularity.desc');
-      discoverUrl.searchParams.set('language', 'en-US'); // English titles and texts; dates stay German (region, release_dates)
-      discoverUrl.searchParams.set('page', String(page));
-      if (page > 1) await sleep(250);
-      var discover = await requestJson(fetchFn, discoverUrl.toString(), { headers: tmdbHeaders }, 'TMDB');
-      pages = discover.total_pages || 1;
-      (discover.results || []).forEach(function (movie) {
-        if (ids.indexOf(movie.id) === -1) ids.push(movie.id);
-      });
+    var refs = []; // {media_type, tmdb_id}: TMDB reuses ids between movies and series
+    function addRef(mediaType, id) {
+      if (!refs.some(function (ref) { return ref.media_type === mediaType && ref.tmdb_id === id; })) {
+        refs.push({ media_type: mediaType, tmdb_id: id });
+      }
     }
+    // TMDB caps discover at 500 pages
+    async function discoverIds(mediaType, params, maxPages) {
+      for (var page = 1, pages = 1; page <= pages && page <= maxPages; page += 1) {
+        var discoverUrl = new URL(TMDB_BASE + '/discover/' + mediaType);
+        Object.keys(params).forEach(function (name) { discoverUrl.searchParams.set(name, params[name]); });
+        discoverUrl.searchParams.set('sort_by', 'popularity.desc');
+        discoverUrl.searchParams.set('language', 'en-US'); // English titles and texts; dates stay German (region, release_dates)
+        discoverUrl.searchParams.set('page', String(page));
+        if (page > 1) await sleep(250);
+        var discover = await requestJson(fetchFn, discoverUrl.toString(), { headers: tmdbHeaders }, 'TMDB');
+        pages = discover.total_pages || 1;
+        (discover.results || []).forEach(function (item) { addRef(mediaType, item.id); });
+      }
+    }
+    await discoverIds('movie', {
+      region: 'DE',
+      with_release_type: '3|4|6', // theatrical, digital, TV
+      'release_date.gte': shiftedDate(now, -30),
+      'release_date.lte': shiftedDate(now, 183)
+    }, 500);
+    // Series have no German air dates (docs/research/tmdb-dates.md): pick those that first aired in the same window,
+    // both the ones already on a German flatrate service and the most popular ones TMDB lists no German service for yet.
+    var tvPages = Number(env.IMPORT_TV_PAGES) || 3;
+    var firstAir = { 'first_air_date.gte': shiftedDate(now, -30), 'first_air_date.lte': shiftedDate(now, 183) };
+    await discoverIds('tv', Object.assign({ watch_region: 'DE', with_watch_monetization_types: 'flatrate' }, firstAir), tvPages);
+    await discoverIds('tv', firstAir, tvPages);
     try {
       var latest = await requestJson(fetchFn, KINOCHECK_BASE + '/trailers/latest?limit=100&language=en',
         { headers: kcHeaders }, 'KinoCheck');
-      latestTrailerIds(latest).forEach(function (id) {
-        if (ids.indexOf(id) === -1) ids.push(id);
-      });
+      latestTrailerIds(latest, 'movie').forEach(function (id) { addRef('movie', id); });
+      latestTrailerIds(latest, 'show').forEach(function (id) { addRef('tv', id); });
     } catch (error) {
       logger.warn('KinoCheck latest trailers degraded: ' + error.message);
     }
-    parseExtraIds(env.IMPORT_EXTRA_IDS).forEach(function (id) {
-      if (ids.indexOf(id) === -1) ids.push(id);
-    });
+    parseExtraIds(env.IMPORT_EXTRA_IDS).forEach(function (id) { addRef('movie', id); });
+    parseExtraIds(env.IMPORT_EXTRA_TV_IDS).forEach(function (id) { addRef('tv', id); });
 
     var titles = [];
-    for (var i = 0; i < ids.length; i += 1) {
-      var id = ids[i];
+    for (var i = 0; i < refs.length; i += 1) {
+      var id = refs[i].tmdb_id;
+      var mediaType = refs[i].media_type;
+      var series = mediaType === 'tv';
       await sleep(250);
-      var detail = await requestJson(fetchFn, TMDB_BASE + '/movie/' + id + '?language=en-US&append_to_response=keywords,watch/providers,translations',
+      var detail = await requestJson(fetchFn, TMDB_BASE + '/' + mediaType + '/' + id + '?language=en-US&append_to_response=keywords,watch/providers,translations',
         { headers: tmdbHeaders }, 'TMDB');
+      // A series has no German dates at all, never a substitute (its availability comes from the watch providers).
+      var releaseDates = { results: [] };
+      if (!series) {
+        await sleep(250);
+        releaseDates = await requestJson(fetchFn, TMDB_BASE + '/movie/' + id + '/release_dates',
+          { headers: tmdbHeaders }, 'TMDB');
+      }
       await sleep(250);
-      var releaseDates = await requestJson(fetchFn, TMDB_BASE + '/movie/' + id + '/release_dates',
-        { headers: tmdbHeaders }, 'TMDB');
-      await sleep(250);
-      var videoUrl = TMDB_BASE + '/movie/' + id +
+      var videoUrl = TMDB_BASE + '/' + mediaType + '/' + id +
         '/videos?include_video_language=' + encodeURIComponent(detail.original_language + ',en,de,null');
       var videos = await requestJson(fetchFn, videoUrl, { headers: tmdbHeaders }, 'TMDB');
       var kinoCheck = null;
       var kcLanguage = detail.original_language === 'de' ? 'de' : 'en';
-      var kcUrl = KINOCHECK_BASE + '/movies?tmdb_id=' + id + '&language=' + kcLanguage;
+      var kcUrl = KINOCHECK_BASE + (series ? '/shows' : '/movies') + '?tmdb_id=' + id + '&language=' + kcLanguage;
 
       await sleep(1000);
       try {
         kinoCheck = await requestJson(fetchFn, kcUrl, { headers: kcHeaders }, 'KinoCheck');
       } catch (error) {
-        if (error.status !== 404) logger.warn('KinoCheck ' + id + ' degraded: ' + error.message);
+        if (error.status !== 404) logger.warn('KinoCheck ' + mediaType + ' ' + id + ' degraded: ' + error.message);
       }
 
+      var name = series ? detail.name : detail.title;
       var candidates = mergeCandidates(tmdbCandidates(videos), kinoCheckCandidates(kinoCheck));
       var decisions = gate.decide(detail, candidates, lists);
       decisions.forEach(function (decision) {
         var state = decision.playable ? 'playable' : 'hidden';
-        logger.log('gate ' + id + ' ' + detail.title + ' ' + decision.key + ' ' + state + ' ' + decision.reason);
+        logger.log('gate ' + mediaType + ' ' + id + ' ' + name + ' ' + decision.key + ' ' + state + ' ' + decision.reason);
       });
       var picked = gate.pickTrailer(candidates, decisions);
       var dates = germanDates(releaseDates, today);
       var text = synopsis(detail);
       titles.push({
+        media_type: mediaType,
         tmdb_id: id,
-        title: detail.title,
-        original_title: detail.original_title,
+        title: name,
+        original_title: series ? detail.original_name : detail.original_title,
         original_language: detail.original_language,
         de_theatrical: dates.theatrical,
         de_digital: dates.digital,
@@ -342,7 +397,7 @@ async function runImport(options) {
         providers: germanProviders(detail),
         providers_expected: expectedProviders(releaseDates, detail, dates.digital, today, germanProviders(detail)),
         genres: detail.genres || [],
-        keywords: (detail.keywords && detail.keywords.keywords) || [],
+        keywords: (detail.keywords && (detail.keywords.keywords || detail.keywords.results)) || [], // /tv names the list results
         candidates: candidates.map(function (candidate) {
           var decision = decisions.find(function (item) { return item.key === candidate.key; });
           return Object.assign({}, candidate, decision);
@@ -353,26 +408,29 @@ async function runImport(options) {
     db.exec('BEGIN IMMEDIATE');
     try {
       db.exec('DELETE FROM candidates; DELETE FROM title_tags; DELETE FROM titles');
-      var insertTag = db.prepare('INSERT OR IGNORE INTO title_tags VALUES (?, ?, ?, ?)');
+      var insertTag = db.prepare('INSERT OR IGNORE INTO title_tags (media_type, tmdb_id, kind, tag_id, name) VALUES (?, ?, ?, ?, ?)');
       var insertTitle = db.prepare([
-        'INSERT INTO titles (tmdb_id, title, original_title, original_language, de_theatrical, de_digital,',
-        'trailer_key, poster_path, backdrop_path, overview, overview_lang) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        'INSERT INTO titles (media_type, tmdb_id, title, original_title, original_language, de_theatrical, de_digital,',
+        'trailer_key, poster_path, backdrop_path, overview, overview_lang) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
       ].join(' '));
       var insertCandidate = db.prepare([
-        'INSERT INTO candidates (tmdb_id, key, source, tmdb_lang, kc_lang, type, site, name,',
+        'INSERT INTO candidates (media_type, tmdb_id, key, source, tmdb_lang, kc_lang, type, site, name,',
         'published_at, official, kinocheck_url, playable, reason)',
-        'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
       ].join(' '));
       titles.forEach(function (title) {
-        insertTitle.run(title.tmdb_id, title.title, title.original_title, title.original_language,
+        insertTitle.run(title.media_type, title.tmdb_id, title.title, title.original_title, title.original_language,
           title.de_theatrical, title.de_digital, title.trailer_key,
           title.poster_path, title.backdrop_path, title.overview, title.overview_lang);
-        title.providers.forEach(function (tag) { insertTag.run(title.tmdb_id, 'provider', tag.id, tag.name); });
-        title.providers_expected.forEach(function (tag) { insertTag.run(title.tmdb_id, 'provider_expected', tag.id, tag.name); });
-        title.genres.forEach(function (tag) { insertTag.run(title.tmdb_id, 'genre', tag.id, tag.name); });
-        title.keywords.forEach(function (tag) { insertTag.run(title.tmdb_id, 'keyword', tag.id, tag.name); });
+        function tag(kind) {
+          return function (item) { insertTag.run(title.media_type, title.tmdb_id, kind, item.id, item.name); };
+        }
+        title.providers.forEach(tag('provider'));
+        title.providers_expected.forEach(tag('provider_expected'));
+        title.genres.forEach(tag('genre'));
+        title.keywords.forEach(tag('keyword'));
         title.candidates.forEach(function (candidate) {
-          insertCandidate.run(title.tmdb_id, candidate.key, candidate.source, candidate.tmdb_lang,
+          insertCandidate.run(title.media_type, title.tmdb_id, candidate.key, candidate.source, candidate.tmdb_lang,
             candidate.kc_lang, candidate.type, candidate.site, candidate.name,
             candidate.published_at, candidate.official ? 1 : 0, candidate.kinocheck_url,
             candidate.playable ? 1 : 0, candidate.reason);

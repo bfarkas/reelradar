@@ -50,7 +50,8 @@ select.chip { appearance: none; -webkit-appearance: none; padding-right: 28px; b
 .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); }
 
 .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; display: flex; gap: 14px; padding: 12px; }
-.poster { align-self: flex-start; aspect-ratio: 2 / 3; background: #2a221c; border-radius: 8px; flex: 0 0 104px; object-fit: cover; width: 104px; }
+.posterwrap { align-self: flex-start; flex: 0 0 104px; position: relative; width: 104px; }
+.poster { aspect-ratio: 2 / 3; background: #2a221c; border-radius: 8px; display: block; object-fit: cover; width: 100%; }
 .card .body { display: flex; flex: 1; flex-direction: column; min-width: 0; }
 .card h3 { font-family: var(--serif); font-size: 18px; line-height: 1.15; margin: 2px 0 3px; }
 .meta { color: var(--muted); font-size: 12px; margin: 0 0 6px; }
@@ -80,6 +81,7 @@ details.check div { margin: 3px 0; overflow-wrap: anywhere; }
 .tile:focus { outline: none; }
 .badge { background: rgba(20,15,12,0.88); border-radius: 4px; color: #fff; font-family: var(--sans); font-size: 10px; font-weight: 800; left: 50%; letter-spacing: 1px; max-width: 88%; overflow: hidden; padding: 3px 7px; position: absolute; text-overflow: ellipsis; text-transform: uppercase; top: 7px; transform: translateX(-50%); white-space: nowrap; }
 .badge.streaming { background: var(--red); }
+.badge.series { background: #1f5f6b; }
 .badge.expected { line-height: 1.25; text-align: center; white-space: normal; }
 .tile .date { color: var(--muted); display: block; font-size: 12px; margin-top: 6px; }
 .tip { background: var(--ink); border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,0.3); color: #fff; display: none; font-size: 12px; left: 50%; padding: 8px 10px; position: absolute; text-align: left; top: 72%; transform: translateX(-50%); width: 170px; z-index: 3; }
@@ -91,7 +93,7 @@ body.wall-mode .hero p.lead { display: none; }
 #detail { align-items: center; background: rgba(10, 8, 6, 0.6); display: flex; inset: 0; justify-content: center; padding: 16px; position: fixed; z-index: 9; }
 #detail[hidden] { display: none; }
 #detail .card { box-shadow: 0 12px 40px rgba(0,0,0,0.35); max-width: 560px; position: relative; width: 100%; }
-#detail .card .poster { flex-basis: 150px; width: 150px; }
+#detail .card .posterwrap { flex-basis: 150px; width: 150px; }
 .overview .lang { border: 1px solid currentColor; border-radius: 3px; font-size: 10px; margin-right: 6px; padding: 0 3px; }
 #detail .overview { -webkit-line-clamp: 8; }
 #detail .x { position: absolute; right: 10px; top: 8px; }
@@ -112,9 +114,9 @@ footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 12px
   #views button { padding: 12px 0 10px; }
   .hero .wrap { padding: 24px 16px; }
   .grid { grid-template-columns: 1fr; }
-  .poster { flex-basis: 88px; width: 88px; }
+  .posterwrap { flex-basis: 88px; width: 88px; }
   .wall { gap: 12px 8px; grid-template-columns: repeat(3, 1fr); }
-  #detail .card .poster { flex-basis: 96px; width: 96px; }
+  #detail .card .posterwrap { flex-basis: 96px; width: 96px; }
   #count { margin-left: 0; width: 100%; }
 }
 </style>
@@ -189,7 +191,7 @@ document.addEventListener('keydown', function (event) {
 function playTrailer(title, trigger) {
   trigger.disabled = true;
   trigger.textContent = 'Loading...';
-  getJson('/api/stream/' + title.tmdb_id, function (error, stream) {
+  getJson('/api/stream/' + mediaType(title) + '/' + title.tmdb_id, function (error, stream) {
     trigger.disabled = false;
     trigger.textContent = 'Play trailer';
     if (error) { trigger.textContent = 'Trailer unavailable'; return; }
@@ -215,7 +217,7 @@ function getJson(url, callback, method) {
 // ---- filter state: {v:1, genres, keywords, kind, service} in localStorage (may be missing or throw) ----
 var FILTER_KEY = 'reelradar.filter';
 var allTitles = [];
-var seerrStatus = {}; // tmdb_id -> none|requested|partial|available; a missing id is unknown and still offers the request
+var seerrStatus = {}; // titleKey -> none|requested|partial|available; a missing key is unknown and still offers the request
 var SEERR_LABELS = { requested: 'Requested in Seerr', partial: 'Partly in the library', available: 'In the library' };
 var selection = loadSelection();
 
@@ -249,12 +251,23 @@ function matchesFilter(title, chosen) {
   return hasAny(title.genres || [], chosen.genres) || hasAny(title.keywords || [], chosen.keywords);
 }
 
+// ---- identity: movie and series ids overlap in TMDB, so a title is (media_type, tmdb_id) ----
+function mediaType(title) { return title.media_type === 'tv' ? 'tv' : 'movie'; }
+function isSeries(title) { return mediaType(title) === 'tv'; }
+function titleKey(title) { return mediaType(title) + ':' + title.tmdb_id; }
+// A series has no German dates. Where it streams in Germany comes from TMDB's flatrate list; null shows nothing.
+function availableText(title, short) {
+  if (!isSeries(title) || !title.providers || !title.providers.length) return null;
+  var names = title.providers.map(function (p) { return p.name; }).join(', ');
+  return short ? 'On ' + names : 'Available on ' + names + ' in Germany';
+}
+
 // ---- views (same logic in frontend/index.html and tv-app/index.html) ----
 var VIEWS = [['upcoming', 'Release calendar'], ['trailers', 'New trailers'], ['recent', 'Recently released'], ['genres', 'Genres'], ['all', 'All titles']];
 var HERO = {
-  upcoming: ['Release calendar', "What's coming next", 'Cinema and streaming releases in Germany for the next six months.'],
+  upcoming: ['Release calendar', "What's coming next", 'Cinema and streaming releases in Germany for the next six months. Series have no German date: find them under the other views.'],
   trailers: ['Fresh from the projector', 'New trailers', 'The latest trailers, in the original language where one exists.'],
-  recent: ['Just released', 'Recently released', 'What reached German cinemas and streaming in the last three months.'],
+  recent: ['Just released', 'Recently released', 'What reached German cinemas and streaming in the last three months. Series are under the other views.'],
   genres: ['Browse', 'By genre', 'Every title, shelved by genre.'],
   all: ['Everything', 'All titles', 'Every title ReelRadar knows about.']
 };
@@ -276,7 +289,17 @@ function releases(title, kind) {
   return list;
 }
 
-// -> [{heading, note, items:[{title, kind, date}]}]; calendar views list each release on its day.
+// Kind filter for the views without a calendar. A series has no cinema release; it counts as streaming when
+// TMDB lists a German flatrate service for it.
+function inKind(title, kind) {
+  if (kind === 'all') return true;
+  if (isSeries(title)) return kind === 'streaming' && !!(title.providers && title.providers.length);
+  return releases(title, kind).length > 0;
+}
+
+// -> [{heading, note, items:[{title, kind, date}]}]; calendar views list each release on its day. A series has no
+// German date, so it is not in the calendar views (Release calendar, Recently released); it is in the others.
+// It is never under Cinema, and under Streaming only while it is on a German service.
 function viewSections(view, titles, kind) {
   var today = isoDay(0);
   if (view === 'upcoming' || view === 'recent') {
@@ -299,7 +322,7 @@ function viewSections(view, titles, kind) {
     days.forEach(function (day) { day.note = day.items.length + (day.items.length === 1 ? ' release' : ' releases'); });
     return days;
   }
-  var kept = titles.filter(function (title) { return kind === 'all' || releases(title, kind).length; });
+  var kept = titles.filter(function (title) { return inKind(title, kind); });
   function asItem(title) { return { title: title, kind: null, date: null }; }
   if (view === 'trailers') {
     var withTrailer = kept.filter(function (title) { return title.trailer; });
@@ -502,7 +525,7 @@ function viewCount(view, sections) {
   sections.forEach(function (section) {
     section.items.forEach(function (item) {
       if (view !== 'genres') count += 1;
-      else if (!seen[item.title.tmdb_id]) { seen[item.title.tmdb_id] = true; count += 1; }
+      else if (!seen[titleKey(item.title)]) { seen[titleKey(item.title)] = true; count += 1; }
     });
   });
   return count;
@@ -607,22 +630,24 @@ function tile(item) {
   var title = item.title;
   var release = itemRelease(item);
   var b = button('', 'tile', function () { openDetail(item); });
-  b.setAttribute('aria-label', title.title + (release ? ', ' + badgeText(title, release.kind, release.date) + ', ' + shortDate(release.date) : ''));
+  b.setAttribute('aria-label', (isSeries(title) ? 'Series, ' : '') + title.title + (release ? ', ' + badgeText(title, release.kind, release.date) + ', ' + shortDate(release.date) : ''));
   var art = document.createElement('span');
   art.className = 'art';
   art.style.display = 'block';
   if (title.poster_path) art.style.backgroundImage = 'url(' + IMG + 'w342' + title.poster_path + ')';
   else art.appendChild(text('span', title.title, 'name'));
-  if (release) art.appendChild(text('span', badgeText(title, release.kind, release.date), 'badge ' + release.kind + (premiereText(title, release.kind, release.date) ? ' expected' : '')));
+  if (isSeries(title)) art.appendChild(text('span', 'Series', 'badge series'));
+  else if (release) art.appendChild(text('span', badgeText(title, release.kind, release.date), 'badge ' + release.kind + (premiereText(title, release.kind, release.date) ? ' expected' : '')));
   b.appendChild(art);
-  b.appendChild(text('span', release ? shortDate(release.date) : 'No German date', 'date'));
+  b.appendChild(text('span', release ? shortDate(release.date) : availableText(title, true) || (isSeries(title) ? '' : 'No German date'), 'date'));
   var tip = document.createElement('span');
   tip.className = 'tip';
   tip.appendChild(text('strong', title.title));
   if (release) tip.appendChild(text('span', shortDate(release.date) + ' · ' + whereText(title, release.kind, release.date)));
-  if (seerrStatus && SEERR_LABELS[seerrStatus[title.tmdb_id]]) {
+  else if (availableText(title)) tip.appendChild(text('span', availableText(title)));
+  if (seerrStatus && SEERR_LABELS[seerrStatus[titleKey(title)]]) {
     tip.appendChild(document.createElement('br'));
-    tip.appendChild(text('span', SEERR_LABELS[seerrStatus[title.tmdb_id]]));
+    tip.appendChild(text('span', SEERR_LABELS[seerrStatus[titleKey(title)]]));
   }
   b.appendChild(tip);
   return b;
@@ -662,9 +687,10 @@ function whereText(title, kind, date) {
 // "Cinema · 6 Mar 2026" or "Netflix · 6 Mar 2026"; for a plain list, the next (or latest) German date.
 function releaseLine(item) {
   var release = itemRelease(item);
-  if (!release) return null;
   var line = document.createElement('p');
   line.className = 'release';
+  if (!release && availableText(item.title)) { line.appendChild(text('span', availableText(item.title), 'kind')); return line; }
+  if (!release) return null;
   line.appendChild(text('span', whereText(item.title, release.kind, release.date), 'kind'));
   line.appendChild(document.createTextNode(' · ' + shortDate(release.date)));
   return line;
@@ -679,7 +705,11 @@ function card(item) {
   poster.alt = '';
   poster.loading = 'lazy';
   if (title.poster_path) poster.src = IMG + 'w342' + title.poster_path;
-  article.appendChild(poster);
+  var posterWrap = document.createElement('div');
+  posterWrap.className = 'posterwrap';
+  posterWrap.appendChild(poster);
+  if (isSeries(title)) posterWrap.appendChild(text('span', 'Series', 'badge series'));
+  article.appendChild(posterWrap);
 
   var body = document.createElement('div');
   body.className = 'body';
@@ -721,14 +751,14 @@ function card(item) {
 }
 
 function seerrControl(title) {
-  var status = seerrStatus[title.tmdb_id];
+  var status = seerrStatus[titleKey(title)];
   if (SEERR_LABELS[status]) return text('span', SEERR_LABELS[status], 'status');
-  var b = button('Request via Seerr', 'btn', function () {
+  var b = button(isSeries(title) ? 'Request season 1 via Seerr' : 'Request via Seerr', 'btn', function () { // a series request asks for the first season only
     b.disabled = true;
     b.textContent = 'Requesting...';
-    getJson('/api/request/' + title.tmdb_id, function (error, result) {
+    getJson('/api/request/' + mediaType(title) + '/' + title.tmdb_id, function (error, result) {
       if (error) { b.disabled = false; b.textContent = 'Request failed - try again'; return; }
-      seerrStatus[title.tmdb_id] = result.status;
+      seerrStatus[titleKey(title)] = result.status;
       b.parentNode.replaceChild(seerrControl(title), b);
     }, 'POST');
   });

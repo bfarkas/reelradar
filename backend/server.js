@@ -29,17 +29,18 @@ function sendJson(res, status, value) {
 function getTitles() {
   var rows = db.prepare([
     'SELECT t.*, c.kinocheck_url, c.published_at AS trailer_published_at FROM titles t',
-    'LEFT JOIN candidates c ON c.tmdb_id = t.tmdb_id AND c.key = t.trailer_key',
-    'ORDER BY t.de_theatrical IS NULL, t.de_theatrical, t.title'
+    'LEFT JOIN candidates c ON c.media_type = t.media_type AND c.tmdb_id = t.tmdb_id AND c.key = t.trailer_key',
+    'ORDER BY t.de_theatrical IS NULL, t.de_theatrical, t.title, t.media_type'
   ].join(' ')).all();
   var decisionStatement = db.prepare([
     'SELECT key, source, playable, reason FROM candidates',
-    'WHERE tmdb_id = ? ORDER BY key'
+    'WHERE media_type = ? AND tmdb_id = ? ORDER BY key'
   ].join(' '));
-  var tagStatement = db.prepare('SELECT tag_id AS id, name FROM title_tags WHERE tmdb_id = ? AND kind = ? ORDER BY name');
+  var tagStatement = db.prepare('SELECT tag_id AS id, name FROM title_tags WHERE media_type = ? AND tmdb_id = ? AND kind = ? ORDER BY name');
 
   return rows.map(function (row) {
     return {
+      media_type: row.media_type, // 'movie' | 'tv'; ids repeat between the two, so identity is (media_type, tmdb_id)
       tmdb_id: row.tmdb_id,
       title: row.title,
       original_title: row.original_title,
@@ -55,11 +56,11 @@ function getTitles() {
         kinocheck_url: row.kinocheck_url || null,
         published_at: row.trailer_published_at || null
       } : null,
-      genres: tagStatement.all(row.tmdb_id, 'genre'),
-      keywords: tagStatement.all(row.tmdb_id, 'keyword'),
-      providers: tagStatement.all(row.tmdb_id, 'provider'),
-      providers_expected: tagStatement.all(row.tmdb_id, 'provider_expected'), // premieres on it, not streaming there yet
-      decisions: decisionStatement.all(row.tmdb_id).map(function (decision) {
+      genres: tagStatement.all(row.media_type, row.tmdb_id, 'genre'),
+      keywords: tagStatement.all(row.media_type, row.tmdb_id, 'keyword'),
+      providers: tagStatement.all(row.media_type, row.tmdb_id, 'provider'),
+      providers_expected: tagStatement.all(row.media_type, row.tmdb_id, 'provider_expected'), // premieres on it, not streaming there yet
+      decisions: decisionStatement.all(row.media_type, row.tmdb_id).map(function (decision) {
         return {
           key: decision.key,
           source: decision.source,
@@ -80,8 +81,8 @@ function getReport() {
     'SUM(kc AND NOT tm) AS playable_from_kinocheck_only,',
     'SUM(tm AND kc) AS playable_from_both',
     'FROM (SELECT t.original_language,',
-    "  EXISTS (SELECT 1 FROM candidates c WHERE c.tmdb_id = t.tmdb_id AND c.playable = 1 AND c.source IN ('tmdb','both')) AS tm,",
-    "  EXISTS (SELECT 1 FROM candidates c WHERE c.tmdb_id = t.tmdb_id AND c.playable = 1 AND c.source IN ('kinocheck','both')) AS kc",
+    "  EXISTS (SELECT 1 FROM candidates c WHERE c.media_type = t.media_type AND c.tmdb_id = t.tmdb_id AND c.playable = 1 AND c.source IN ('tmdb','both')) AS tm,",
+    "  EXISTS (SELECT 1 FROM candidates c WHERE c.media_type = t.media_type AND c.tmdb_id = t.tmdb_id AND c.playable = 1 AND c.source IN ('kinocheck','both')) AS kc",
     '  FROM titles t)',
     'GROUP BY original_language ORDER BY original_language'
   ].join(' ')).all();
@@ -90,8 +91,7 @@ function getReport() {
 // Seerr state of every title; cached for a minute so page loads don't hammer Seerr.
 async function getSeerrStatuses() {
   if (seerrCache.value && Date.now() - seerrCache.at < 60000) return seerrCache.value;
-  var ids = db.prepare('SELECT tmdb_id FROM titles').all();
-  var value = await seerr.movieStatuses(ids.map(function (row) { return row.tmdb_id; }));
+  var value = await seerr.mediaStatuses(db.prepare('SELECT media_type, tmdb_id FROM titles').all());
   seerrCache = { at: Date.now(), value: value };
   return value;
 }
@@ -101,6 +101,12 @@ async function getSeerrStatuses() {
 function trustedOrigin(req) {
   var origin = req.headers.origin;
   return !origin || origin === 'null' || origin === 'file://' || origin === 'http://' + req.headers.host;
+}
+
+// <prefix>/movie/603 or <prefix>/tv/1396; a bare <prefix>/603 is a movie (clients from before series existed).
+function titleRef(pathname, prefix) {
+  var match = pathname.startsWith(prefix + '/') && pathname.slice(prefix.length).match(/^\/(?:(movie|tv)\/)?(\d+)$/);
+  return match ? { mediaType: match[1] || 'movie', tmdbId: Number(match[2]) } : null;
 }
 
 http.createServer(function (req, res) {
@@ -114,18 +120,19 @@ http.createServer(function (req, res) {
   } else if (req.method === 'GET' && pathname === '/api/seerr') {
     getSeerrStatuses().then(function (value) { sendJson(res, 200, value); })
       .catch(function (error) { sendJson(res, 502, { error: error.message }); });
-  } else if (req.method === 'POST' && /^\/api\/request\/\d+$/.test(pathname)) {
-    var tmdbId = Number(pathname.split('/')[3]);
+  } else if (req.method === 'POST' && titleRef(pathname, '/api/request')) {
+    var ref = titleRef(pathname, '/api/request');
     if (!trustedOrigin(req)) return sendJson(res, 403, { error: 'foreign origin' });
-    if (!db.prepare('SELECT 1 FROM titles WHERE tmdb_id = ?').get(tmdbId)) return sendJson(res, 404, { error: 'unknown title' });
-    seerr.requestMovie(tmdbId).then(function (status) {
+    if (!db.prepare('SELECT 1 FROM titles WHERE media_type = ? AND tmdb_id = ?').get(ref.mediaType, ref.tmdbId)) return sendJson(res, 404, { error: 'unknown title' });
+    seerr.requestMedia(ref.mediaType, ref.tmdbId).then(function (status) {
       seerrCache.value = null;
-      console.log('seerr request ' + tmdbId + ' -> ' + status);
+      console.log('seerr request ' + ref.mediaType + ' ' + ref.tmdbId + ' -> ' + status);
       sendJson(res, 200, { status: status });
     }).catch(function (error) { sendJson(res, 502, { error: error.message }); });
-  } else if (req.method === 'GET' && /^\/api\/stream\/\d+$/.test(pathname)) {
+  } else if (req.method === 'GET' && titleRef(pathname, '/api/stream')) {
     // TV app: the title's trailer as a cached MP4 (downloads on first request, falls back past dead videos).
-    media.ensureTitleTrailer(db, Number(pathname.split('/')[3])).then(function (key) {
+    var streamRef = titleRef(pathname, '/api/stream');
+    media.ensureTitleTrailer(db, streamRef.mediaType, streamRef.tmdbId).then(function (key) {
       if (key) sendJson(res, 200, { key: key, url: media.mediaUrl(key) });
       else sendJson(res, 404, { error: 'no playable trailer' });
     }).catch(function (error) {

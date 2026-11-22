@@ -19,12 +19,30 @@ function response(status, body) {
   });
 }
 
+// A series that shares its id (101) with the fixture movie: TMDB numbers movies and series separately.
+var seriesDetail = {
+  id: 101, name: 'Fixture Series', original_name: 'Fixture Serie', original_language: 'de',
+  genres: [{ id: 18, name: 'Drama' }, { id: 10765, name: 'Sci-Fi & Fantasy' }],
+  keywords: { results: [{ id: 1, name: 'dystopia' }] }, // /tv names the keyword list "results", /movie "keywords"
+  poster_path: '/series-poster.jpg', backdrop_path: '/series-backdrop.jpg', overview: 'A series.',
+  first_air_date: '2026-12-01', // origin date: never shown as a German date
+  'watch/providers': { results: {
+    DE: { flatrate: [{ provider_id: 8, provider_name: 'Netflix' }] },
+    US: { flatrate: [{ provider_id: 9, provider_name: 'Prime Video' }] }
+  } }
+};
+var seriesVideos = { results: [{ key: 'seriesVid01', iso_639_1: 'de', type: 'Trailer', site: 'YouTube', name: 'Official Trailer' }] };
+
 function successfulFetch(url) {
+  if (url.indexOf('/discover/tv') !== -1) return response(200, { results: [{ id: 101 }], total_pages: 1 });
+  if (url.indexOf('/tv/101/videos') !== -1) return response(200, seriesVideos);
+  if (url.indexOf('/tv/101?') !== -1) return response(200, seriesDetail);
+  if (url.indexOf('api.kinocheck.com/shows?tmdb_id=101') !== -1) return response(404, {});
   if (url.indexOf('/discover/movie') !== -1) return response(200, fixture.discover);
   if (url.indexOf('/movie/101/release_dates') !== -1) return response(200, fixture.release_dates);
   if (url.indexOf('/movie/101/videos') !== -1) return response(200, fixture.videos);
   if (url.indexOf('api.kinocheck.com/trailers/latest') !== -1) {
-    return response(200, { 0: { resource: { type: 'movie', tmdb_id: 101 } }, 1: { resource: { type: 'show', tmdb_id: 93405 } } });
+    return response(200, { 0: { resource: { type: 'movie', tmdb_id: 101 } }, 1: { resource: { type: 'show', tmdb_id: 101 } } });
   }
   if (url.indexOf('api.kinocheck.com/movies') !== -1) return response(200, fixture.kinocheck);
   if (url.indexOf('/movie/101?') !== -1) return response(200, fixture.detail);
@@ -76,18 +94,21 @@ test('failed import preserves titles and candidates and records failure', async 
   });
 
   var db = new DatabaseSync(dbPath);
-  var titlesBefore = db.prepare('SELECT * FROM titles ORDER BY tmdb_id').all();
-  var candidatesBefore = db.prepare('SELECT * FROM candidates ORDER BY tmdb_id, key').all();
-  var tagsBefore = db.prepare('SELECT kind, tag_id, name FROM title_tags ORDER BY kind, tag_id').all();
-  assert.deepEqual(tagsBefore.map(function (row) { return row.kind + ':' + row.name; }),
-    ['genre:Drama', 'keyword:based on novel', 'keyword:superhero', 'provider:Netflix']);
-  assert.equal(titlesBefore.length, 1);
+  var titlesBefore = db.prepare('SELECT * FROM titles ORDER BY media_type, tmdb_id').all();
+  var candidatesBefore = db.prepare('SELECT * FROM candidates ORDER BY media_type, tmdb_id, key').all();
+  var tagsBefore = db.prepare('SELECT media_type, kind, tag_id, name FROM title_tags ORDER BY media_type, kind, tag_id').all();
+  assert.deepEqual(tagsBefore.map(function (row) { return row.media_type + ':' + row.kind + ':' + row.name; }), [
+    'movie:genre:Drama', 'movie:keyword:based on novel', 'movie:keyword:superhero', 'movie:provider:Netflix',
+    'tv:genre:Drama', 'tv:genre:Sci-Fi & Fantasy', 'tv:keyword:dystopia', 'tv:provider:Netflix'
+  ]);
+  assert.equal(titlesBefore.length, 2); // movie 101 and series 101 are both stored
+  assert.equal(titlesBefore[0].media_type, 'movie');
   assert.equal(titlesBefore[0].trailer_key, 'fixture-video');
   assert.equal(titlesBefore[0].poster_path, '/poster.jpg');
   assert.equal(candidatesBefore[0].source, 'both');
   assert.match(calls[0].options.headers.Authorization, /^Bearer fixture-token$/);
   assert.ok(calls.some(function (call) {
-    return call.url.indexOf('/videos?include_video_language=en%2Cen%2Cde%2Cnull') !== -1;
+    return call.url.indexOf('/movie/101/videos?include_video_language=en%2Cen%2Cde%2Cnull') !== -1;
   }));
   assert.ok(calls.some(function (call) {
     return call.url === 'https://api.kinocheck.com/movies?tmdb_id=101&language=en';
@@ -108,9 +129,9 @@ test('failed import preserves titles and candidates and records failure', async 
   }), /TMDB returned HTTP 500/);
 
   db = new DatabaseSync(dbPath);
-  assert.deepEqual(db.prepare('SELECT * FROM titles ORDER BY tmdb_id').all(), titlesBefore);
-  assert.deepEqual(db.prepare('SELECT * FROM candidates ORDER BY tmdb_id, key').all(), candidatesBefore);
-  assert.deepEqual(db.prepare('SELECT kind, tag_id, name FROM title_tags ORDER BY kind, tag_id').all(), tagsBefore);
+  assert.deepEqual(db.prepare('SELECT * FROM titles ORDER BY media_type, tmdb_id').all(), titlesBefore);
+  assert.deepEqual(db.prepare('SELECT * FROM candidates ORDER BY media_type, tmdb_id, key').all(), candidatesBefore);
+  assert.deepEqual(db.prepare('SELECT media_type, kind, tag_id, name FROM title_tags ORDER BY media_type, kind, tag_id').all(), tagsBefore);
   var imports = db.prepare('SELECT status FROM imports ORDER BY id').all();
   assert.deepEqual(imports.map(function (row) { return row.status; }), ['success', 'failed']);
   db.close();
@@ -143,8 +164,8 @@ async function importWith(t, detail, releaseDates) {
     logger: { log: function () {}, warn: function () {} }
   });
   var db = new DatabaseSync(dbPath);
-  var row = db.prepare('SELECT overview, overview_lang FROM titles').get();
-  var tags = db.prepare("SELECT kind, tag_id AS id, name FROM title_tags WHERE kind LIKE 'provider%' ORDER BY kind, tag_id").all()
+  var row = db.prepare("SELECT overview, overview_lang FROM titles WHERE media_type = 'movie'").get();
+  var tags = db.prepare("SELECT kind, tag_id AS id, name FROM title_tags WHERE media_type = 'movie' AND kind LIKE 'provider%' ORDER BY kind, tag_id").all()
     .map(function (tag) { return Object.assign({}, tag); });
   db.close();
   return { row: row, urls: urls, tags: tags };
@@ -196,13 +217,16 @@ test('ensureSchema adds overview_lang to an existing database and keeps its rows
   db.close();
 });
 
-test('latest trailers yield movie ids only, once each', function () {
-  assert.deepEqual(importer.latestTrailerIds({
+test('latest trailers yield the ids of one resource type, once each', function () {
+  var body = {
     0: { resource: { type: 'movie', tmdb_id: 7 } },
     1: { resource: { type: 'show', tmdb_id: 8 } },
     2: { resource: { type: 'movie', tmdb_id: 7 } },
     3: { title: 'no resource' }
-  }), [7]);
+  };
+  assert.deepEqual(importer.latestTrailerIds(body), [7]);
+  assert.deepEqual(importer.latestTrailerIds(body, 'movie'), [7]);
+  assert.deepEqual(importer.latestTrailerIds(body, 'show'), [8]);
 });
 
 // ---- expected provider: 'premieres on X' before TMDB lists a flatrate provider (OS-T-3HXMY) ----
@@ -260,4 +284,101 @@ test('the import stores the expected provider as its own tag kind, and drops it 
   assert.deepEqual(after.tags, [{ kind: 'provider', id: 337, name: 'Disney Plus' }]);
   var none = await importWith(t, fixture.detail, fixture.release_dates); // fixture: note missing, and Netflix already streams
   assert.deepEqual(none.tags, [{ kind: 'provider', id: 8, name: 'Netflix' }]);
+});
+
+// ---- series (OS-T-J0NCM) ----
+async function importAll(t, fetchFn, env) {
+  var directory = fs.mkdtempSync(path.join(os.tmpdir(), 'reelradar-test-'));
+  var dbPath = path.join(directory, 'reelradar.db');
+  t.after(function () { fs.rmSync(directory, { recursive: true, force: true }); });
+  var urls = [];
+  await importer.runImport({
+    dbPath: dbPath,
+    fetch: function (url) { urls.push(url); return fetchFn(url); },
+    sleep: function () { return Promise.resolve(); },
+    now: new Date('2026-11-21T12:00:00Z'),
+    env: Object.assign({ TMDB_API_KEY: 'fixture-token' }, env),
+    logger: { log: function () {}, warn: function () {} }
+  });
+  var db = new DatabaseSync(dbPath);
+  t.after(function () { db.close(); });
+  return { db: db, urls: urls };
+}
+
+test('a series is stored next to the movie with the same id, with no German dates and its own tags and trailer', async function (t) {
+  var run = await importAll(t, successfulFetch);
+  var rows = run.db.prepare('SELECT media_type, tmdb_id, title, original_title, original_language, de_theatrical, de_digital, trailer_key, poster_path FROM titles ORDER BY media_type').all()
+    .map(function (row) { return Object.assign({}, row); });
+  assert.deepEqual(rows, [
+    { media_type: 'movie', tmdb_id: 101, title: 'Fixture Film', original_title: 'Fixture Film', original_language: 'en', de_theatrical: '2026-12-10', de_digital: '2027-01-15', trailer_key: 'fixture-video', poster_path: '/poster.jpg' },
+    { media_type: 'tv', tmdb_id: 101, title: 'Fixture Series', original_title: 'Fixture Serie', original_language: 'de', de_theatrical: null, de_digital: null, trailer_key: 'seriesVid01', poster_path: '/series-poster.jpg' }
+  ]);
+  var candidates = run.db.prepare('SELECT media_type, key, playable FROM candidates ORDER BY media_type').all().map(function (row) { return Object.assign({}, row); });
+  assert.deepEqual(candidates, [
+    { media_type: 'movie', key: 'fixture-video', playable: 1 },
+    { media_type: 'tv', key: 'seriesVid01', playable: 1 }
+  ]);
+  // German flatrate only: the US provider and the origin first_air_date never become a service or a date
+  var providers = run.db.prepare("SELECT name FROM title_tags WHERE media_type = 'tv' AND kind = 'provider'").all().map(function (row) { return row.name; });
+  assert.deepEqual(providers, ['Netflix']);
+  assert.ok(run.urls.some(function (url) { return /discover\/tv\?.*watch_region=DE.*with_watch_monetization_types=flatrate.*first_air_date\.gte=2026-10-22/.test(url); }));
+  assert.ok(run.urls.some(function (url) { return /discover\/tv\?(?!.*watch_region)/.test(url); }));
+  assert.ok(run.urls.some(function (url) { return url.indexOf('/tv/101?language=en-US&append_to_response=keywords,watch/providers,translations') !== -1; }));
+  assert.ok(run.urls.some(function (url) { return url.indexOf('/tv/101/videos?include_video_language=de%2Cen%2Cde%2Cnull') !== -1; }));
+  assert.ok(run.urls.some(function (url) { return url === 'https://api.kinocheck.com/shows?tmdb_id=101&language=de'; })); // German original: de bucket
+  assert.ok(!run.urls.some(function (url) { return url.indexOf('/tv/101/release_dates') !== -1; }));
+});
+
+test('a series without German streaming data stores no service and no date', async function (t) {
+  var run = await importAll(t, function (url) {
+    if (url.indexOf('/tv/101?') !== -1) {
+      return response(200, Object.assign({}, seriesDetail, { 'watch/providers': { results: { US: { flatrate: [{ provider_id: 9, provider_name: 'Prime Video' }] } } } }));
+    }
+    return successfulFetch(url);
+  });
+  assert.equal(run.db.prepare("SELECT COUNT(*) AS n FROM title_tags WHERE media_type = 'tv' AND kind LIKE 'provider%'").get().n, 0);
+  var row = run.db.prepare("SELECT de_theatrical, de_digital FROM titles WHERE media_type = 'tv'").get();
+  assert.deepEqual(Object.assign({}, row), { de_theatrical: null, de_digital: null });
+});
+
+test('extra series ids are imported as series', async function (t) {
+  var run = await importAll(t, function (url) {
+    if (url.indexOf('/discover/tv') !== -1) return response(200, { results: [] });
+    if (/\/tv\/777\//.test(url)) return response(200, seriesVideos);
+    if (/\/tv\/777\?/.test(url)) return response(200, Object.assign({}, seriesDetail, { id: 777, name: 'Extra Series' }));
+    if (url.indexOf('api.kinocheck.com/trailers/latest') !== -1) return response(200, { 0: { resource: { type: 'movie', tmdb_id: 101 } } });
+    if (url.indexOf('api.kinocheck.com/shows') !== -1) return response(404, {});
+    return successfulFetch(url);
+  }, { IMPORT_EXTRA_TV_IDS: '777' });
+  var rows = run.db.prepare('SELECT media_type, tmdb_id FROM titles ORDER BY media_type, tmdb_id').all().map(function (row) { return row.media_type + ':' + row.tmdb_id; });
+  assert.deepEqual(rows, ['movie:101', 'tv:777']);
+});
+
+test('a database from before series migrates: rows become movies, nothing is lost, a series may reuse an id', function () {
+  var db = new DatabaseSync(':memory:');
+  db.exec([
+    'CREATE TABLE titles (tmdb_id INTEGER PRIMARY KEY, title TEXT NOT NULL, original_title TEXT NOT NULL, original_language TEXT NOT NULL,',
+    'de_theatrical TEXT, de_digital TEXT, trailer_key TEXT, poster_path TEXT, backdrop_path TEXT, overview TEXT, overview_lang TEXT)',
+    ';CREATE TABLE candidates (tmdb_id INTEGER NOT NULL, key TEXT NOT NULL, source TEXT NOT NULL, tmdb_lang TEXT, kc_lang TEXT, type TEXT,',
+    'site TEXT, name TEXT, published_at TEXT, official INTEGER, kinocheck_url TEXT, playable INTEGER NOT NULL, reason TEXT NOT NULL, PRIMARY KEY (tmdb_id, key))',
+    ';CREATE TABLE title_tags (tmdb_id INTEGER NOT NULL, kind TEXT NOT NULL, tag_id INTEGER NOT NULL, name TEXT NOT NULL, PRIMARY KEY (tmdb_id, kind, tag_id))',
+    ';CREATE TABLE imports (id INTEGER PRIMARY KEY AUTOINCREMENT, started TEXT NOT NULL, finished TEXT, status TEXT NOT NULL, error TEXT)',
+    ";INSERT INTO titles VALUES (603, 'The Matrix', 'The Matrix', 'en', '2026-12-01', NULL, 'abcdefghijk', '/p.jpg', '/b.jpg', 'Text.', 'de')",
+    ";INSERT INTO candidates VALUES (603, 'abcdefghijk', 'tmdb', 'en', NULL, 'Trailer', 'YouTube', 'Trailer', '2026-01-01', 1, NULL, 1, 'ok')",
+    ";INSERT INTO title_tags VALUES (603, 'genre', 28, 'Action')",
+    ";INSERT INTO imports (started, status) VALUES ('2026-11-20T04:00:00Z', 'success')"
+  ].join(' '));
+  importer.ensureSchema(db);
+  importer.ensureSchema(db); // idempotent
+  var title = db.prepare('SELECT * FROM titles').get();
+  assert.deepEqual(Object.assign({}, title), { media_type: 'movie', tmdb_id: 603, title: 'The Matrix', original_title: 'The Matrix', original_language: 'en',
+    de_theatrical: '2026-12-01', de_digital: null, trailer_key: 'abcdefghijk', poster_path: '/p.jpg', backdrop_path: '/b.jpg', overview: 'Text.', overview_lang: 'de' });
+  assert.equal(db.prepare("SELECT media_type FROM candidates WHERE tmdb_id = 603 AND key = 'abcdefghijk'").get().media_type, 'movie');
+  assert.deepEqual(Object.assign({}, db.prepare('SELECT media_type, kind, name FROM title_tags').get()), { media_type: 'movie', kind: 'genre', name: 'Action' });
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM imports').get().n, 1);
+  db.exec("INSERT INTO titles (media_type, tmdb_id, title, original_title, original_language) VALUES ('tv', 603, 'A Series', 'A Series', 'en')");
+  db.exec("INSERT INTO candidates (media_type, tmdb_id, key, source, playable, reason) VALUES ('tv', 603, 'abcdefghijk', 'tmdb', 1, 'ok')");
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM titles WHERE tmdb_id = 603').get().n, 2);
+  assert.throws(function () { db.exec("INSERT INTO titles (media_type, tmdb_id, title, original_title, original_language) VALUES ('tv', 603, 'x', 'x', 'en')"); });
+  db.close();
 });

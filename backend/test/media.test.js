@@ -39,7 +39,7 @@ function fakeYtDlp(calls) {
 test('falls back to the next playable candidate when a video cannot be downloaded', async function () {
   var s = setup();
   var calls = [];
-  var key = await media.ensureTitleTrailer(s.db, 1, { env: s.env, execFile: fakeYtDlp(calls), logger: { warn: function () {} } });
+  var key = await media.ensureTitleTrailer(s.db, 'movie', 1, { env: s.env, execFile: fakeYtDlp(calls), logger: { warn: function () {} } });
   assert.equal(key, 'goodVideo_2');
   assert.deepEqual(calls, ['privateVid1', 'goodVideo_2']);
   assert.equal(s.db.prepare('SELECT trailer_key FROM titles').get().trailer_key, 'goodVideo_2');
@@ -49,8 +49,21 @@ test('falls back to the next playable candidate when a video cannot be downloade
   assert.ok(fs.existsSync(path.join(s.dir, 'goodVideo_2.mp4')));
 
   calls.length = 0;
-  await media.ensureTitleTrailer(s.db, 1, { env: s.env, execFile: fakeYtDlp(calls) });
+  await media.ensureTitleTrailer(s.db, 'movie', 1, { env: s.env, execFile: fakeYtDlp(calls) });
   assert.deepEqual(calls, [], 'cached file is not downloaded again');
+});
+
+test('a series trailer uses the series candidates, not those of the movie with the same id', async function () {
+  var s = setup();
+  s.db.prepare("INSERT INTO titles (media_type, tmdb_id, title, original_title, original_language, trailer_key) VALUES ('tv', 1, 'Series', 'Series', 'en', NULL)").run();
+  s.db.prepare("INSERT INTO candidates (media_type, tmdb_id, key, source, type, published_at, playable, reason) VALUES ('tv', 1, 'seriesVid_1', 'tmdb', 'Trailer', '2024-05-01', 1, 'ok')").run();
+  var calls = [];
+  var key = await media.ensureTitleTrailer(s.db, 'tv', 1, { env: s.env, execFile: fakeYtDlp(calls), logger: { warn: function () {} } });
+  assert.equal(key, 'seriesVid_1');
+  assert.deepEqual(calls, ['seriesVid_1']);
+  assert.equal(s.db.prepare("SELECT trailer_key FROM titles WHERE media_type = 'tv'").get().trailer_key, 'seriesVid_1');
+  assert.equal(s.db.prepare("SELECT trailer_key FROM titles WHERE media_type = 'movie'").get().trailer_key, 'privateVid1');
+  assert.equal(await media.ensureTitleTrailer(s.db, 'tv', 2, { env: s.env, execFile: fakeYtDlp(calls) }), null); // no such series
 });
 
 test('rejects keys that are not YouTube video ids', async function () {
@@ -165,7 +178,7 @@ function kinoCheckSetup(source) {
 test('KinoCheck trailer: ident cut at both ends and transcoded to HEVC hvc1', async function () {
   var s = kinoCheckSetup('kinocheck');
   var tools = fakeToolchain({ ident: INTRO_AND_OUTRO });
-  assert.equal(await media.ensureTitleTrailer(s.db, 1, { env: s.env, execFile: tools.run }), 'goodVideo_2');
+  assert.equal(await media.ensureTitleTrailer(s.db, 'movie', 1, { env: s.env, execFile: tools.run }), 'goodVideo_2');
   var video = readVideo(s.dir, 'goodVideo_2');
   assert.deepEqual([video.codec, video.tag, video.audio], ['hevc', 'hvc1', 'aac']);
   assert.ok(Math.abs(video.duration - (END - START)) < 1e-6);
@@ -176,14 +189,14 @@ test('KinoCheck trailer: ident cut at both ends and transcoded to HEVC hvc1', as
 
 test('a scan whose output came back short is repeated once', async function () {
   var s = kinoCheckSetup('kinocheck');
-  await media.ensureTitleTrailer(s.db, 1, { env: s.env, execFile: fakeToolchain({ ident: INTRO_AND_OUTRO, glitchOnce: true }).run });
+  await media.ensureTitleTrailer(s.db, 'movie', 1, { env: s.env, execFile: fakeToolchain({ ident: INTRO_AND_OUTRO, glitchOnce: true }).run });
   assert.ok(Math.abs(readVideo(s.dir, 'goodVideo_2').duration - (END - START)) < 1e-6);
 });
 
 test('KinoCheck trailer without a recognisable ident is transcoded but not cut', async function () {
   var s = kinoCheckSetup('both');
   var tools = fakeToolchain({});
-  await media.ensureTitleTrailer(s.db, 1, { env: s.env, execFile: tools.run });
+  await media.ensureTitleTrailer(s.db, 'movie', 1, { env: s.env, execFile: tools.run });
   var video = readVideo(s.dir, 'goodVideo_2');
   assert.equal(video.codec, 'hevc');
   assert.equal(video.duration, 100);
@@ -192,17 +205,17 @@ test('KinoCheck trailer without a recognisable ident is transcoded but not cut',
 
 test('only the end that is found is cut', async function () {
   var s = kinoCheckSetup('kinocheck');
-  await media.ensureTitleTrailer(s.db, 1, { env: s.env, execFile: fakeToolchain({ ident: { outro: 84.92 } }).run });
+  await media.ensureTitleTrailer(s.db, 'movie', 1, { env: s.env, execFile: fakeToolchain({ ident: { outro: 84.92 } }).run });
   assert.ok(Math.abs(readVideo(s.dir, 'goodVideo_2').duration - 84.9) < 1e-6);
   s = kinoCheckSetup('kinocheck');
-  await media.ensureTitleTrailer(s.db, 1, { env: s.env, execFile: fakeToolchain({ ident: { intro: 3.04 } }).run });
+  await media.ensureTitleTrailer(s.db, 'movie', 1, { env: s.env, execFile: fakeToolchain({ ident: { intro: 3.04 } }).run });
   assert.ok(Math.abs(readVideo(s.dir, 'goodVideo_2').duration - (100 - 3.02)) < 1e-6);
 });
 
 test('a failed ident scan still transcodes, uncut', async function () {
   var s = kinoCheckSetup('kinocheck');
   var warnings = [];
-  await media.ensureTitleTrailer(s.db, 1, { env: s.env, execFile: fakeToolchain({ ident: INTRO_AND_OUTRO, scanFails: true }).run, logger: { warn: function (m) { warnings.push(m); } } });
+  await media.ensureTitleTrailer(s.db, 'movie', 1, { env: s.env, execFile: fakeToolchain({ ident: INTRO_AND_OUTRO, scanFails: true }).run, logger: { warn: function (m) { warnings.push(m); } } });
   var video = readVideo(s.dir, 'goodVideo_2');
   assert.deepEqual([video.codec, video.duration], ['hevc', 100]);
   assert.match(warnings[0], /ident scan .* not cutting/);
@@ -211,7 +224,7 @@ test('a failed ident scan still transcodes, uncut', async function () {
 test('non-KinoCheck trailer is transcoded but never cut or scanned', async function () {
   var s = kinoCheckSetup('tmdb');
   var tools = fakeToolchain({ ident: INTRO_AND_OUTRO });
-  await media.ensureTitleTrailer(s.db, 1, { env: s.env, execFile: tools.run });
+  await media.ensureTitleTrailer(s.db, 'movie', 1, { env: s.env, execFile: tools.run });
   var video = readVideo(s.dir, 'goodVideo_2');
   assert.equal(video.codec, 'hevc');
   assert.equal(video.duration, 100);
@@ -222,7 +235,7 @@ test('ffmpeg failure keeps the original download', async function () {
   var s = kinoCheckSetup('kinocheck');
   var tools = fakeToolchain({ ident: INTRO_AND_OUTRO, ffmpegFails: true });
   var warnings = [];
-  assert.equal(await media.ensureTitleTrailer(s.db, 1, { env: s.env, execFile: tools.run, logger: { warn: function (m) { warnings.push(m); } } }), 'goodVideo_2');
+  assert.equal(await media.ensureTitleTrailer(s.db, 'movie', 1, { env: s.env, execFile: tools.run, logger: { warn: function (m) { warnings.push(m); } } }), 'goodVideo_2');
   var video = readVideo(s.dir, 'goodVideo_2');
   assert.deepEqual([video.codec, video.duration], ['h264', 100]);
   assert.match(warnings[0], /keeping original/);
@@ -239,7 +252,7 @@ test('a transcode that fails validation does not replace the original', async fu
     }
     tools.run(cmd, args, options, callback);
   };
-  await media.ensureTitleTrailer(s.db, 1, { env: s.env, execFile: broken, logger: { warn: function () {} } });
+  await media.ensureTitleTrailer(s.db, 'movie', 1, { env: s.env, execFile: broken, logger: { warn: function () {} } });
   assert.equal(readVideo(s.dir, 'goodVideo_2').codec, 'h264');
 });
 
@@ -260,7 +273,7 @@ test('without KINOCHECK_TRIM a KinoCheck trailer is transcoded but never cut', a
   var s = kinoCheckSetup('kinocheck');
   var tools = fakeToolchain({ ident: INTRO_AND_OUTRO });
   delete process.env.KINOCHECK_TRIM;
-  try { await media.ensureTitleTrailer(s.db, 1, { env: s.env, execFile: tools.run }); } finally { process.env.KINOCHECK_TRIM = '1'; }
+  try { await media.ensureTitleTrailer(s.db, 'movie', 1, { env: s.env, execFile: tools.run }); } finally { process.env.KINOCHECK_TRIM = '1'; }
   assert.equal(readVideo(s.dir, 'goodVideo_2').duration, 100);
   assert.ok(!tools.log.some(function (l) { return /showinfo/.test(l); }));
 });
