@@ -37,3 +37,11 @@ Next:
 - Commit + push; log progress on OctoSprout tasks OS-T-DV0WN (data), OS-T-2ADN0 (web), OS-T-34KA0 (TV).
 - Pending owner approvals: OS-PROP-P6WJY (fallback in ADR OS-D-51H34).
 - Poster wall (second mockup, OS-T-C7J65): web grid/list toggle (localStorage reelradar.layout) with badge tiles + detail dialog, deployed; TV Wall/Rows header button with info bar, checked in the 1920x1080 browser preview. TV app still not installed on the TV (waiting for the owner's OK).
+
+## 2026-11-22 (afternoon): lead session, subagents per OctoSprout task
+- Merged to main and pushed: OS-T-YDZXA (poster stretch, done), OS-T-Z2KE8 (Seerr lookups bounded, request button always offered), OS-T-2K6ZX (service chip counts match the view; pre-premiere signal is a follow-up task), OS-T-VP0FG (HEVC transcode + background reprocess; KinoCheck ident cutting is OFF unless `KINOCHECK_TRIM=1`), OS-T-BMGS7 (German synopsis fallback with `overview_lang`, ADR OS-D-TMAG1), OS-T-8568R (TV player progress bar and play/pause indicator).
+- Deployed to rei3 (rsync of backend/ frontend/ docker-compose.yml README.md, then `docker compose up -d --build`) at main 065c989: live `/api/seerr` returns 200 for all 620 titles; background HEVC reprocess of 414 cached trailers (12.0 GB before) is running. NOT yet deployed: OS-T-BMGS7 and OS-T-8568R changes, and the synopsis needs a re-import (wipes and rebuilds the catalogue with the production TMDB key; ask the owner first).
+- TV: `sdb connect` fails until `sdb kill-server && sdb start-server`. Build/install: `tizen package -t wgt -s hideki -o <dir> -- tv-app/` then `tizen install -n ReelRadar.wgt -s 192.168.42.54:26101 -- <dir>`.
+- Owner tests on the TV: Seerr request works, seeking works. Open: web-page request, wall info bar, HEVC check on trailers, DE badge, progress bar on the TV.
+- KinoCheck ident detector: blackdetect is unreliable on real files (Gatto xfPj0tSu7OM: intro logo 0-3 s then black 3.09-3.38 s; outro is a hard cut at ~144 s to a static red card with no black). A subagent is building a safer detector; keep `KINOCHECK_TRIM` off until it is checked.
+- Task follow-up for the pre-premiere service signal exists in OctoSprout.
