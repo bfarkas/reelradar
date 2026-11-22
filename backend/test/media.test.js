@@ -13,7 +13,7 @@ function setup() {
   var dir = fs.mkdtempSync(path.join(os.tmpdir(), 'reelradar-media-'));
   var db = new DatabaseSync(':memory:');
   importer.ensureSchema(db);
-  db.prepare("INSERT INTO titles VALUES (1, 'Film', 'Film', 'ja', NULL, NULL, 'privateVid1')").run();
+  db.prepare("INSERT INTO titles (tmdb_id, title, original_title, original_language, trailer_key) VALUES (1, 'Film', 'Film', 'ja', 'privateVid1')").run();
   var insert = db.prepare('INSERT INTO candidates (tmdb_id, key, source, type, published_at, playable, reason) VALUES (1, ?, ?, ?, ?, ?, ?)');
   insert.run('privateVid1', 'tmdb', 'Trailer', '2024-02-01', 1, 'ok');
   insert.run('goodVideo_2', 'tmdb', 'Trailer', '2024-01-01', 1, 'ok');

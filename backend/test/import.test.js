@@ -77,9 +77,10 @@ test('failed import preserves titles and candidates and records failure', async 
   var candidatesBefore = db.prepare('SELECT * FROM candidates ORDER BY tmdb_id, key').all();
   var tagsBefore = db.prepare('SELECT kind, tag_id, name FROM title_tags ORDER BY kind, tag_id').all();
   assert.deepEqual(tagsBefore.map(function (row) { return row.kind + ':' + row.name; }),
-    ['genre:Drama', 'keyword:based on novel', 'keyword:superhero']);
+    ['genre:Drama', 'keyword:based on novel', 'keyword:superhero', 'provider:Netflix']);
   assert.equal(titlesBefore.length, 1);
   assert.equal(titlesBefore[0].trailer_key, 'fixture-video');
+  assert.equal(titlesBefore[0].poster_path, '/poster.jpg');
   assert.equal(candidatesBefore[0].source, 'both');
   assert.match(calls[0].options.headers.Authorization, /^Bearer fixture-token$/);
   assert.ok(calls.some(function (call) {

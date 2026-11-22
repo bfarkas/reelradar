@@ -22,3 +22,17 @@ Goal: work through the ReelRadar tasks in OctoSprout (project OS-P-3NEBD). Commi
 - Deploy: `COPYFILE_DISABLE=1 tar -cf - <files> | ssh rei3.local 'cd ~/reelradar && tar -x && docker compose up -d --build <svc>'`. Import: `docker compose exec -T -e IMPORT_EXTRA_IDS=496243,915935,940721,906126,49046,705996,129 backend node import.js`.
 - TV: 192.168.42.54. Remote: `cd spikes/tv && TV_TOKEN=<from transcript> node remote.mjs launch reelradar1.ReelRadar | KEY_...`. If sdb won't connect, run `sdb kill-server` first. Photo Booth shows the TV (mirrored); release it when done. Never commit the token.
 - Codex can't run: the model in ~/.codex/config.toml isn't supported. Don't edit that config.
+
+## 2026-11-22: "Screening room" redesign (Concept 03 mockup)
+
+Goal: apply the owner's Concept 03 mockup to web (incl. phones) and TV. Owner skipped Watchlist, Search, Settings, Profile.
+
+Done:
+- Backend: import stores poster_path, backdrop_path, overview (German) and German flatrate providers (title_tags kind 'provider'; channel/ad/kids variants dropped). Existing DBs migrate via ALTER in ensureSchema. Deployed to rei3 and imported (27 titles, all with posters). 23 tests pass.
+- Web (frontend/index.html): rewritten. Cream/red/serif look, hero per view with backdrop, All/Cinema/Streaming chips, services select, genres/keywords panel, calendar grouped by day (each cinema/streaming release is its own entry), poster cards with Play trailer (modal <video> on /api/stream, no YouTube embed any more) and Request via Seerr; gate decisions moved into a "Trailer check" details. Responsive, checked at 375px (no horizontal scroll). Deployed.
+- TV (tv-app/index.html): dark hero for the focused poster (backdrop, title, date + where, synopsis, Play trailer / Request via Seerr), poster rows below (one row for calendar/trailers/recent/all, a shelf per genre). Up from a poster -> Play; Down from hero -> that poster. View logic copied verbatim from the web page. Previewed in browser via .claude/launch.json (python http.server on 8765).
+
+Next:
+- Install the TV app on the TV (ask the owner first) and check with them.
+- Commit + push; log progress on OctoSprout tasks OS-T-DV0WN (data), OS-T-2ADN0 (web), OS-T-34KA0 (TV).
+- Pending owner approvals: OS-PROP-P6WJY (fallback in ADR OS-D-51H34).

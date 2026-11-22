@@ -4,53 +4,75 @@
 <meta charset="utf-8">
 <title>ReelRadar</title>
 <style>
-/* Fixed 1920x1080 stage, Tizen 4.0 (Chromium M56): no flex gap, no inset. */
-html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #101418; color: #eee; font-family: sans-serif; }
-.layer { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
+/* Fixed 1920x1080 stage, Tizen 4.0 (Chromium M56): no flex gap, no inset. "Screening room" look. */
+html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #120e0b; color: #f4ede3; font-family: sans-serif; }
+.layer { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: hidden; }
 .hidden { display: none; }
-header { height: 140px; padding: 40px 80px 0; box-sizing: border-box; }
-header h1 { display: inline-block; margin: 0 40px 0 0; font-size: 52px; vertical-align: middle; }
-#views { display: inline-block; vertical-align: middle; margin-right: 30px; }
-.btn.on { background: #2d6cdf; border-color: #2d6cdf; }
-#count { position: absolute; left: 80px; top: 140px; color: #aaa; font-size: 28px; }
-.btn { display: inline-block; vertical-align: middle; margin-right: 14px; padding: 12px 24px; font-size: 28px; background: #2a3038; border: 4px solid #2a3038; border-radius: 10px; }
-#list { position: absolute; left: 80px; top: 190px; width: 1760px; height: 850px; overflow: hidden; }
-.shelf-title { margin: 20px 0 10px; font-size: 34px; }
-.shelf { white-space: nowrap; overflow: hidden; padding: 6px 4px; }
-.card { display: inline-block; vertical-align: top; white-space: normal; width: 400px; height: 150px; margin-right: 20px; padding: 16px 20px; box-sizing: border-box; background: #1a2027; border: 4px solid #1a2027; border-radius: 12px; }
-.card h2 { margin: 0 0 8px; font-size: 30px; overflow: hidden; height: 72px; }
-.card .meta { font-size: 24px; color: #bbb; }
-.card .none { color: #e88; }
-.card .seerr { color: #9c9; }
-.row { padding: 22px 30px; margin-bottom: 14px; background: #1a2027; border: 4px solid #1a2027; border-radius: 12px; }
-.row h2 { margin: 0 0 8px; font-size: 40px; }
-.row .meta { color: #bbb; font-size: 28px; }
-.row .none { color: #e88; }
-.row .seerr { color: #9c9; }
-.row .btn { float: right; margin: 12px 0 0 20px; font-size: 28px; padding: 10px 26px; }
-#filter { background: rgba(16, 20, 24, 0.97); }
+.serif { font-family: Georgia, "Times New Roman", serif; }
+#backdrop { position: absolute; right: 0; top: 0; width: 1400px; height: 790px; background: #120e0b center / cover no-repeat; }
+#shade { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px;
+  background: linear-gradient(90deg, #120e0b 28%, rgba(18,14,11,0.85) 45%, rgba(18,14,11,0.2) 75%, rgba(18,14,11,0.35)),
+              linear-gradient(0deg, #120e0b 30%, rgba(18,14,11,0) 55%); }
+header { position: absolute; left: 80px; top: 36px; width: 1760px; height: 80px; white-space: nowrap; }
+.logo { display: inline-block; vertical-align: middle; margin-right: 50px; font-size: 54px; font-weight: bold; }
+.logo span { color: #e0412a; }
+#views { display: inline-block; vertical-align: middle; margin-right: 24px; }
+#count { position: absolute; right: 80px; top: 648px; color: #a89c8e; font-size: 24px; }
+.btn { display: inline-block; vertical-align: middle; margin-right: 12px; padding: 12px 26px; font-size: 26px; border: 4px solid transparent; border-radius: 40px; color: #f4ede3; }
+.btn.on { background: #c8321e; }
+.btn.focus { border-color: #fff; background: rgba(255,255,255,0.14); }
+.btn.on.focus { background: #c8321e; }
+#hero { position: absolute; left: 80px; top: 170px; width: 1150px; height: 440px; }
+#kicker { color: #e0412a; font-size: 24px; font-weight: bold; letter-spacing: 4px; text-transform: uppercase; height: 34px; }
+#hero-title { margin: 6px 0 14px; font-size: 76px; line-height: 1.05; max-height: 160px; overflow: hidden; }
+#hero-date { font-size: 30px; color: #e8dccd; height: 44px; }
+#hero-text { font-size: 27px; line-height: 1.4; color: #cfc3b5; width: 1000px; max-height: 114px; overflow: hidden; }
+#hero-actions { position: absolute; left: 0; top: 372px; white-space: nowrap; }
+.action { display: inline-block; margin-right: 22px; padding: 14px 34px; font-size: 28px; font-weight: bold; border-radius: 12px; border: 4px solid #f4ede3; }
+.action.solid { background: #f4ede3; color: #1d1712; }
+.action.focus { border-color: #e0412a; box-shadow: 0 0 0 4px #e0412a; }
+.action-note { display: inline-block; font-size: 26px; color: #9fcf8f; }
+#list { position: absolute; left: 80px; top: 640px; width: 1840px; height: 440px; overflow: hidden; }
+.shelf-title { margin: 0 0 14px; font-size: 34px; height: 44px; }
+.shelf { white-space: nowrap; overflow: hidden; height: 370px; padding: 6px 0 0 6px; }
+.poster { display: inline-block; vertical-align: top; width: 200px; margin-right: 22px; white-space: normal; }
+.poster .frame { width: 200px; height: 300px; border-radius: 10px; background: #2a221c center / cover no-repeat; border: 5px solid transparent; margin: -5px; position: relative; overflow: hidden; }
+.poster .fallback { position: absolute; left: 12px; right: 12px; top: 110px; text-align: center; font-size: 26px; }
+.poster .cap { margin-top: 14px; font-size: 21px; color: #a89c8e; white-space: nowrap; overflow: hidden; }
+.poster.focus .frame { border-color: #e0412a; box-shadow: 0 0 30px rgba(224,65,42,0.6); }
+.poster.focus .cap { color: #f4ede3; }
+#filter { background: rgba(18, 14, 11, 0.97); }
 #filter h2 { margin: 40px 80px 10px; font-size: 40px; }
-#filter-hint { margin: 0 80px; color: #aaa; font-size: 28px; }
+#filter-hint { margin: 0 80px; color: #a89c8e; font-size: 28px; }
 .tags { margin: 0 70px; }
 #keywords { height: 520px; overflow: hidden; }
-.tag { display: inline-block; margin: 10px; padding: 12px 26px; font-size: 30px; background: #2a3038; border: 4px solid #2a3038; border-radius: 30px; }
-.tag.on { background: #2d6cdf; border-color: #2d6cdf; }
-.focus { border-color: #fff !important; box-shadow: 0 0 24px rgba(255, 255, 255, 0.5); }
+.tag { display: inline-block; margin: 10px; padding: 12px 26px; font-size: 30px; background: #2a221c; border: 4px solid #2a221c; border-radius: 30px; }
+.tag.on { background: #c8321e; border-color: #c8321e; }
+.tag.focus { border-color: #fff; }
 #player { background: #000; }
 #video { width: 1920px; height: 1080px; }
 #status { position: absolute; left: 0; top: 480px; width: 1920px; text-align: center; font-size: 44px; color: #ddd; }
-#message { position: absolute; left: 80px; top: 200px; font-size: 36px; color: #ddd; }
+#message { position: absolute; left: 80px; top: 680px; font-size: 34px; color: #cfc3b5; }
 </style>
 </head>
 <body>
 <div id="main" class="layer">
+  <div id="backdrop"></div>
+  <div id="shade"></div>
   <header>
-    <h1>ReelRadar</h1>
+    <span class="logo serif">Reel<span>Radar</span></span>
     <div id="views"></div>
     <span class="btn" id="open-filter">Filter</span>
     <span class="btn" id="clear-filter">Clear filter</span>
-    <span id="count"></span>
   </header>
+  <div id="count"></div>
+  <div id="hero">
+    <div id="kicker"></div>
+    <div id="hero-title" class="serif"></div>
+    <div id="hero-date"></div>
+    <div id="hero-text"></div>
+    <div id="hero-actions"></div>
+  </div>
   <div id="message">Loading titles...</div>
   <div id="list"></div>
 </div>
@@ -72,7 +94,8 @@ var KEYS = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, ENTER: 13, BACK: 10009, ESC:
   PLAY: 415, PAUSE: 19, PLAY_PAUSE: 10252, STOP: 413, FF: 417, RW: 412 };
 var FILTER_KEY = 'reelradar.filter';
 // ---- views (same logic in frontend/index.html and tv-app/index.html) ----
-var VIEWS = [['upcoming', 'Upcoming'], ['trailers', 'New trailers'], ['recent', 'Recently released'], ['genres', 'Genres'], ['all', 'All']];
+var VIEWS = [['upcoming', 'Release calendar'], ['trailers', 'New trailers'], ['recent', 'Recently released'], ['genres', 'Genres'], ['all', 'All titles']];
+var KINDS = [['all', 'All releases'], ['cinema', 'Cinema'], ['streaming', 'Streaming']];
 var WINDOW_DAYS = 90; // "upcoming" and "recently released" look three months ahead/back
 
 function isoDay(offsetDays) {
@@ -81,40 +104,68 @@ function isoDay(offsetDays) {
   return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
 }
 
-// German theatrical or digital dates inside [from, to); both count (cinema and streaming premieres).
-function datesIn(title, from, to) {
-  return [title.de_theatrical, title.de_digital].filter(function (date) { return date && date >= from && date < to; }).sort();
+// A title's German releases as entries; kind filter applies. Cinema = theatrical, streaming = digital.
+function releases(title, kind) {
+  var list = [];
+  if (title.de_theatrical && kind !== 'streaming') list.push({ title: title, kind: 'cinema', date: title.de_theatrical });
+  if (title.de_digital && kind !== 'cinema') list.push({ title: title, kind: 'streaming', date: title.de_digital });
+  return list;
 }
 
-// -> [{heading, titles}] for the chosen view; titles are already filtered.
-function viewSections(view, titles) {
+// -> [{heading, note, items:[{title, kind, date}]}]; calendar views list each release on its day.
+function viewSections(view, titles, kind) {
   var today = isoDay(0);
   if (view === 'upcoming' || view === 'recent') {
     var from = view === 'upcoming' ? today : isoDay(-WINDOW_DAYS);
     var to = view === 'upcoming' ? isoDay(WINDOW_DAYS + 1) : today;
-    var hits = titles.filter(function (title) { return datesIn(title, from, to).length; });
-    hits.sort(function (a, b) {
-      var x = datesIn(a, from, to), y = datesIn(b, from, to);
-      return view === 'upcoming' ? (x[0] < y[0] ? -1 : x[0] > y[0] ? 1 : 0) : (x[x.length - 1] > y[y.length - 1] ? -1 : 1);
+    var entries = [];
+    titles.forEach(function (title) {
+      releases(title, kind).forEach(function (entry) { if (entry.date >= from && entry.date < to) entries.push(entry); });
     });
-    return [{ heading: '', titles: hits }];
+    entries.sort(function (a, b) {
+      var order = a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
+      return view === 'upcoming' ? order : -order;
+    });
+    var days = [];
+    entries.forEach(function (entry) {
+      var last = days[days.length - 1];
+      if (!last || last.date !== entry.date) { last = { date: entry.date, heading: longDate(entry.date), items: [] }; days.push(last); }
+      last.items.push(entry);
+    });
+    days.forEach(function (day) { day.note = day.items.length + (day.items.length === 1 ? ' release' : ' releases'); });
+    return days;
   }
+  var kept = titles.filter(function (title) { return kind === 'all' || releases(title, kind).length; });
+  function asItem(title) { return { title: title, kind: null, date: null }; }
   if (view === 'trailers') {
-    var withTrailer = titles.filter(function (title) { return title.trailer; });
+    var withTrailer = kept.filter(function (title) { return title.trailer; });
     withTrailer.sort(function (a, b) { return (b.trailer.published_at || '') > (a.trailer.published_at || '') ? 1 : -1; });
-    return [{ heading: '', titles: withTrailer }];
+    return [{ heading: '', items: withTrailer.map(asItem) }];
   }
   if (view === 'genres') {
     var byName = {}, names = [];
-    titles.forEach(function (title) {
+    kept.forEach(function (title) {
       (title.genres || []).forEach(function (genre) {
         if (!byName[genre.name]) { byName[genre.name] = []; names.push(genre.name); }
         byName[genre.name].push(title);
       });
     });
-    return names.sort().map(function (name) { return { heading: name, titles: byName[name] }; });
+    return names.sort().map(function (name) {
+      return { heading: name, note: byName[name].length + ' titles', items: byName[name].map(asItem) };
+    });
   }
-  return [{ heading: '', titles: titles }];
+  return [{ heading: '', items: kept.map(asItem) }];
+}
+
+var DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function longDate(iso) {
+  var d = new Date(iso + 'T12:00:00');
+  return DAYS[d.getDay()] + ', ' + d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear();
+}
+function shortDate(iso) {
+  var d = new Date(iso + 'T12:00:00');
+  return d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear();
 }
 
 var currentView = 'upcoming';
@@ -177,6 +228,7 @@ function setFocus(target) {
   if (!target) return;
   target.className += ' focus';
   focused[layer] = target;
+  if (target.item) { focused.poster = target; if (target.item !== heroItem) showHero(target.item); }
   ensureVisible(target);
 }
 function ensureVisible(target) {
@@ -196,6 +248,11 @@ function move(dx, dy) {
   var current = $(layer).querySelector('.focus');
   var items = focusables();
   if (!current) { setFocus(items[0]); return; }
+  // Down from the hero buttons returns to the poster the hero shows.
+  if (dy === 1 && current.parentNode === $('hero-actions') && focused.poster) { setFocus(focused.poster); return; }
+  // Up from a poster goes to the hero's first button (Play trailer).
+  var firstAction = $('hero-actions').querySelector('.focusable');
+  if (dy === -1 && current.item && firstAction) { setFocus(firstAction); return; }
   var a = current.getBoundingClientRect();
   var ax = a.left + a.width / 2, ay = a.top + a.height / 2;
   var best = null, bestScore = Infinity;
@@ -214,59 +271,97 @@ function move(dx, dy) {
   if (best) setFocus(best);
 }
 
-// ---- main list ----
+// ---- main: hero for the focused title, poster rows below ----
+var IMG = 'https://image.tmdb.org/t/p/';
+var heroItem = null;
+var KICKER = { upcoming: 'Upcoming', trailers: 'New trailer', recent: 'Just released', genres: 'Genre', all: 'ReelRadar' };
+var ROW_TITLE = { upcoming: 'Coming soon in Germany', trailers: 'Newest trailers', recent: 'Recently released in Germany', all: 'All titles' };
+
+// The release an item stands for: its calendar entry, or the title's next (else latest) German date.
+function itemRelease(item) {
+  if (item.kind) return item;
+  var all = releases(item.title, 'all').sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+  var today = isoDay(0);
+  return all.filter(function (entry) { return entry.date >= today; })[0] || all[all.length - 1] || null;
+}
+function whereText(title, kind) {
+  if (kind === 'cinema') return 'Cinema';
+  return title.providers && title.providers.length ? title.providers.map(function (p) { return p.name; }).join(', ') : 'Streaming';
+}
+
 function renderList() {
   var list = $('list');
   var shown = allTitles.filter(matchesFilter);
   var active = selection.genres.length + selection.keywords.length;
-  var sections = viewSections(currentView, shown);
-  var count = currentView === 'genres' ? shown.length : sections[0].titles.length;
+  var sections = viewSections(currentView, shown, 'all');
+  var count = 0;
+  sections.forEach(function (section) { count += section.items.length; });
+  if (currentView === 'genres') count = shown.length;
   list.textContent = '';
   list.scrollTop = 0;
   $('count').textContent = count + ' of ' + allTitles.length + ' titles' + (active ? ' · ' + active + ' filter' + (active > 1 ? 's' : '') + ' on' : '');
   $('message').textContent = count ? '' : (allTitles.length ? 'No titles in this view match the filter.' : 'No titles imported yet.');
-  sections.forEach(function (section) {
-    if (!section.heading) { section.titles.forEach(function (title) { list.appendChild(titleRow(title)); }); return; }
-    // Genres: one horizontal shelf per genre.
-    list.appendChild(el('h3', 'shelf-title', section.heading));
+  // Calendar views come back per day; on the TV they are one row in date order.
+  var rows = currentView === 'genres' ? sections :
+    [{ heading: ROW_TITLE[currentView], items: [].concat.apply([], sections.map(function (s) { return s.items; })) }];
+  rows.forEach(function (row) {
+    if (!row.items.length) return;
+    list.appendChild(el('h3', 'shelf-title serif', row.heading));
     var shelf = el('div', 'shelf');
-    section.titles.forEach(function (title) { shelf.appendChild(titleCard(title)); });
+    row.items.forEach(function (item) { shelf.appendChild(posterCard(item)); });
     list.appendChild(shelf);
   });
   var first = list.querySelector('.focusable');
+  showHero(first ? first.item : null);
   setFocus(first || $('open-filter'));
 }
 
-function datesText(title) {
-  var dates = title.de_theatrical ? 'In cinemas (DE): ' + title.de_theatrical : 'No German cinema date';
-  return title.de_digital ? dates + '  ·  digital: ' + title.de_digital : dates;
-}
-
-function titleRow(title) {
-  var row = el('div', 'row focusable');
-  row.setAttribute('data-id', title.tmdb_id);
-  var status = seerrStatus && seerrStatus[title.tmdb_id];
-  if (status === 'none') row.appendChild(requestButton(title));
-  var genres = (title.genres || []).map(function (g) { return g.name; }).join(', ');
-  row.appendChild(el('h2', '', title.title));
-  row.appendChild(el('div', 'meta', datesText(title) + (genres ? '  ·  ' + genres : '')));
-  if (!title.trailer) row.appendChild(el('div', 'meta none', 'No trailer'));
-  if (SEERR_LABELS[status]) row.appendChild(el('div', 'meta seerr', SEERR_LABELS[status]));
-  row.onactivate = function () { if (title.trailer) play(title); };
-  return row;
-}
-
-// shortcut: shelf cards have no Request button; request from a list view.
-function titleCard(title) {
-  var card = el('span', 'card focusable');
-  var status = seerrStatus && seerrStatus[title.tmdb_id];
+function posterCard(item) {
+  var title = item.title;
+  var card = el('div', 'poster focusable');
+  var frame = el('div', 'frame');
+  if (title.poster_path) frame.style.backgroundImage = 'url(' + IMG + 'w342' + title.poster_path + ')';
+  else frame.appendChild(el('div', 'fallback serif', title.title));
+  card.appendChild(frame);
+  var release = itemRelease(item);
+  card.appendChild(el('div', 'cap', release ? shortDate(release.date).replace(/ \d{4}$/, '') + ' · ' + (release.kind === 'cinema' ? 'Cinema' : 'Streaming') : (title.trailer ? '' : 'No trailer')));
   card.setAttribute('data-id', title.tmdb_id);
-  card.appendChild(el('h2', '', title.title));
-  card.appendChild(el('div', 'meta', title.de_theatrical || title.de_digital || 'no German date'));
-  if (!title.trailer) card.appendChild(el('div', 'meta none', 'No trailer'));
-  if (SEERR_LABELS[status]) card.appendChild(el('div', 'meta seerr', SEERR_LABELS[status]));
+  card.item = item;
   card.onactivate = function () { if (title.trailer) play(title); };
   return card;
+}
+
+// Hero follows the focused poster: backdrop, title, date, synopsis, Play / Request.
+function showHero(item) {
+  heroItem = item;
+  var actions = $('hero-actions');
+  actions.textContent = '';
+  if (!item) {
+    $('kicker').textContent = ''; $('hero-title').textContent = ''; $('hero-date').textContent = ''; $('hero-text').textContent = '';
+    $('backdrop').style.backgroundImage = 'none';
+    return;
+  }
+  var title = item.title;
+  var release = itemRelease(item);
+  var kicker = KICKER[currentView];
+  if (currentView === 'genres' && title.genres && title.genres.length) kicker = title.genres.map(function (g) { return g.name; }).slice(0, 2).join(' · ');
+  if (release) kicker += ' · ' + (release.kind === 'cinema' ? 'Cinema' : 'Streaming');
+  $('kicker').textContent = kicker;
+  $('hero-title').textContent = title.title;
+  $('hero-date').textContent = release ? longDate(release.date) + '  ·  ' + whereText(title, release.kind) : 'No German release date';
+  $('hero-text').textContent = title.overview || '';
+  $('backdrop').style.backgroundImage = title.backdrop_path ? 'url(' + IMG + 'w1280' + title.backdrop_path + ')' : 'none';
+
+  if (title.trailer) {
+    var playButton = el('span', 'action solid focusable', '\u25B6  Play trailer');
+    playButton.onactivate = function () { play(title); };
+    actions.appendChild(playButton);
+  } else {
+    actions.appendChild(el('span', 'action-note', 'No trailer'));
+  }
+  var status = seerrStatus && seerrStatus[title.tmdb_id];
+  if (status === 'none') actions.appendChild(requestButton(title));
+  else if (SEERR_LABELS[status]) actions.appendChild(el('span', 'action-note', SEERR_LABELS[status]));
 }
 
 function renderViews() {
@@ -283,9 +378,9 @@ function renderViews() {
     nav.appendChild(button);
   });
 }
-// Right from a row reaches its Request button; OK sends the request to Seerr through the backend.
+// OK sends the hero title's request to Seerr through the backend.
 function requestButton(title) {
-  var button = el('span', 'btn focusable', 'Request');
+  var button = el('span', 'action focusable', 'Request via Seerr');
   button.onactivate = function () {
     if (button.busy) return;
     button.busy = true;
@@ -294,10 +389,10 @@ function requestButton(title) {
       button.busy = false;
       if (error) { button.textContent = 'Failed - OK retries'; return; }
       seerrStatus[title.tmdb_id] = result.status;
-      var row = button.parentNode;
-      row.removeChild(button);
-      row.appendChild(el('div', 'meta seerr', SEERR_LABELS[result.status] || result.status));
-      setFocus(row);
+      if (heroItem && heroItem.title === title) {
+        showHero(heroItem);
+        setFocus($('hero-actions').querySelector('.focusable') || $('list').querySelector('.focus'));
+      }
     });
   };
   return button;

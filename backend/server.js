@@ -45,6 +45,9 @@ function getTitles() {
       original_language: row.original_language,
       de_theatrical: row.de_theatrical,
       de_digital: row.de_digital,
+      poster_path: row.poster_path || null,
+      backdrop_path: row.backdrop_path || null,
+      overview: row.overview || null,
       trailer: row.trailer_key ? {
         key: row.trailer_key,
         kinocheck_url: row.kinocheck_url || null,
@@ -52,6 +55,7 @@ function getTitles() {
       } : null,
       genres: tagStatement.all(row.tmdb_id, 'genre'),
       keywords: tagStatement.all(row.tmdb_id, 'keyword'),
+      providers: tagStatement.all(row.tmdb_id, 'provider'),
       decisions: decisionStatement.all(row.tmdb_id).map(function (decision) {
         return {
           key: decision.key,

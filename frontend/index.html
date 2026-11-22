@@ -1,90 +1,178 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <title>ReelRadar</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-body { background: #101418; color: #eee; font-family: sans-serif; margin: 2em auto; max-width: 900px; padding: 0 1em; }
-article { border-bottom: 1px solid #777; padding: 1em 0; }
-h1, h2 { margin-bottom: 0.3em; }
-.dates, .decision { color: #ccc; }
-.decision { font-size: 0.85em; margin: 0.25em 0; }
-button { font-size: 1.1em; margin: 0.75em 0; padding: 0.6em 1em; }
-iframe { border: 0; display: block; height: 360px; max-width: 100%; width: 640px; }
-a { color: #9cf; }
-footer { margin-top: 2em; }
-#filter { border: 1px solid #777; margin: 0.5em 0; padding: 0.5em 1em; }
-#filter h2 { font-size: 1.1em; }
-.tag { background: #2a3038; border: 2px solid #555; color: #eee; font-size: 1.1em; margin: 0.25em; padding: 0.4em 0.8em; }
-.tag[aria-pressed="true"] { background: #2d6cdf; border-color: #9cf; }
-#keyword-search { font-size: 1.1em; padding: 0.4em; width: 20em; max-width: 100%; }
-#count { color: #ccc; }
-#views button[aria-pressed="true"] { background: #2d6cdf; color: #fff; }
-h2.shelf { border-bottom: 2px solid #2d6cdf; margin-top: 1.5em; }
-.seerr { color: #9c9; margin: 0.25em 0; }
+:root {
+  --paper: #f6f0e6; --card: #fffaf2; --ink: #1d1712; --muted: #6f655b; --line: #e3d8c8;
+  --red: #c8321e; --red-dark: #a2240f; --chip: #fffdf8;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+body { background: var(--paper); color: var(--ink); font-family: var(--sans); margin: 0; }
+a { color: var(--red-dark); }
+button, select, input { font: inherit; color: inherit; }
+.wrap { margin: 0 auto; max-width: 1180px; padding: 0 24px; }
+
+header.top { background: var(--paper); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5; }
+header.top .wrap { align-items: center; display: flex; gap: 28px; min-height: 64px; }
+.logo { font-family: var(--serif); font-size: 28px; font-weight: 700; letter-spacing: -0.5px; white-space: nowrap; }
+.logo span { color: var(--red); }
+#views { display: flex; gap: 22px; overflow-x: auto; scrollbar-width: none; }
+#views button { background: none; border: 0; border-bottom: 2px solid transparent; cursor: pointer; font-size: 14px; padding: 20px 0 18px; white-space: nowrap; }
+#views button[aria-pressed="true"] { border-color: var(--red); font-weight: 600; }
+
+.hero { background: linear-gradient(90deg, var(--paper) 30%, rgba(246,240,230,0.75) 55%, rgba(200,50,30,0.55)), var(--red) center / cover no-repeat; border-bottom: 1px solid var(--line); }
+.hero .wrap { padding-bottom: 36px; padding-top: 40px; }
+.kicker { color: var(--red); font-size: 12px; font-weight: 700; letter-spacing: 3px; margin: 0 0 6px; text-transform: uppercase; }
+.hero h1 { font-family: var(--serif); font-size: clamp(34px, 5vw, 54px); font-weight: 700; letter-spacing: -1px; line-height: 1.05; margin: 0 0 10px; }
+.hero p.lead { color: var(--muted); margin: 0; max-width: 34em; }
+
+.bar { align-items: center; display: flex; flex-wrap: wrap; gap: 10px; padding: 20px 0 8px; }
+.chip { background: var(--chip); border: 1px solid var(--line); border-radius: 999px; cursor: pointer; font-size: 13px; font-weight: 600; padding: 7px 14px; }
+.chip[aria-pressed="true"] { background: var(--red); border-color: var(--red); color: #fff; }
+select.chip { appearance: none; -webkit-appearance: none; padding-right: 28px; background-image: linear-gradient(45deg, transparent 50%, var(--ink) 50%), linear-gradient(135deg, var(--ink) 50%, transparent 50%); background-position: calc(100% - 15px) 50%, calc(100% - 10px) 50%; background-size: 5px 5px; background-repeat: no-repeat; }
+#count { color: var(--muted); font-size: 13px; margin-left: auto; }
+
+#filter { background: var(--card); border: 1px solid var(--line); border-radius: 12px; margin: 8px 0; padding: 4px 18px 16px; }
+#filter h2 { font-family: var(--serif); font-size: 18px; margin: 14px 0 8px; }
+#filter .chip { margin: 0 6px 6px 0; }
+#keyword-search { background: var(--chip); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 8px; max-width: 100%; padding: 8px 10px; width: 22em; }
+
+.day { align-items: baseline; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; margin: 28px 0 14px; padding-bottom: 6px; }
+.day h2 { font-family: var(--serif); font-size: 24px; margin: 0; }
+.day small { color: var(--muted); font-size: 12px; }
+.grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); }
+
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; display: flex; gap: 14px; padding: 12px; }
+.poster { aspect-ratio: 2 / 3; background: #2a221c; border-radius: 8px; flex: 0 0 104px; object-fit: cover; width: 104px; }
+.card .body { display: flex; flex: 1; flex-direction: column; min-width: 0; }
+.card h3 { font-family: var(--serif); font-size: 18px; line-height: 1.15; margin: 2px 0 3px; }
+.meta { color: var(--muted); font-size: 12px; margin: 0 0 6px; }
+.release { font-size: 12px; font-weight: 600; margin: 0 0 4px; }
+.release .kind { color: var(--red); }
+.overview { color: var(--muted); display: -webkit-box; font-size: 13px; line-height: 1.4; margin: 2px 0 8px; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; }
+.btn { background: var(--chip); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; padding: 7px 12px; }
+.btn.primary { background: var(--red); border-color: var(--red); color: #fff; }
+.btn.primary:hover { background: var(--red-dark); }
+.btn:disabled { cursor: default; opacity: 0.6; }
+.status { color: #3c6e2f; font-size: 12px; font-weight: 600; padding: 7px 0; }
+details.check { color: var(--muted); font-size: 11px; margin-top: 8px; }
+details.check summary { cursor: pointer; }
+details.check div { margin: 3px 0; overflow-wrap: anywhere; }
+.empty { color: var(--muted); padding: 40px 0; }
+
+#player { align-items: center; background: rgba(10, 8, 6, 0.9); display: flex; inset: 0; justify-content: center; padding: 24px; position: fixed; z-index: 10; }
+#player[hidden] { display: none; }
+#player video { background: #000; max-height: 85vh; max-width: 100%; width: 1100px; }
+#player .close { position: absolute; right: 20px; top: 16px; }
+#player p { color: #fff; }
+
+footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; margin-top: 48px; padding: 20px 0 32px; }
+
+@media (max-width: 720px) {
+  .wrap { padding: 0 16px; }
+  header.top .wrap { flex-direction: column; align-items: flex-start; gap: 0; padding-top: 10px; }
+  #views { max-width: 100%; }
+  #views button { padding: 12px 0 10px; }
+  .hero .wrap { padding: 24px 16px; }
+  .grid { grid-template-columns: 1fr; }
+  .poster { flex-basis: 88px; width: 88px; }
+  #count { margin-left: 0; width: 100%; }
+}
 </style>
 </head>
 <body>
-<h1>ReelRadar</h1>
-<nav id="views"></nav>
-<button type="button" id="filter-toggle">Filter</button>
-<button type="button" id="filter-clear">Clear filter</button>
-<span id="count"></span>
-<section id="filter" hidden>
-<h2>Genres</h2>
-<div id="genres"></div>
-<h2>Keywords</h2>
-<input type="search" id="keyword-search" placeholder="Search keywords" aria-label="Search keywords">
-<div id="keywords"></div>
-</section>
-<main id="titles">Loading titles...</main>
-<footer>This product uses the TMDB API but is not endorsed or certified by TMDB.</footer>
+<header class="top"><div class="wrap">
+  <div class="logo">Reel<span>Radar</span></div>
+  <nav id="views" aria-label="Views"></nav>
+</div></header>
+
+<section class="hero" id="hero"><div class="wrap">
+  <p class="kicker" id="hero-kicker">Release calendar</p>
+  <h1 id="hero-title">What's coming next</h1>
+  <p class="lead" id="hero-lead">Cinema and streaming releases in Germany for the next three months.</p>
+</div></section>
+
+<main class="wrap">
+  <div class="bar">
+    <span id="kinds"></span>
+    <select class="chip" id="service" aria-label="Streaming service"></select>
+    <button type="button" class="chip" id="filter-toggle" aria-pressed="false">Genres &amp; keywords</button>
+    <button type="button" class="chip" id="filter-clear">Clear filter</button>
+    <span id="count"></span>
+  </div>
+  <section id="filter" hidden>
+    <h2>Genres</h2>
+    <div id="genres"></div>
+    <h2>Keywords</h2>
+    <input type="search" id="keyword-search" placeholder="Search keywords" aria-label="Search keywords">
+    <div id="keywords"></div>
+  </section>
+  <div id="titles"><p class="empty">Loading titles...</p></div>
+</main>
+
+<div id="player" hidden role="dialog" aria-label="Trailer">
+  <button type="button" class="btn close" id="player-close">Close</button>
+  <video id="video" controls playsinline></video>
+</div>
+
+<footer><div class="wrap">This product uses the TMDB API but is not endorsed or certified by TMDB. Streaming availability from JustWatch via TMDB.</div></footer>
 <script>
-// ES5 only (Tizen 4.0 / Chromium M56)
+// ES5, like the TV app.
+var IMG = 'https://image.tmdb.org/t/p/';
 function text(tag, value, className) {
   var element = document.createElement(tag);
   element.textContent = value;
   if (className) element.className = className;
   return element;
 }
-
-// If the player reports an error (101/150 = embedding disabled), open the watch page instead.
-function openOnYouTube(iframe, key) {
-  var url = 'https://www.youtube.com/watch?v=' + encodeURIComponent(key);
-  var link = text('a', 'Open trailer on YouTube');
-  link.href = url;
-  link.target = '_blank';
-  iframe.parentNode.replaceChild(link, iframe);
-  // The error arrives after the click, so a popup blocker may stop this; the link stays as a fallback.
-  window.open(url, '_blank');
+function button(label, className, onclick) {
+  var b = text('button', label, className);
+  b.setAttribute('type', 'button');
+  if (onclick) b.onclick = onclick;
+  return b;
 }
 
-function playTrailer(event) {
-  var button = event.currentTarget;
-  var key = button.getAttribute('data-key');
-  var iframe = document.createElement('iframe');
-  var failed = false;
-  iframe.src = 'https://www.youtube.com/embed/' + encodeURIComponent(key) + '?enablejsapi=1';
-  iframe.title = 'Trailer';
-  iframe.setAttribute('allowfullscreen', 'allowfullscreen');
-  iframe.onload = function () {
-    iframe.contentWindow.postMessage(JSON.stringify({ event: 'listening', id: key }), '*');
-  };
-  window.addEventListener('message', function onMessage(message) {
-    if (failed || message.source !== iframe.contentWindow) return;
-    var data;
-    try { data = JSON.parse(message.data); } catch (error) { return; }
-    if (data && data.event === 'onError') {
-      failed = true;
-      window.removeEventListener('message', onMessage);
-      openOnYouTube(iframe, key);
-    }
+// ---- trailer: the cached MP4 from /api/stream, same as the TV app ----
+var player = document.getElementById('player');
+var video = document.getElementById('video');
+function closePlayer() { video.pause(); video.removeAttribute('src'); video.load(); player.hidden = true; }
+document.getElementById('player-close').onclick = closePlayer;
+player.onclick = function (event) { if (event.target === player) closePlayer(); };
+document.addEventListener('keydown', function (event) { if (event.key === 'Escape' && !player.hidden) closePlayer(); });
+
+function playTrailer(title, trigger) {
+  trigger.disabled = true;
+  trigger.textContent = 'Loading...';
+  getJson('/api/stream/' + title.tmdb_id, function (error, stream) {
+    trigger.disabled = false;
+    trigger.textContent = 'Play trailer';
+    if (error) { trigger.textContent = 'Trailer unavailable'; return; }
+    video.src = stream.url;
+    player.hidden = false;
+    video.play();
   });
-  button.parentNode.replaceChild(iframe, button);
 }
 
-// Selection: {v:1, genres:[ids], keywords:[ids]} in localStorage; storage may be missing or throw.
+function getJson(url, callback, method) {
+  var xhr = new XMLHttpRequest();
+  xhr.open(method || 'GET', url);
+  xhr.onload = function () {
+    var value;
+    try { value = JSON.parse(xhr.responseText); } catch (error) {}
+    if (xhr.status !== 200 || value === undefined) callback(new Error('HTTP ' + xhr.status));
+    else callback(null, value);
+  };
+  xhr.onerror = function () { callback(new Error('network')); };
+  xhr.send();
+}
+
+// ---- filter state: {v:1, genres, keywords, kind, service} in localStorage (may be missing or throw) ----
 var FILTER_KEY = 'reelradar.filter';
 var allTitles = [];
 var seerrStatus = null; // tmdb_id -> none|requested|partial|available; null while unknown
@@ -92,13 +180,17 @@ var SEERR_LABELS = { requested: 'Requested in Seerr', partial: 'Partly in the li
 var selection = loadSelection();
 
 function loadSelection() {
+  var empty = { v: 1, genres: [], keywords: [], kind: 'all', service: 0 };
   try {
     var value = JSON.parse(window.localStorage.getItem(FILTER_KEY));
-    if (value && value.v === 1 && value.genres instanceof Array && value.keywords instanceof Array) return value;
+    if (value && value.v === 1 && value.genres instanceof Array && value.keywords instanceof Array) {
+      value.kind = value.kind || 'all';
+      value.service = value.service || 0;
+      return value;
+    }
   } catch (error) {}
-  return { v: 1, genres: [], keywords: [] };
+  return empty;
 }
-
 function saveSelection() {
   try { window.localStorage.setItem(FILTER_KEY, JSON.stringify(selection)); } catch (error) {}
 }
@@ -108,14 +200,23 @@ function hasAny(tags, ids) {
   return false;
 }
 
-// Match rule: ANY selected genre or keyword; nothing selected shows everything.
+// Genres/keywords: ANY selected one matches; nothing selected shows everything. Service: must be on it.
 function matchesFilter(title, chosen) {
+  if (chosen.service && !hasAny(title.providers || [], [chosen.service])) return false;
   if (!chosen.genres.length && !chosen.keywords.length) return true;
   return hasAny(title.genres || [], chosen.genres) || hasAny(title.keywords || [], chosen.keywords);
 }
 
 // ---- views (same logic in frontend/index.html and tv-app/index.html) ----
-var VIEWS = [['upcoming', 'Upcoming'], ['trailers', 'New trailers'], ['recent', 'Recently released'], ['genres', 'Genres'], ['all', 'All']];
+var VIEWS = [['upcoming', 'Release calendar'], ['trailers', 'New trailers'], ['recent', 'Recently released'], ['genres', 'Genres'], ['all', 'All titles']];
+var HERO = {
+  upcoming: ['Release calendar', "What's coming next", 'Cinema and streaming releases in Germany for the next three months.'],
+  trailers: ['Fresh from the projector', 'New trailers', 'The latest trailers, in the original language where one exists.'],
+  recent: ['Just released', 'Recently released', 'What reached German cinemas and streaming in the last three months.'],
+  genres: ['Browse', 'By genre', 'Every title, shelved by genre.'],
+  all: ['Everything', 'All titles', 'Every title ReelRadar knows about.']
+};
+var KINDS = [['all', 'All releases'], ['cinema', 'Cinema'], ['streaming', 'Streaming']];
 var WINDOW_DAYS = 90; // "upcoming" and "recently released" look three months ahead/back
 
 function isoDay(offsetDays) {
@@ -124,45 +225,73 @@ function isoDay(offsetDays) {
   return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
 }
 
-// German theatrical or digital dates inside [from, to); both count (cinema and streaming premieres).
-function datesIn(title, from, to) {
-  return [title.de_theatrical, title.de_digital].filter(function (date) { return date && date >= from && date < to; }).sort();
+// A title's German releases as entries; kind filter applies. Cinema = theatrical, streaming = digital.
+function releases(title, kind) {
+  var list = [];
+  if (title.de_theatrical && kind !== 'streaming') list.push({ title: title, kind: 'cinema', date: title.de_theatrical });
+  if (title.de_digital && kind !== 'cinema') list.push({ title: title, kind: 'streaming', date: title.de_digital });
+  return list;
 }
 
-// -> [{heading, titles}] for the chosen view; titles are already filtered.
-function viewSections(view, titles) {
+// -> [{heading, note, items:[{title, kind, date}]}]; calendar views list each release on its day.
+function viewSections(view, titles, kind) {
   var today = isoDay(0);
   if (view === 'upcoming' || view === 'recent') {
     var from = view === 'upcoming' ? today : isoDay(-WINDOW_DAYS);
     var to = view === 'upcoming' ? isoDay(WINDOW_DAYS + 1) : today;
-    var hits = titles.filter(function (title) { return datesIn(title, from, to).length; });
-    hits.sort(function (a, b) {
-      var x = datesIn(a, from, to), y = datesIn(b, from, to);
-      return view === 'upcoming' ? (x[0] < y[0] ? -1 : x[0] > y[0] ? 1 : 0) : (x[x.length - 1] > y[y.length - 1] ? -1 : 1);
+    var entries = [];
+    titles.forEach(function (title) {
+      releases(title, kind).forEach(function (entry) { if (entry.date >= from && entry.date < to) entries.push(entry); });
     });
-    return [{ heading: '', titles: hits }];
+    entries.sort(function (a, b) {
+      var order = a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
+      return view === 'upcoming' ? order : -order;
+    });
+    var days = [];
+    entries.forEach(function (entry) {
+      var last = days[days.length - 1];
+      if (!last || last.date !== entry.date) { last = { date: entry.date, heading: longDate(entry.date), items: [] }; days.push(last); }
+      last.items.push(entry);
+    });
+    days.forEach(function (day) { day.note = day.items.length + (day.items.length === 1 ? ' release' : ' releases'); });
+    return days;
   }
+  var kept = titles.filter(function (title) { return kind === 'all' || releases(title, kind).length; });
+  function asItem(title) { return { title: title, kind: null, date: null }; }
   if (view === 'trailers') {
-    var withTrailer = titles.filter(function (title) { return title.trailer; });
+    var withTrailer = kept.filter(function (title) { return title.trailer; });
     withTrailer.sort(function (a, b) { return (b.trailer.published_at || '') > (a.trailer.published_at || '') ? 1 : -1; });
-    return [{ heading: '', titles: withTrailer }];
+    return [{ heading: '', items: withTrailer.map(asItem) }];
   }
   if (view === 'genres') {
     var byName = {}, names = [];
-    titles.forEach(function (title) {
+    kept.forEach(function (title) {
       (title.genres || []).forEach(function (genre) {
         if (!byName[genre.name]) { byName[genre.name] = []; names.push(genre.name); }
         byName[genre.name].push(title);
       });
     });
-    return names.sort().map(function (name) { return { heading: name, titles: byName[name] }; });
+    return names.sort().map(function (name) {
+      return { heading: name, note: byName[name].length + ' titles', items: byName[name].map(asItem) };
+    });
   }
-  return [{ heading: '', titles: titles }];
+  return [{ heading: '', items: kept.map(asItem) }];
+}
+
+var DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function longDate(iso) {
+  var d = new Date(iso + 'T12:00:00');
+  return DAYS[d.getDay()] + ', ' + d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear();
+}
+function shortDate(iso) {
+  var d = new Date(iso + 'T12:00:00');
+  return d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear();
 }
 
 var currentView = 'upcoming';
 
-// All tags of one kind on the loaded titles, with how many titles carry each.
+// ---- filter controls ----
 function collectTags(kind) {
   var byId = {};
   var list = [];
@@ -178,25 +307,25 @@ function collectTags(kind) {
   }
   return list;
 }
+function byName(a, b) { return a.name < b.name ? -1 : a.name > b.name ? 1 : 0; }
 
 function toggleButton(kind, tag) {
   var ids = selection[kind];
-  var button = text('button', tag.name + (kind === 'keywords' ? ' (' + tag.count + ')' : ''), 'tag');
-  button.setAttribute('type', 'button');
-  button.setAttribute('aria-pressed', ids.indexOf(tag.id) !== -1 ? 'true' : 'false');
-  button.onclick = function () {
+  var b = button(tag.name + (kind === 'keywords' ? ' (' + tag.count + ')' : ''), 'chip');
+  b.setAttribute('aria-pressed', ids.indexOf(tag.id) !== -1 ? 'true' : 'false');
+  b.onclick = function () {
     var index = ids.indexOf(tag.id);
     if (index === -1) ids.push(tag.id); else ids.splice(index, 1);
-    button.setAttribute('aria-pressed', index === -1 ? 'true' : 'false');
+    b.setAttribute('aria-pressed', index === -1 ? 'true' : 'false');
     saveSelection();
     renderTitles();
   };
-  return button;
+  return b;
 }
 
 function renderGenres() {
   var root = document.getElementById('genres');
-  var genres = collectTags('genres').sort(function (a, b) { return a.name < b.name ? -1 : a.name > b.name ? 1 : 0; });
+  var genres = collectTags('genres').sort(byName);
   root.textContent = '';
   for (var i = 0; i < genres.length; i += 1) root.appendChild(toggleButton('genres', genres[i]));
 }
@@ -206,155 +335,222 @@ function renderKeywords() {
   var query = document.getElementById('keyword-search').value.toLowerCase();
   var keywords = collectTags('keywords').filter(function (tag) {
     return tag.name.toLowerCase().indexOf(query) !== -1;
-  }).sort(function (a, b) {
-    return b.count - a.count || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
-  });
+  }).sort(function (a, b) { return b.count - a.count || byName(a, b); });
   root.textContent = '';
   for (var i = 0; i < keywords.length && i < 40; i += 1) root.appendChild(toggleButton('keywords', keywords[i]));
-  if (keywords.length > 40) root.appendChild(text('p', (keywords.length - 40) + ' more: search to narrow down.'));
+  if (keywords.length > 40) root.appendChild(text('p', (keywords.length - 40) + ' more: search to narrow down.', 'meta'));
 }
 
-function renderTitles() {
-  var shown = allTitles.filter(function (title) { return matchesFilter(title, selection); });
-  var sections = viewSections(currentView, shown);
-  var count = currentView === 'genres' ? shown.length : sections[0].titles.length;
-  document.getElementById('count').textContent = 'Showing ' + count + ' of ' + allTitles.length + ' titles';
-  render(sections);
+function renderKinds() {
+  var root = document.getElementById('kinds');
+  root.textContent = '';
+  KINDS.forEach(function (kind) {
+    var b = button(kind[1], 'chip', function () { selection.kind = kind[0]; saveSelection(); renderKinds(); renderTitles(); });
+    b.setAttribute('aria-pressed', selection.kind === kind[0] ? 'true' : 'false');
+    b.style.marginRight = '8px';
+    root.appendChild(b);
+  });
+}
+
+function renderServices() {
+  var select = document.getElementById('service');
+  var services = collectTags('providers').sort(byName);
+  select.textContent = '';
+  var all = text('option', 'All services');
+  all.value = '0';
+  select.appendChild(all);
+  services.forEach(function (service) {
+    var option = text('option', service.name + ' (' + service.count + ')');
+    option.value = String(service.id);
+    select.appendChild(option);
+  });
+  select.value = String(selection.service);
+  if (select.value !== String(selection.service)) { selection.service = 0; select.value = '0'; }
+  select.setAttribute('aria-pressed', selection.service ? 'true' : 'false');
+  select.onchange = function () {
+    selection.service = Number(select.value);
+    select.setAttribute('aria-pressed', selection.service ? 'true' : 'false');
+    saveSelection();
+    renderTitles();
+  };
 }
 
 function renderViews() {
   var nav = document.getElementById('views');
   nav.textContent = '';
   VIEWS.forEach(function (view) {
-    var button = text('button', view[1]);
-    button.setAttribute('type', 'button');
-    button.setAttribute('aria-pressed', view[0] === currentView ? 'true' : 'false');
-    button.onclick = function () { currentView = view[0]; renderViews(); renderTitles(); };
-    nav.appendChild(button);
+    var b = button(view[1], '', function () { currentView = view[0]; renderViews(); renderTitles(); });
+    b.setAttribute('aria-pressed', view[0] === currentView ? 'true' : 'false');
+    nav.appendChild(b);
   });
+  var hero = HERO[currentView];
+  document.getElementById('hero-kicker').textContent = hero[0];
+  document.getElementById('hero-title').textContent = hero[1];
+  document.getElementById('hero-lead').textContent = hero[2];
 }
-renderViews();
 
 document.getElementById('filter-toggle').onclick = function () {
   var panel = document.getElementById('filter');
   panel.hidden = !panel.hidden;
+  this.setAttribute('aria-pressed', panel.hidden ? 'false' : 'true');
 };
 document.getElementById('filter-clear').onclick = function () {
-  selection = { v: 1, genres: [], keywords: [] };
+  selection = { v: 1, genres: [], keywords: [], kind: 'all', service: 0 };
   saveSelection();
   renderGenres();
   renderKeywords();
+  renderKinds();
+  renderServices();
   renderTitles();
 };
 document.getElementById('keyword-search').oninput = renderKeywords;
 
+// ---- list ----
+function renderTitles() {
+  var shown = allTitles.filter(function (title) { return matchesFilter(title, selection); });
+  var sections = viewSections(currentView, shown, selection.kind);
+  var count = 0;
+  sections.forEach(function (section) { count += section.items.length; });
+  var noun = currentView === 'upcoming' || currentView === 'recent' ? ' releases' : ' titles';
+  document.getElementById('count').textContent = (currentView === 'genres' ? shown.length + ' titles' : count + noun) +
+    ' of ' + allTitles.length + ' titles';
+  setHeroImage(sections);
+  render(sections);
+}
+
+// Backdrop of the first title in view behind the hero, washed into the paper colour.
+function setHeroImage(sections) {
+  var first = sections.length && sections[0].items.length ? sections[0].items[0].title : null;
+  var hero = document.getElementById('hero');
+  hero.style.backgroundImage = 'linear-gradient(90deg, #f6f0e6 30%, rgba(246,240,230,0.8) 52%, rgba(200,50,30,0.45))' +
+    (first && first.backdrop_path ? ', url(' + IMG + 'w1280' + first.backdrop_path + ')' : '');
+}
+
 function render(sections) {
   var root = document.getElementById('titles');
   root.textContent = '';
-  var empty = !sections.length || (sections.length === 1 && !sections[0].titles.length);
-  if (empty) root.appendChild(text('p', allTitles.length ? 'No titles in this view match the filter.' : 'No titles imported yet.'));
+  if (!sections.length || (sections.length === 1 && !sections[0].items.length)) {
+    root.appendChild(text('p', allTitles.length ? 'No titles in this view match the filter.' : 'No titles imported yet.', 'empty'));
+    return;
+  }
   sections.forEach(function (section) {
-    if (section.heading) root.appendChild(text('h2', section.heading, 'shelf'));
-    renderArticles(root, section.titles);
+    if (section.heading) {
+      var day = document.createElement('div');
+      day.className = 'day';
+      day.appendChild(text('h2', section.heading));
+      if (section.note) day.appendChild(text('small', section.note));
+      root.appendChild(day);
+    } else {
+      root.appendChild(document.createElement('div')).style.height = '12px';
+    }
+    var grid = document.createElement('div');
+    grid.className = 'grid';
+    section.items.forEach(function (item) { grid.appendChild(card(item)); });
+    root.appendChild(grid);
   });
 }
 
-function renderArticles(root, titles) {
-  for (var i = 0; i < titles.length; i += 1) {
-    var title = titles[i];
-    var article = document.createElement('article');
-    var dates = title.de_theatrical ? 'German theatrical: ' + title.de_theatrical : 'no German date';
-    if (title.de_digital) dates += ' · digital: ' + title.de_digital;
-    article.appendChild(text('h2', title.title));
-    article.appendChild(text('div', dates, 'dates'));
-
-    if (seerrStatus && seerrStatus[title.tmdb_id]) article.appendChild(seerrLine(title));
-
-    if (title.trailer) {
-      var button = text('button', 'Play trailer');
-      button.setAttribute('type', 'button');
-      button.setAttribute('data-key', title.trailer.key);
-      button.onclick = playTrailer;
-      article.appendChild(button);
-      if (title.trailer.kinocheck_url) {
-        var source = document.createElement('div');
-        var link = text('a', 'Trailer: KinoCheck');
-        link.href = title.trailer.kinocheck_url;
-        source.appendChild(link);
-        article.appendChild(source);
-      }
-    } else {
-      article.appendChild(text('p', 'no trailer'));
-    }
-
-    for (var j = 0; j < title.decisions.length; j += 1) {
-      var decision = title.decisions[j];
-      article.appendChild(text('div', decision.key + ' (' + decision.source + '): ' +
-        (decision.playable ? 'playable — ' : 'hidden — ') + decision.reason, 'decision'));
-    }
-    root.appendChild(article);
+// "Cinema · 6 Mar 2026" or "Netflix · 6 Mar 2026"; for a plain list, the next (or latest) German date.
+function releaseLine(item) {
+  var title = item.title;
+  var kind = item.kind, date = item.date;
+  if (!kind) {
+    var all = releases(title, 'all').sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+    var today = isoDay(0);
+    var next = all.filter(function (entry) { return entry.date >= today; })[0] || all[all.length - 1];
+    if (!next) return null;
+    kind = next.kind; date = next.date;
   }
-}
-
-function seerrLine(title) {
-  var status = seerrStatus[title.tmdb_id];
-  var line = text('div', SEERR_LABELS[status] || '', 'seerr');
-  if (status === 'none') {
-    var button = text('button', 'Request in Seerr');
-    button.setAttribute('type', 'button');
-    button.onclick = function () {
-      button.disabled = true;
-      button.textContent = 'Requesting...';
-      var post = new XMLHttpRequest();
-      post.open('POST', '/api/request/' + title.tmdb_id);
-      post.onload = function () {
-        try {
-          if (post.status !== 200) throw new Error();
-          seerrStatus[title.tmdb_id] = JSON.parse(post.responseText).status;
-          line.parentNode.replaceChild(seerrLine(title), line);
-        } catch (error) {
-          button.disabled = false;
-          button.textContent = 'Request failed - try again';
-        }
-      };
-      post.onerror = post.onload;
-      post.send();
-    };
-    line.appendChild(button);
-  }
+  var where = kind === 'cinema' ? 'Cinema' :
+    (title.providers && title.providers.length ? title.providers.map(function (p) { return p.name; }).join(', ') : 'Streaming');
+  var line = document.createElement('p');
+  line.className = 'release';
+  line.appendChild(text('span', where, 'kind'));
+  line.appendChild(document.createTextNode(' · ' + shortDate(date)));
   return line;
 }
 
-// Seerr state loads after the list; without it the page simply shows no status.
-function loadSeerr() {
-  var statusRequest = new XMLHttpRequest();
-  statusRequest.open('GET', '/api/seerr');
-  statusRequest.onload = function () {
-    if (statusRequest.status !== 200) return;
-    try { seerrStatus = JSON.parse(statusRequest.responseText); } catch (error) { return; }
-    renderTitles();
-  };
-  statusRequest.send();
+function card(item) {
+  var title = item.title;
+  var article = document.createElement('article');
+  article.className = 'card';
+  var poster = document.createElement('img');
+  poster.className = 'poster';
+  poster.alt = '';
+  poster.loading = 'lazy';
+  if (title.poster_path) poster.src = IMG + 'w342' + title.poster_path;
+  article.appendChild(poster);
+
+  var body = document.createElement('div');
+  body.className = 'body';
+  body.appendChild(text('h3', title.title));
+  var meta = (title.genres || []).slice(0, 2).map(function (g) { return g.name; }).join(' · ');
+  if (title.original_title !== title.title) meta = title.original_title + (meta ? ' — ' + meta : '');
+  if (meta) body.appendChild(text('p', meta, 'meta'));
+  var line = releaseLine(item);
+  if (line) body.appendChild(line);
+  if (title.overview) body.appendChild(text('p', title.overview, 'overview'));
+
+  var actions = document.createElement('div');
+  actions.className = 'actions';
+  if (title.trailer) {
+    actions.appendChild(button('Play trailer', 'btn primary', function () { playTrailer(title, this); }));
+  }
+  if (seerrStatus && seerrStatus[title.tmdb_id]) actions.appendChild(seerrControl(title));
+  body.appendChild(actions);
+
+  var check = document.createElement('details');
+  check.className = 'check';
+  check.appendChild(text('summary', title.trailer ? 'Trailer check' + (title.trailer.kinocheck_url ? ' · KinoCheck' : '') : 'No trailer · why'));
+  if (title.trailer && title.trailer.kinocheck_url) {
+    var link = text('a', 'Trailer: KinoCheck');
+    link.href = title.trailer.kinocheck_url;
+    check.appendChild(document.createElement('div')).appendChild(link);
+  }
+  title.decisions.forEach(function (decision) {
+    check.appendChild(text('div', decision.key + ' (' + decision.source + '): ' +
+      (decision.playable ? 'playable — ' : 'hidden — ') + decision.reason));
+  });
+  body.appendChild(check);
+  article.appendChild(body);
+  return article;
 }
 
-var request = new XMLHttpRequest();
-request.open('GET', '/api/titles');
-request.onload = function () {
-  try {
-    if (request.status < 200 || request.status >= 300) throw new Error('HTTP ' + request.status);
-    allTitles = JSON.parse(request.responseText);
-    renderGenres();
-    renderKeywords();
-    renderTitles();
-    loadSeerr();
-  } catch (error) {
-    document.getElementById('titles').textContent = 'Could not load titles.';
+function seerrControl(title) {
+  var status = seerrStatus[title.tmdb_id];
+  if (status !== 'none') return text('span', SEERR_LABELS[status] || '', 'status');
+  var b = button('Request via Seerr', 'btn', function () {
+    b.disabled = true;
+    b.textContent = 'Requesting...';
+    getJson('/api/request/' + title.tmdb_id, function (error, result) {
+      if (error) { b.disabled = false; b.textContent = 'Request failed - try again'; return; }
+      seerrStatus[title.tmdb_id] = result.status;
+      b.parentNode.replaceChild(seerrControl(title), b);
+    }, 'POST');
+  });
+  return b;
+}
+
+renderViews();
+renderKinds();
+
+// Seerr state loads after the list; without it the page simply shows no status.
+getJson('/api/titles', function (error, titles) {
+  if (error) {
+    document.getElementById('titles').textContent = error.message === 'network' ? 'Backend unreachable.' : 'Could not load titles.';
+    return;
   }
-};
-request.onerror = function () {
-  document.getElementById('titles').textContent = 'Backend unreachable.';
-};
-request.send();
+  allTitles = titles;
+  renderGenres();
+  renderKeywords();
+  renderServices();
+  renderTitles();
+  getJson('/api/seerr', function (seerrError, statuses) {
+    if (seerrError) return;
+    seerrStatus = statuses;
+    renderTitles();
+  });
+});
 </script>
 </body>
 </html>

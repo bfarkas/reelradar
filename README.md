@@ -90,12 +90,18 @@ The backend refuses POSTs whose `Origin` is another website. Allowed are the pag
 
 ## Views
 
-Both the web page and the TV app have five views, and each one respects the genre/keyword filter:
-- **Upcoming** (default): German theatrical or digital release in the next 90 days, soonest first.
+Both the web page and the TV app follow the "Screening room" design (Concept 03). They have five views, and each one respects the genre/keyword filter:
+- **Release calendar** (default): German cinema and streaming releases in the next 90 days. The web page groups them by day; each cinema or streaming release is its own entry.
 - **New trailers**: most recently published trailers first.
-- **Recently released**: German release in the last 90 days, newest first.
-- **Genres**: one shelf per genre. On the TV the shelves are horizontal rows: Left/Right moves along a shelf, Up/Down moves between shelves.
-- **All**: everything, in German theatrical date order.
+- **Recently released**: German releases in the last 90 days, newest first.
+- **Genres**: one shelf per genre.
+- **All titles**: everything.
+
+The web page adds All / Cinema / Streaming chips and a streaming-service filter (German subscription services from TMDB/JustWatch; resold channels and ad tiers are dropped). It plays trailers from the same cached MP4 as the TV (`/api/stream`), and works at phone width.
+
+On the TV, a hero at the top shows the focused poster's backdrop, title, date, synopsis, Play trailer and Request via Seerr; poster rows sit below. Left/Right moves along a row, Up goes to Play trailer, Down returns to the poster.
+
+To preview the TV app in a desktop browser, serve `tv-app/` over HTTP (`.claude/launch.json` has a `python3 -m http.server` entry on port 8765); opened as a file it can't reach the API.
 
 ## Scheduled import
 

@@ -28,6 +28,29 @@
           "name": "based on novel"
         }
       ]
+    },
+    "poster_path": "/poster.jpg",
+    "backdrop_path": "/backdrop.jpg",
+    "overview": "A fixture.",
+    "watch/providers": {
+      "results": {
+        "DE": {
+          "flatrate": [
+            {
+              "provider_id": 8,
+              "provider_name": "Netflix"
+            }
+          ]
+        },
+        "US": {
+          "flatrate": [
+            {
+              "provider_id": 9,
+              "provider_name": "Prime Video"
+            }
+          ]
+        }
+      }
     }
   },
   "release_dates": {
