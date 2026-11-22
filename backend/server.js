@@ -89,9 +89,7 @@ function getReport() {
 async function getSeerrStatuses() {
   if (seerrCache.value && Date.now() - seerrCache.at < 60000) return seerrCache.value;
   var ids = db.prepare('SELECT tmdb_id FROM titles').all();
-  var statuses = await Promise.all(ids.map(function (row) { return seerr.movieStatus(row.tmdb_id); }));
-  var value = {};
-  ids.forEach(function (row, i) { value[row.tmdb_id] = statuses[i]; });
+  var value = await seerr.movieStatuses(ids.map(function (row) { return row.tmdb_id; }));
   seerrCache = { at: Date.now(), value: value };
   return value;
 }

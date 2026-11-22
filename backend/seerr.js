@@ -29,6 +29,22 @@ function createClient(options) {
     return (movie.mediaInfo && STATUS[movie.mediaInfo.status]) || 'none';
   }
 
+  // Statuses for many titles through a small pool, so Seerr isn't hit with hundreds of parallel requests.
+  // A failing title is left out (unknown); after 5 failures in a row Seerr counts as down and the rest is skipped.
+  async function movieStatuses(ids) {
+    var result = {};
+    var next = 0;
+    var failedInRow = 0;
+    async function worker() {
+      while (next < ids.length && failedInRow < 5) {
+        var id = ids[next++];
+        try { result[id] = await movieStatus(id); failedInRow = 0; } catch (error) { failedInRow++; }
+      }
+    }
+    await Promise.all(Array.from({ length: 8 }, worker));
+    return result;
+  }
+
   async function csrfHeaders() {
     var response = await call('GET', '/api/v1/status');
     var cookies = {};
@@ -54,7 +70,7 @@ function createClient(options) {
     return movieStatus(tmdbId);
   }
 
-  return { movieStatus: movieStatus, requestMovie: requestMovie };
+  return { movieStatus: movieStatus, movieStatuses: movieStatuses, requestMovie: requestMovie };
 }
 
 module.exports = { createClient: createClient, STATUS: STATUS };

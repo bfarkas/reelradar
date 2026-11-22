@@ -203,7 +203,7 @@ var LAYOUT_KEY = 'reelradar.layout';
 var wall = false; // poster wall layout instead of hero + rows
 try { wall = window.localStorage.getItem(LAYOUT_KEY) === 'wall'; } catch (error) {}
 var allTitles = [];
-var seerrStatus = null; // tmdb_id -> none|requested|partial|available
+var seerrStatus = {}; // tmdb_id -> none|requested|partial|available
 var SEERR_LABELS = { requested: 'Requested in Seerr', partial: 'Partly in the library', available: 'In the library' };
 var selection = loadSelection();
 var layer = 'main';           // main | filter | player
@@ -403,9 +403,9 @@ function showHero(item) {
     actions.appendChild(el('span', 'action-note', 'No trailer'));
   }
   if (wall && !title.trailer) actions.appendChild(el('span', 'action-note', 'No trailer  '));
-  var status = seerrStatus && seerrStatus[title.tmdb_id];
-  if (status === 'none') actions.appendChild(requestButton(title));
-  else if (SEERR_LABELS[status]) actions.appendChild(el('span', 'action-note', SEERR_LABELS[status]));
+  var status = seerrStatus[title.tmdb_id];
+  if (SEERR_LABELS[status]) actions.appendChild(el('span', 'action-note', SEERR_LABELS[status]));
+  else actions.appendChild(requestButton(title));
 }
 
 function renderViews() {
@@ -602,7 +602,7 @@ getJson(API + '/api/titles', function (error, titles) {
   if (error) { $('message').textContent = 'Could not load titles: ' + error; setFocus($('open-filter')); return; }
   allTitles = titles;
   renderList();
-  // Seerr state comes second; without it the list just shows no status.
+  // Seerr state comes second; without it the request button is still offered.
   getJson(API + '/api/seerr', function (seerrError, statuses) {
     if (seerrError || layer !== 'main') return;
     seerrStatus = statuses;

@@ -213,7 +213,7 @@ function getJson(url, callback, method) {
 // ---- filter state: {v:1, genres, keywords, kind, service} in localStorage (may be missing or throw) ----
 var FILTER_KEY = 'reelradar.filter';
 var allTitles = [];
-var seerrStatus = null; // tmdb_id -> none|requested|partial|available; null while unknown
+var seerrStatus = {}; // tmdb_id -> none|requested|partial|available; a missing id is unknown and still offers the request
 var SEERR_LABELS = { requested: 'Requested in Seerr', partial: 'Partly in the library', available: 'In the library' };
 var selection = loadSelection();
 
@@ -630,7 +630,7 @@ function card(item) {
   if (title.trailer) {
     actions.appendChild(button('Play trailer', 'btn primary', function () { playTrailer(title, this); }));
   }
-  if (seerrStatus && seerrStatus[title.tmdb_id]) actions.appendChild(seerrControl(title));
+  actions.appendChild(seerrControl(title));
   body.appendChild(actions);
 
   var check = document.createElement('details');
@@ -652,7 +652,7 @@ function card(item) {
 
 function seerrControl(title) {
   var status = seerrStatus[title.tmdb_id];
-  if (status !== 'none') return text('span', SEERR_LABELS[status] || '', 'status');
+  if (SEERR_LABELS[status]) return text('span', SEERR_LABELS[status], 'status');
   var b = button('Request via Seerr', 'btn', function () {
     b.disabled = true;
     b.textContent = 'Requesting...';
@@ -669,7 +669,7 @@ renderViews();
 renderKinds();
 renderLayout();
 
-// Seerr state loads after the list; without it the page simply shows no status.
+// Seerr state loads after the list; without it the request button is still offered.
 getJson('/api/titles', function (error, titles) {
   if (error) {
     document.getElementById('titles').textContent = error.message === 'network' ? 'Backend unreachable.' : 'Could not load titles.';

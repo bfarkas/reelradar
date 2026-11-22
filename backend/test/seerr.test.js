@@ -53,3 +53,35 @@ test('an existing request (409) counts as success', async function () {
 test('fails clearly when Seerr is not configured', async function () {
   await assert.rejects(seerr.createClient({ env: {} }).movieStatus(1), /not configured/);
 });
+
+test('looks up many titles with bounded concurrency and leaves a failing title out', async function () {
+  var running = 0;
+  var peak = 0;
+  var c = seerr.createClient({ env: { SEERR_URL: 'http://seerr', SEERR_API_KEY: 'k' }, fetch: async function (url) {
+    var id = Number(url.split('/').pop());
+    running++;
+    peak = Math.max(peak, running);
+    await new Promise(function (resolve) { setTimeout(resolve, 1); });
+    running--;
+    if (id === 7) throw new TypeError('fetch failed');
+    return Response.json({ id: id, mediaInfo: id % 2 ? { status: 5 } : undefined });
+  } });
+  var ids = Array.from({ length: 620 }, function (_, i) { return i + 1; });
+  var result = await c.movieStatuses(ids);
+  assert.equal(Object.keys(result).length, 619);
+  assert.equal(result[7], undefined);
+  assert.equal(result[1], 'available');
+  assert.equal(result[2], 'none');
+  assert.ok(peak <= 8, 'peak concurrency ' + peak);
+});
+
+test('gives up quickly when Seerr is down', async function () {
+  var calls = 0;
+  var c = seerr.createClient({ env: { SEERR_URL: 'http://seerr', SEERR_API_KEY: 'k' }, fetch: async function () {
+    calls++;
+    throw new TypeError('fetch failed');
+  } });
+  var result = await c.movieStatuses(Array.from({ length: 620 }, function (_, i) { return i + 1; }));
+  assert.deepEqual(result, {});
+  assert.ok(calls < 20, 'calls ' + calls);
+});
