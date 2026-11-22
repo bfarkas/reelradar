@@ -58,6 +58,7 @@ function getTitles() {
       genres: tagStatement.all(row.tmdb_id, 'genre'),
       keywords: tagStatement.all(row.tmdb_id, 'keyword'),
       providers: tagStatement.all(row.tmdb_id, 'provider'),
+      providers_expected: tagStatement.all(row.tmdb_id, 'provider_expected'), // premieres on it, not streaming there yet
       decisions: decisionStatement.all(row.tmdb_id).map(function (decision) {
         return {
           key: decision.key,

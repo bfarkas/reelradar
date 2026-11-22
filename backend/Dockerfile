@@ -5,7 +5,7 @@ RUN apk add --no-cache ffmpeg python3 \
   && chmod +x /usr/local/bin/yt-dlp
 WORKDIR /app
 COPY server.js .
-COPY gate.js import.js kinocheck.js media.js prefetch.js scheduler.js seerr.js lists.json ./
+COPY gate.js import.js kinocheck.js media.js prefetch.js scheduler.js seerr.js lists.json expected-providers.json ./
 RUN mkdir /data && chown node /data
 USER node
 CMD ["node", "server.js"]

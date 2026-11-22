@@ -40,6 +40,35 @@ function germanProviders(detail) {
     .map(function (p) { return { id: p.provider_id, name: p.provider_name.trim() }; });
 }
 
+var EXPECTED = JSON.parse(fs.readFileSync(path.join(__dirname, 'expected-providers.json'), 'utf8')).providers;
+
+function lower(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+// Service a title premieres on, before TMDB lists a flatrate provider (OS-T-3HXMY): the note of the German digital
+// (type 4) release date names it, unless the production companies name a different one. Unknown stays unknown.
+function expectedProviders(releaseDates, detail, digital, today, current) {
+  if (!digital || digital < today) return [];
+  var germany = (releaseDates.results || []).find(function (entry) { return entry.iso_3166_1 === 'DE'; });
+  var noted = [];
+  ((germany && germany.release_dates) || []).forEach(function (entry) {
+    if (entry.type !== 4 || dateOnly(entry.release_date) !== digital) return;
+    EXPECTED.forEach(function (provider) {
+      if (provider.notes.indexOf(lower(entry.note)) !== -1 && noted.indexOf(provider) === -1) noted.push(provider);
+    });
+  });
+  if (noted.length !== 1) return []; // no note, or notes naming several services
+  var studios = EXPECTED.filter(function (provider) {
+    return (detail.production_companies || []).some(function (company) {
+      return provider.companies.indexOf(lower(company.name)) !== -1;
+    });
+  });
+  if (studios.length && studios.indexOf(noted[0]) === -1) return [];
+  if (current.some(function (p) { return p.id === noted[0].id; })) return [];
+  return [{ id: noted[0].id, name: noted[0].name }];
+}
+
 // English synopsis; when TMDB has none, the German translation (ADR OS-D-TMAG1). lang is 'de' only for the fallback.
 function synopsis(detail) {
   if (detail.overview) return { text: detail.overview, lang: null };
@@ -311,6 +340,7 @@ async function runImport(options) {
         overview: text.text,
         overview_lang: text.lang,
         providers: germanProviders(detail),
+        providers_expected: expectedProviders(releaseDates, detail, dates.digital, today, germanProviders(detail)),
         genres: detail.genres || [],
         keywords: (detail.keywords && detail.keywords.keywords) || [],
         candidates: candidates.map(function (candidate) {
@@ -338,6 +368,7 @@ async function runImport(options) {
           title.de_theatrical, title.de_digital, title.trailer_key,
           title.poster_path, title.backdrop_path, title.overview, title.overview_lang);
         title.providers.forEach(function (tag) { insertTag.run(title.tmdb_id, 'provider', tag.id, tag.name); });
+        title.providers_expected.forEach(function (tag) { insertTag.run(title.tmdb_id, 'provider_expected', tag.id, tag.name); });
         title.genres.forEach(function (tag) { insertTag.run(title.tmdb_id, 'genre', tag.id, tag.name); });
         title.keywords.forEach(function (tag) { insertTag.run(title.tmdb_id, 'keyword', tag.id, tag.name); });
         title.candidates.forEach(function (candidate) {
@@ -375,6 +406,7 @@ if (require.main === module) {
 
 module.exports = {
   ensureSchema: ensureSchema,
+  expectedProviders: expectedProviders,
   germanDates: germanDates,
   kinoCheckCandidates: kinoCheckCandidates,
   latestTrailerIds: latestTrailerIds,

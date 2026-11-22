@@ -1,0 +1,12 @@
+{
+  "_": "Data for the 'premieres on X' signal (OS-T-3HXMY). One entry per service, ids and names as the import stores them from TMDB watch/providers. 'notes': exact (case-insensitive) text of a German release_dates type 4 note that names the service. 'companies': production companies that only ever mean this service; a title whose studios name a different service than its note stays unknown.",
+  "providers": [
+    { "id": 8, "name": "Netflix", "notes": ["netflix"], "companies": ["netflix", "netflix animation studios", "netflix studios"] },
+    { "id": 9, "name": "Amazon Prime Video", "notes": ["prime video", "amazon prime video"], "companies": ["amazon mgm studios", "amazon studios", "amazon content services"] },
+    { "id": 350, "name": "Apple TV", "notes": ["apple tv", "apple tv+"], "companies": ["apple studios", "apple original films"] },
+    { "id": 337, "name": "Disney Plus", "notes": ["disney+", "disney plus"], "companies": ["walt disney pictures", "walt disney animation studios", "disney television animation"] },
+    { "id": 30, "name": "WOW", "notes": ["wow"], "companies": [] },
+    { "id": 1899, "name": "HBO Max", "notes": ["hbo max"], "companies": [] },
+    { "id": 11, "name": "MUBI", "notes": ["mubi"], "companies": [] }
+  ]
+}

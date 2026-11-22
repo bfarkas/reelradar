@@ -125,7 +125,7 @@ test('KinoCheck clips tagged Trailer are not treated as trailers', function () {
 });
 
 // Runs one import against a detail response and returns the stored row plus the requested URLs.
-async function importWith(t, detail) {
+async function importWith(t, detail, releaseDates) {
   var directory = fs.mkdtempSync(path.join(os.tmpdir(), 'reelradar-test-'));
   var dbPath = path.join(directory, 'reelradar.db');
   t.after(function () { fs.rmSync(directory, { recursive: true, force: true }); });
@@ -134,6 +134,7 @@ async function importWith(t, detail) {
     dbPath: dbPath,
     fetch: function (url) {
       urls.push(url);
+      if (releaseDates && url.indexOf('/movie/101/release_dates') !== -1) return response(200, releaseDates);
       return url.indexOf('/movie/101?') !== -1 ? response(200, detail) : successfulFetch(url);
     },
     sleep: function () { return Promise.resolve(); },
@@ -143,8 +144,10 @@ async function importWith(t, detail) {
   });
   var db = new DatabaseSync(dbPath);
   var row = db.prepare('SELECT overview, overview_lang FROM titles').get();
+  var tags = db.prepare("SELECT kind, tag_id AS id, name FROM title_tags WHERE kind LIKE 'provider%' ORDER BY kind, tag_id").all()
+    .map(function (tag) { return Object.assign({}, tag); });
   db.close();
-  return { row: row, urls: urls };
+  return { row: row, urls: urls, tags: tags };
 }
 
 function withTranslation(overview, deOverview) {
@@ -200,4 +203,61 @@ test('latest trailers yield movie ids only, once each', function () {
     2: { resource: { type: 'movie', tmdb_id: 7 } },
     3: { title: 'no resource' }
   }), [7]);
+});
+
+// ---- expected provider: 'premieres on X' before TMDB lists a flatrate provider (OS-T-3HXMY) ----
+var TODAY = '2026-11-21';
+function digital(date, note, type) {
+  return { results: [{ iso_3166_1: 'DE', release_dates: [{ type: type || 4, release_date: date + 'T00:00:00.000Z', note: note }] }] };
+}
+function detailWith(companies, flatrate) {
+  return {
+    production_companies: (companies || []).map(function (name) { return { name: name }; }),
+    'watch/providers': { results: { DE: { flatrate: flatrate || [] } } }
+  };
+}
+
+test('a digital note that names a service gives the expected provider', function () {
+  var expected = importer.expectedProviders(digital('2026-12-04', 'Netflix'), detailWith(['Good One']), '2026-12-04', TODAY, []);
+  assert.deepEqual(expected, [{ id: 8, name: 'Netflix' }]);
+  ['Prime Video', ' disney+ ', 'Apple TV'].forEach(function (note) {
+    assert.equal(importer.expectedProviders(digital('2026-12-04', note), detailWith(), '2026-12-04', TODAY, []).length, 1, note);
+  });
+});
+
+test('no note, a note that names no service, or several services stays unknown', function () {
+  ['', undefined, 'Arte.tv', 'Only on Baker+', 'Netflix and chill', '4K Ultra HD / Blu-ray / DVD'].forEach(function (note) {
+    assert.deepEqual(importer.expectedProviders(digital('2026-12-04', note), detailWith(), '2026-12-04', TODAY, []), [], String(note));
+  });
+  var two = digital('2026-12-04', 'Netflix');
+  two.results[0].release_dates.push({ type: 4, release_date: '2026-12-04T00:00:00.000Z', note: 'Prime Video' });
+  assert.deepEqual(importer.expectedProviders(two, detailWith(), '2026-12-04', TODAY, []), []);
+  // a note on a TV or physical entry, or on another date than the German digital date, is not used
+  assert.deepEqual(importer.expectedProviders(digital('2026-12-04', 'Netflix', 6), detailWith(), '2026-12-04', TODAY, []), []);
+  assert.deepEqual(importer.expectedProviders(digital('2026-12-04', 'Netflix'), detailWith(), '2026-12-18', TODAY, []), []);
+});
+
+test('production companies decide only against the note: another service vetoes, no match or the same one passes', function () {
+  var notes = digital('2026-11-23', 'Netflix'); // Clashing Through the Snow: note says Netflix, studio is Amazon MGM Studios
+  assert.deepEqual(importer.expectedProviders(notes, detailWith(['Amazon MGM Studios', 'Wonderland Sound and Vision']), '2026-11-23', TODAY, []), []);
+  assert.equal(importer.expectedProviders(notes, detailWith(['Netflix Animation Studios']), '2026-11-23', TODAY, []).length, 1);
+  assert.equal(importer.expectedProviders(notes, detailWith(['Tyler Perry Studios']), '2026-11-23', TODAY, []).length, 1);
+  // a studio alone never names a service
+  assert.deepEqual(importer.expectedProviders(digital('2026-11-23', ''), detailWith(['Netflix']), '2026-11-23', TODAY, []), []);
+});
+
+test('a past digital date, or a service the title already streams on, gives no expected provider', function () {
+  assert.deepEqual(importer.expectedProviders(digital('2026-11-01', 'Netflix'), detailWith(), '2026-11-01', TODAY, []), []);
+  assert.deepEqual(importer.expectedProviders(digital('2026-12-04', 'Netflix'), detailWith(), '2026-12-04', TODAY, [{ id: 8, name: 'Netflix' }]), []);
+  assert.deepEqual(importer.expectedProviders(digital('2026-12-04', 'Netflix'), detailWith(), null, TODAY, []), []);
+});
+
+test('the import stores the expected provider as its own tag kind, and drops it once the flatrate entry appears', async function (t) {
+  var releaseDates = digital('2027-01-15', 'Disney+');
+  var before = await importWith(t, Object.assign({}, fixture.detail, detailWith(['Walt Disney Pictures'])), releaseDates);
+  assert.deepEqual(before.tags, [{ kind: 'provider_expected', id: 337, name: 'Disney Plus' }]);
+  var after = await importWith(t, Object.assign({}, fixture.detail, detailWith([], [{ provider_id: 337, provider_name: 'Disney Plus' }])), releaseDates);
+  assert.deepEqual(after.tags, [{ kind: 'provider', id: 337, name: 'Disney Plus' }]);
+  var none = await importWith(t, fixture.detail, fixture.release_dates); // fixture: note missing, and Netflix already streams
+  assert.deepEqual(none.tags, [{ kind: 'provider', id: 8, name: 'Netflix' }]);
 });
