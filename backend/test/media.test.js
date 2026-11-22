@@ -9,6 +9,8 @@ var DatabaseSync = require('node:sqlite').DatabaseSync;
 var importer = require('../import');
 var media = require('../media');
 
+process.env.KINOCHECK_TRIM = '1'; // ident cutting is opt-in in production
+
 function setup() {
   var dir = fs.mkdtempSync(path.join(os.tmpdir(), 'reelradar-media-'));
   var db = new DatabaseSync(':memory:');
@@ -171,4 +173,13 @@ test('reprocessCached upgrades old H.264 files one by one and skips HEVC ones', 
   assert.deepEqual(done, { replaced: 1, kept: 1 });
   assert.equal(readVideo(s.dir, 'goodVideo_2').duration, 94 - 5.5);
   assert.equal(fs.readFileSync(path.join(s.dir, 'half-way_11.part.mp4'), 'utf8'), 'partial');
+});
+
+test('without KINOCHECK_TRIM a KinoCheck trailer is transcoded but never cut', async function () {
+  var s = kinoCheckSetup('kinocheck');
+  var tools = fakeToolchain({ blacks: INTRO_AND_OUTRO });
+  delete process.env.KINOCHECK_TRIM;
+  try { await media.ensureTitleTrailer(s.db, 1, { env: s.env, execFile: tools.run }); } finally { process.env.KINOCHECK_TRIM = '1'; }
+  assert.equal(readVideo(s.dir, 'goodVideo_2').duration, 100);
+  assert.ok(!tools.log.some(function (l) { return /blackdetect/.test(l); }));
 });

@@ -18,6 +18,7 @@ var busy = 0;
 var skipped = new Set(); // keys not replaced this process (failed or already HEVC)
 var reprocessing = null;
 
+// Cutting is off unless KINOCHECK_TRIM=1: the detector has not been checked against real KinoCheck files yet, and a wrong cut removes trailer content.
 // KinoCheck ident detection: a black frame run bracketing the ident. shortcut: tuned by eye, not on
 // real files; an end is cut only if a black run sits inside its window, else that end stays uncut.
 var INTRO_BLACK_START_MIN = 1.5; // black must begin after at least this much ident
@@ -94,7 +95,7 @@ async function processFile(file, isKinoCheck, options) {
     var before = await probe(run, file);
     if (!before.video || !(before.duration > 0)) throw new Error('unreadable source');
     if (before.video.codec_name === 'hevc' && before.video.codec_tag_string === 'hvc1') return false; // already processed
-    var cuts = isKinoCheck ? await findCuts(run, file, before.duration) : { start: null, end: null };
+    var cuts = isKinoCheck && process.env.KINOCHECK_TRIM === '1' ? await findCuts(run, file, before.duration) : { start: null, end: null };
     var args = ['-i', file];
     if (cuts.start !== null) args.push('-ss', String(cuts.start));
     if (cuts.end !== null) args.push('-to', String(cuts.end));
