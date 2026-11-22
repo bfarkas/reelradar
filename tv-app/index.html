@@ -79,6 +79,13 @@ header { position: absolute; left: 80px; top: 36px; width: 1760px; height: 80px;
 .tag.focus { border-color: #fff; }
 #player { background: #000; }
 #video { width: 1920px; height: 1080px; }
+#ctl { position: absolute; left: 0; bottom: 0; width: 1920px; height: 170px; background: linear-gradient(0deg, rgba(0,0,0,0.75), rgba(0,0,0,0)); }
+#ctl .pi { position: absolute; left: 80px; bottom: 74px; width: 40px; height: 40px; }
+#ctl .pi.playing { width: 0; height: 0; border-style: solid; border-width: 20px 0 20px 34px; border-color: transparent transparent transparent #f4ede3; }
+#ctl .pi.paused { border-left: 14px solid #f4ede3; border-right: 14px solid #f4ede3; width: 12px; box-sizing: content-box; }
+#ptime { position: absolute; left: 144px; bottom: 74px; font-size: 34px; line-height: 40px; color: #f4ede3; }
+#pbar { position: absolute; left: 80px; bottom: 40px; width: 1760px; height: 8px; background: rgba(255,255,255,0.3); }
+#pfill { width: 0; height: 8px; background: #e0412a; }
 #status { position: absolute; left: 0; top: 480px; width: 1920px; text-align: center; font-size: 44px; color: #ddd; }
 #message { position: absolute; left: 80px; top: 680px; font-size: 34px; color: #cfc3b5; }
 </style>
@@ -116,6 +123,7 @@ header { position: absolute; left: 80px; top: 36px; width: 1760px; height: 80px;
 <div id="player" class="layer hidden">
   <video id="video"></video>
   <div id="status"></div>
+  <div id="ctl" class="hidden"><span id="pi" class="pi playing"></span><span id="ptime"></span><div id="pbar"><div id="pfill"></div></div></div>
 </div>
 <script>
 // ES5 only. API on rei3 (LAN, behind Caddy).
@@ -509,10 +517,54 @@ function closeFilter() {
 }
 
 // ---- player: fullscreen <video> on the backend's cached MP4 ----
+// Overlay helpers are pure (tested in backend/test/tv-player.test.js).
+var OVERLAY_MS = 3000;
+function fmtTime(sec) {
+  sec = sec > 0 && isFinite(sec) ? Math.floor(sec) : 0;
+  var s = sec % 60;
+  return Math.floor(sec / 60) + ':' + (s < 10 ? '0' : '') + s;
+}
+// Seek target: base + delta, never below 0, never past the end once the duration is known.
+function seekPosition(base, delta, duration) {
+  var t = base + delta;
+  if (duration > 0 && isFinite(duration)) t = Math.min(t, duration);
+  return Math.max(0, t);
+}
+function overlayState(position, duration) {
+  var known = duration > 0 && isFinite(duration);
+  return { text: fmtTime(position) + ' / ' + fmtTime(duration), percent: known ? Math.min(100, Math.max(0, position / duration * 100)) : 0 };
+}
+var overlayTimer = null;
+var seekTarget = null; // set while a seek is pending, so repeated presses add up and the bar shows the target
+function paintOverlay() {
+  var video = $('video');
+  var state = overlayState(seekTarget !== null ? seekTarget : video.currentTime, video.duration);
+  $('ptime').textContent = state.text;
+  $('pfill').style.width = state.percent + '%';
+  $('pi').className = 'pi ' + (video.paused ? 'paused' : 'playing');
+}
+function hideOverlay() {
+  clearTimeout(overlayTimer);
+  overlayTimer = null;
+  $('ctl').className = 'hidden';
+}
+// Shown on every seek/pause/resume; stays while paused, hides OVERLAY_MS after the last key while playing.
+function showOverlay() {
+  $('ctl').className = '';
+  paintOverlay();
+  clearTimeout(overlayTimer);
+  overlayTimer = $('video').paused ? null : setTimeout(hideOverlay, OVERLAY_MS);
+}
+function syncOverlay() {
+  if (!$('video').seeking) seekTarget = null;
+  if ($('ctl').className === '') paintOverlay();
+}
 function play(title) {
   var token = ++playToken;
   var video = $('video');
   showLayer('player');
+  hideOverlay();
+  seekTarget = null;
   $('status').textContent = 'Loading trailer: ' + title.title;
   getJson(API + '/api/stream/' + title.tmdb_id, function (error, stream) {
     if (token !== playToken) return;
@@ -527,11 +579,15 @@ function closePlayer() {
   video.pause();
   video.removeAttribute('src');
   video.load();
+  hideOverlay();
+  seekTarget = null;
   showLayer('main');
   setFocus(focused.main);
 }
 $('video').addEventListener('playing', function () { $('status').textContent = ''; });
 $('video').addEventListener('ended', closePlayer);
+$('video').addEventListener('timeupdate', syncOverlay);
+$('video').addEventListener('seeked', syncOverlay);
 $('video').addEventListener('error', function () {
   if ($('video').getAttribute('src')) $('status').textContent = 'Playback failed. Back returns.';
 });
@@ -539,11 +595,12 @@ function playerKey(code) {
   var video = $('video');
   if (code === KEYS.ENTER || code === KEYS.PLAY_PAUSE || code === KEYS.PLAY || code === KEYS.PAUSE) {
     if (video.paused) video.play(); else video.pause();
-    $('status').textContent = video.paused ? 'Paused' : '';
-  } else if (code === KEYS.RIGHT || code === KEYS.FF) {
-    video.currentTime = Math.min(video.duration || 0, video.currentTime + 10);
-  } else if (code === KEYS.LEFT || code === KEYS.RW) {
-    video.currentTime = Math.max(0, video.currentTime - 10);
+    showOverlay();
+  } else if (code === KEYS.RIGHT || code === KEYS.FF || code === KEYS.LEFT || code === KEYS.RW) {
+    var forward = code === KEYS.RIGHT || code === KEYS.FF;
+    seekTarget = seekPosition(seekTarget !== null ? seekTarget : video.currentTime, forward ? 10 : -10, video.duration);
+    video.currentTime = seekTarget;
+    showOverlay();
   } else if (code === KEYS.STOP) {
     closePlayer();
   }
