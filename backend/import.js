@@ -177,6 +177,17 @@ function parseExtraIds(value) {
     .filter(function (item) { return Number.isInteger(item) && item > 0; });
 }
 
+// /trailers/latest answers with an object keyed "0", "1", ...; keep movies only
+function latestTrailerIds(body) {
+  var ids = [];
+  Object.keys(body || {}).forEach(function (key) {
+    var resource = body[key] && body[key].resource;
+    var id = resource && resource.type === 'movie' && Number(resource.tmdb_id);
+    if (Number.isInteger(id) && id > 0 && ids.indexOf(id) === -1) ids.push(id);
+  });
+  return ids;
+}
+
 async function runImport(options) {
   options = options || {};
   var fetchFn = options.fetch || global.fetch;
@@ -191,14 +202,15 @@ async function runImport(options) {
   var importId;
   var started = new Date().toISOString();
   var token = options.tmdbApiKey || env.TMDB_API_KEY;
-  var limit = Number(env.IMPORT_LIMIT || 20);
   var listsPath = env.LISTS_PATH || path.join(__dirname, 'lists.json');
   var lists;
   var tmdbHeaders = { Authorization: 'Bearer ' + token, Accept: 'application/json' };
   var kcHeaders = { Accept: 'application/json' };
 
-  if (!Number.isInteger(limit) || limit < 1) limit = 20;
-  if (env.KINOCHECK_API_KEY) kcHeaders['X-Api-Key'] = env.KINOCHECK_API_KEY;
+  if (env.KINOCHECK_API_KEY) {
+    kcHeaders['X-Api-Key'] = env.KINOCHECK_API_KEY;
+    kcHeaders['X-Api-Host'] = 'api.kinocheck.com';
+  }
   if (ownsDb) {
     fs.mkdirSync(path.dirname(dbPath), { recursive: true });
     db = new DatabaseSync(dbPath);
@@ -213,15 +225,33 @@ async function runImport(options) {
     if (!token) throw new Error('TMDB_API_KEY is required');
     lists = JSON.parse(fs.readFileSync(listsPath, 'utf8'));
 
-    var discoverUrl = new URL(TMDB_BASE + '/discover/movie');
-    discoverUrl.searchParams.set('region', 'DE');
-    discoverUrl.searchParams.set('with_release_type', '3');
-    discoverUrl.searchParams.set('release_date.gte', shiftedDate(now, -30));
-    discoverUrl.searchParams.set('release_date.lte', shiftedDate(now, 90));
-    discoverUrl.searchParams.set('sort_by', 'popularity.desc');
-    discoverUrl.searchParams.set('language', 'de-DE');
-    var discover = await requestJson(fetchFn, discoverUrl.toString(), { headers: tmdbHeaders }, 'TMDB');
-    var ids = (discover.results || []).slice(0, limit).map(function (movie) { return movie.id; });
+    var ids = [];
+    // TMDB caps discover at 500 pages
+    for (var page = 1, pages = 1; page <= pages && page <= 500; page += 1) {
+      var discoverUrl = new URL(TMDB_BASE + '/discover/movie');
+      discoverUrl.searchParams.set('region', 'DE');
+      discoverUrl.searchParams.set('with_release_type', '3|4|6'); // theatrical, digital, TV
+      discoverUrl.searchParams.set('release_date.gte', shiftedDate(now, -30));
+      discoverUrl.searchParams.set('release_date.lte', shiftedDate(now, 183));
+      discoverUrl.searchParams.set('sort_by', 'popularity.desc');
+      discoverUrl.searchParams.set('language', 'de-DE');
+      discoverUrl.searchParams.set('page', String(page));
+      if (page > 1) await sleep(250);
+      var discover = await requestJson(fetchFn, discoverUrl.toString(), { headers: tmdbHeaders }, 'TMDB');
+      pages = discover.total_pages || 1;
+      (discover.results || []).forEach(function (movie) {
+        if (ids.indexOf(movie.id) === -1) ids.push(movie.id);
+      });
+    }
+    try {
+      var latest = await requestJson(fetchFn, KINOCHECK_BASE + '/trailers/latest?limit=100&language=en',
+        { headers: kcHeaders }, 'KinoCheck');
+      latestTrailerIds(latest).forEach(function (id) {
+        if (ids.indexOf(id) === -1) ids.push(id);
+      });
+    } catch (error) {
+      logger.warn('KinoCheck latest trailers degraded: ' + error.message);
+    }
     parseExtraIds(env.IMPORT_EXTRA_IDS).forEach(function (id) {
       if (ids.indexOf(id) === -1) ids.push(id);
     });
@@ -336,6 +366,7 @@ module.exports = {
   ensureSchema: ensureSchema,
   germanDates: germanDates,
   kinoCheckCandidates: kinoCheckCandidates,
+  latestTrailerIds: latestTrailerIds,
   mergeCandidates: mergeCandidates,
   runImport: runImport
 };

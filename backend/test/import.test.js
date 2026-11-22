@@ -23,6 +23,9 @@ function successfulFetch(url) {
   if (url.indexOf('/discover/movie') !== -1) return response(200, fixture.discover);
   if (url.indexOf('/movie/101/release_dates') !== -1) return response(200, fixture.release_dates);
   if (url.indexOf('/movie/101/videos') !== -1) return response(200, fixture.videos);
+  if (url.indexOf('api.kinocheck.com/trailers/latest') !== -1) {
+    return response(200, { 0: { resource: { type: 'movie', tmdb_id: 101 } }, 1: { resource: { type: 'show', tmdb_id: 93405 } } });
+  }
   if (url.indexOf('api.kinocheck.com/movies') !== -1) return response(200, fixture.kinocheck);
   if (url.indexOf('/movie/101?') !== -1) return response(200, fixture.detail);
   return response(404, {});
@@ -68,7 +71,7 @@ test('failed import preserves titles and candidates and records failure', async 
     },
     sleep: function () { return Promise.resolve(); },
     now: new Date('2026-11-21T12:00:00Z'),
-    env: { TMDB_API_KEY: 'fixture-token', IMPORT_LIMIT: '1' },
+    env: { TMDB_API_KEY: 'fixture-token' },
     logger: { log: function () {}, warn: function () {} }
   });
 
@@ -89,6 +92,10 @@ test('failed import preserves titles and candidates and records failure', async 
   assert.ok(calls.some(function (call) {
     return call.url === 'https://api.kinocheck.com/movies?tmdb_id=101&language=en';
   }));
+  assert.ok(calls.some(function (call) {
+    return /discover\/movie\?.*with_release_type=3%7C4%7C6.*release_date\.lte=2027-05-23.*page=1/.test(call.url);
+  }));
+  assert.ok(calls.some(function (call) { return call.url.indexOf('/trailers/latest') !== -1; }));
   db.close();
 
   await assert.rejects(importer.runImport({
@@ -96,7 +103,7 @@ test('failed import preserves titles and candidates and records failure', async 
     fetch: function () { return response(500, { error: 'fixture failure' }); },
     sleep: function () { return Promise.resolve(); },
     now: new Date('2026-11-21T12:00:00Z'),
-    env: { TMDB_API_KEY: 'fixture-token', IMPORT_LIMIT: '1' },
+    env: { TMDB_API_KEY: 'fixture-token' },
     logger: { log: function () {}, warn: function () {} }
   }), /TMDB returned HTTP 500/);
 
@@ -115,4 +122,13 @@ test('KinoCheck clips tagged Trailer are not treated as trailers', function () {
     { youtube_video_id: 'tr1', categories: ['Trailer'] }
   ] });
   assert.deepEqual(out.map(function (c) { return [c.key, c.type]; }), [['clip1', 'Clip'], ['tr1', 'Trailer']]);
+});
+
+test('latest trailers yield movie ids only, once each', function () {
+  assert.deepEqual(importer.latestTrailerIds({
+    0: { resource: { type: 'movie', tmdb_id: 7 } },
+    1: { resource: { type: 'show', tmdb_id: 8 } },
+    2: { resource: { type: 'movie', tmdb_id: 7 } },
+    3: { title: 'no resource' }
+  }), [7]);
 });

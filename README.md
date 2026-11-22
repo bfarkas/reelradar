@@ -21,10 +21,11 @@ Set `TMDB_API_KEY` in `.env`, rebuild the stack, then run:
 docker compose exec backend node import.js
 ```
 
-`IMPORT_LIMIT` controls how many discover results are imported (default 20),
-`IMPORT_EXTRA_IDS` is a comma-separated list of extra TMDB movie IDs, and
+The import takes every German theatrical, digital and TV release from 30 days ago
+to 6 months ahead (all TMDB discover pages), plus the movies behind KinoCheck's
+100 latest trailers. `IMPORT_EXTRA_IDS` is a comma-separated list of extra TMDB movie IDs, and
 `IMPORT_ON_START=1` runs one import whenever the backend starts. `KINOCHECK_API_KEY`
-is optional. Allow/deny overrides live in `backend/lists.json`.
+is optional but needed at this volume (1,000 requests/day without it). Allow/deny overrides live in `backend/lists.json`.
 
 This product uses the TMDB API but is not endorsed or certified by TMDB.
 KinoCheck trailers link back to KinoCheck as their source.

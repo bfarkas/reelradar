@@ -117,7 +117,8 @@ var FILTER_KEY = 'reelradar.filter';
 // ---- views (same logic in frontend/index.html and tv-app/index.html) ----
 var VIEWS = [['upcoming', 'Release calendar'], ['trailers', 'New trailers'], ['recent', 'Recently released'], ['genres', 'Genres'], ['all', 'All titles']];
 var KINDS = [['all', 'All releases'], ['cinema', 'Cinema'], ['streaming', 'Streaming']];
-var WINDOW_DAYS = 90; // "upcoming" and "recently released" look three months ahead/back
+var WINDOW_DAYS = 90; // "recently released" looks three months back
+var AHEAD_DAYS = 183; // "upcoming" looks six months ahead, matching the import
 
 function isoDay(offsetDays) {
   var d = new Date(Date.now() + offsetDays * 86400000);
@@ -138,7 +139,7 @@ function viewSections(view, titles, kind) {
   var today = isoDay(0);
   if (view === 'upcoming' || view === 'recent') {
     var from = view === 'upcoming' ? today : isoDay(-WINDOW_DAYS);
-    var to = view === 'upcoming' ? isoDay(WINDOW_DAYS + 1) : today;
+    var to = view === 'upcoming' ? isoDay(AHEAD_DAYS + 1) : today;
     var entries = [];
     titles.forEach(function (title) {
       releases(title, kind).forEach(function (entry) { if (entry.date >= from && entry.date < to) entries.push(entry); });
