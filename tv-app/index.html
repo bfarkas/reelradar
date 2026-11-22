@@ -22,6 +22,14 @@ header { position: absolute; left: 80px; top: 36px; width: 1760px; height: 80px;
 .btn.on { background: #c8321e; }
 .btn.focus { border-color: #fff; background: rgba(255,255,255,0.14); }
 .btn.on.focus { background: #c8321e; }
+/* layout switcher like the web page: one segmented control, the active half red */
+#layout { display: inline-block; vertical-align: middle; border: 2px solid #5a4d42; border-radius: 40px; padding: 2px; }
+#layout .btn { margin: 0; padding: 12px 22px; }
+.ico { display: inline-block; vertical-align: middle; width: 26px; height: 26px; }
+.ico.wall { background: linear-gradient(#f4ede3, #f4ede3) 0 0 / 11px 11px no-repeat, linear-gradient(#f4ede3, #f4ede3) 15px 0 / 11px 11px no-repeat,
+  linear-gradient(#f4ede3, #f4ede3) 0 15px / 11px 11px no-repeat, linear-gradient(#f4ede3, #f4ede3) 15px 15px / 11px 11px no-repeat; }
+.ico.rows { background: linear-gradient(#f4ede3, #f4ede3) 0 2px / 26px 4px no-repeat, linear-gradient(#f4ede3, #f4ede3) 0 11px / 26px 4px no-repeat,
+  linear-gradient(#f4ede3, #f4ede3) 0 20px / 26px 4px no-repeat; }
 #hero { position: absolute; left: 80px; top: 170px; width: 1150px; height: 440px; }
 #kicker { color: #e0412a; font-size: 24px; font-weight: bold; letter-spacing: 4px; text-transform: uppercase; height: 34px; }
 #hero-title { margin: 6px 0 14px; font-size: 76px; line-height: 1.05; max-height: 160px; overflow: hidden; }
@@ -83,7 +91,7 @@ header { position: absolute; left: 80px; top: 36px; width: 1760px; height: 80px;
     <div id="views"></div>
     <span class="btn" id="open-filter">Filter</span>
     <span class="btn" id="clear-filter">Clear filter</span>
-    <span class="btn" id="toggle-layout"></span>
+    <span id="layout"><span class="btn focusable" id="layout-wall"><span class="ico wall"></span></span><span class="btn focusable" id="layout-rows"><span class="ico rows"></span></span></span>
   </header>
   <div id="count"></div>
   <div id="hero">
@@ -436,16 +444,20 @@ function requestButton(title) {
 
 function renderLayout() {
   $('main').className = 'layer' + (wall ? ' wall' : '') + (layer === 'main' ? '' : ' hidden');
-  $('toggle-layout').textContent = wall ? 'Rows' : 'Wall';
+  removeClass($('layout-wall'), 'on');
+  removeClass($('layout-rows'), 'on');
+  $(wall ? 'layout-wall' : 'layout-rows').className += ' on';
 }
-$('toggle-layout').className += ' focusable';
-$('toggle-layout').onactivate = function () {
-  wall = !wall;
-  try { window.localStorage.setItem(LAYOUT_KEY, wall ? 'wall' : 'rows'); } catch (error) {}
-  renderLayout();
-  renderList();
-  setFocus($('toggle-layout'));
-};
+[['layout-wall', true], ['layout-rows', false]].forEach(function (option) {
+  $(option[0]).onactivate = function () {
+    if (wall === option[1]) return;
+    wall = option[1];
+    try { window.localStorage.setItem(LAYOUT_KEY, wall ? 'wall' : 'rows'); } catch (error) {}
+    renderLayout();
+    renderList();
+    setFocus($(option[0]));
+  };
+});
 renderLayout();
 renderViews();
 $('open-filter').className += ' focusable';
