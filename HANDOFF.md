@@ -36,3 +36,4 @@ Next:
 - Install the TV app on the TV (ask the owner first) and check with them.
 - Commit + push; log progress on OctoSprout tasks OS-T-DV0WN (data), OS-T-2ADN0 (web), OS-T-34KA0 (TV).
 - Pending owner approvals: OS-PROP-P6WJY (fallback in ADR OS-D-51H34).
+- Poster wall (second mockup, OS-T-C7J65): web grid/list toggle (localStorage reelradar.layout) with badge tiles + detail dialog, deployed; TV Wall/Rows header button with info bar, checked in the 1920x1080 browser preview. TV app still not installed on the TV (waiting for the owner's OK).

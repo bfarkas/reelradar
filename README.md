@@ -101,6 +101,8 @@ The web page adds All / Cinema / Streaming chips and a streaming-service filter 
 
 On the TV, a hero at the top shows the focused poster's backdrop, title, date, synopsis, Play trailer and Request via Seerr; poster rows sit below. Left/Right moves along a row, Up goes to Play trailer, Down returns to the poster.
 
+**Poster wall** (second mockup) is a denser alternative layout on both. On the web page, the grid/list toggle in the filter bar switches it (remembered per browser): a poster grid with a Cinema or service badge and the date, a hover tip, and the full card in a dialog on click; three columns on phones. On the TV, the Wall/Rows button in the header switches it: a poster grid with an info bar (title, date, where, Request via Seerr) at the bottom; OK on a poster plays the trailer, Down from the last row reaches the request button.
+
 To preview the TV app in a desktop browser, serve `tv-app/` over HTTP (`.claude/launch.json` has a `python3 -m http.server` entry on port 8765); opened as a file it can't reach the API.
 
 ## Scheduled import

@@ -66,6 +66,33 @@ details.check summary { cursor: pointer; }
 details.check div { margin: 3px 0; overflow-wrap: anywhere; }
 .empty { color: var(--muted); padding: 40px 0; }
 
+/* poster wall layout */
+.layout { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.layout button { background: var(--chip); border: 0; cursor: pointer; font-size: 15px; line-height: 1; padding: 8px 11px; }
+.layout button[aria-pressed="true"] { background: var(--red); color: #fff; }
+.wall { display: grid; gap: 16px 12px; grid-template-columns: repeat(auto-fill, minmax(122px, 1fr)); }
+.tile { background: none; border: 0; cursor: pointer; padding: 0; position: relative; text-align: center; }
+.tile .art { aspect-ratio: 2 / 3; background: #2a221c center / cover no-repeat; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.18); color: #f4ede3; font-family: var(--serif); font-size: 15px; overflow: hidden; position: relative; }
+.tile .art .name { left: 8px; position: absolute; right: 8px; top: 40%; }
+.tile:hover .art, .tile:focus-visible .art { box-shadow: 0 0 0 3px var(--red), 0 6px 18px rgba(200,50,30,0.35); }
+.tile:focus { outline: none; }
+.badge { background: rgba(20,15,12,0.88); border-radius: 4px; color: #fff; font-family: var(--sans); font-size: 10px; font-weight: 800; left: 50%; letter-spacing: 1px; max-width: 88%; overflow: hidden; padding: 3px 7px; position: absolute; text-overflow: ellipsis; text-transform: uppercase; top: 7px; transform: translateX(-50%); white-space: nowrap; }
+.badge.streaming { background: var(--red); }
+.tile .date { color: var(--muted); display: block; font-size: 12px; margin-top: 6px; }
+.tip { background: var(--ink); border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,0.3); color: #fff; display: none; font-size: 12px; left: 50%; padding: 8px 10px; position: absolute; text-align: left; top: 72%; transform: translateX(-50%); width: 170px; z-index: 3; }
+.tip strong { display: block; font-size: 13px; margin-bottom: 2px; }
+@media (hover: hover) { .tile:hover .tip { display: block; } }
+body.wall-mode .hero .wrap { padding-bottom: 18px; padding-top: 22px; }
+body.wall-mode .hero h1 { font-size: clamp(28px, 4vw, 40px); font-style: italic; margin-bottom: 0; }
+body.wall-mode .hero p.lead { display: none; }
+#detail { align-items: center; background: rgba(10, 8, 6, 0.6); display: flex; inset: 0; justify-content: center; padding: 16px; position: fixed; z-index: 9; }
+#detail[hidden] { display: none; }
+#detail .card { box-shadow: 0 12px 40px rgba(0,0,0,0.35); max-width: 560px; position: relative; width: 100%; }
+#detail .card .poster { flex-basis: 150px; width: 150px; }
+#detail .overview { -webkit-line-clamp: 8; }
+#detail .x { position: absolute; right: 10px; top: 8px; }
+#detail .card h3 { padding-right: 44px; }
+
 #player { align-items: center; background: rgba(10, 8, 6, 0.9); display: flex; inset: 0; justify-content: center; padding: 24px; position: fixed; z-index: 10; }
 #player[hidden] { display: none; }
 #player video { background: #000; max-height: 85vh; max-width: 100%; width: 1100px; }
@@ -82,6 +109,8 @@ footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 12px
   .hero .wrap { padding: 24px 16px; }
   .grid { grid-template-columns: 1fr; }
   .poster { flex-basis: 88px; width: 88px; }
+  .wall { gap: 12px 8px; grid-template-columns: repeat(3, 1fr); }
+  #detail .card .poster { flex-basis: 96px; width: 96px; }
   #count { margin-left: 0; width: 100%; }
 }
 </style>
@@ -104,6 +133,7 @@ footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 12px
     <select class="chip" id="service" aria-label="Streaming service"></select>
     <button type="button" class="chip" id="filter-toggle" aria-pressed="false">Genres &amp; keywords</button>
     <button type="button" class="chip" id="filter-clear">Clear filter</button>
+    <span class="layout" id="layout" role="group" aria-label="Layout"></span>
     <span id="count"></span>
   </div>
   <section id="filter" hidden>
@@ -115,6 +145,8 @@ footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 12px
   </section>
   <div id="titles"><p class="empty">Loading titles...</p></div>
 </main>
+
+<div id="detail" hidden role="dialog" aria-label="Title details"></div>
 
 <div id="player" hidden role="dialog" aria-label="Trailer">
   <button type="button" class="btn close" id="player-close">Close</button>
@@ -144,7 +176,11 @@ var video = document.getElementById('video');
 function closePlayer() { video.pause(); video.removeAttribute('src'); video.load(); player.hidden = true; }
 document.getElementById('player-close').onclick = closePlayer;
 player.onclick = function (event) { if (event.target === player) closePlayer(); };
-document.addEventListener('keydown', function (event) { if (event.key === 'Escape' && !player.hidden) closePlayer(); });
+document.addEventListener('keydown', function (event) {
+  if (event.key !== 'Escape') return;
+  if (!player.hidden) closePlayer();
+  else if (!detail.hidden) closeDetail();
+});
 
 function playTrailer(title, trigger) {
   trigger.disabled = true;
@@ -290,6 +326,27 @@ function shortDate(iso) {
 }
 
 var currentView = 'upcoming';
+var LAYOUT_KEY = 'reelradar.layout';
+var layout = 'list';
+try { layout = window.localStorage.getItem(LAYOUT_KEY) === 'wall' ? 'wall' : 'list'; } catch (error) {}
+
+function renderLayout() {
+  var root = document.getElementById('layout');
+  root.textContent = '';
+  document.body.className = layout === 'wall' ? 'wall-mode' : '';
+  [['wall', '\u25A6', 'Poster wall'], ['list', '\u2630', 'List']].forEach(function (option) {
+    var b = button(option[1], '', function () {
+      layout = option[0];
+      try { window.localStorage.setItem(LAYOUT_KEY, layout); } catch (error) {}
+      renderLayout();
+      renderTitles();
+    });
+    b.setAttribute('aria-pressed', layout === option[0] ? 'true' : 'false');
+    b.setAttribute('aria-label', option[2]);
+    b.title = option[2];
+    root.appendChild(b);
+  });
+}
 
 // ---- filter controls ----
 function collectTags(kind) {
@@ -433,6 +490,7 @@ function render(sections) {
     root.appendChild(text('p', allTitles.length ? 'No titles in this view match the filter.' : 'No titles imported yet.', 'empty'));
     return;
   }
+  if (layout === 'wall') { renderWall(root, sections); return; }
   sections.forEach(function (section) {
     if (section.heading) {
       var day = document.createElement('div');
@@ -450,23 +508,96 @@ function render(sections) {
   });
 }
 
+// Poster wall: calendar views become one flat grid in date order; genre shelves keep their headings.
+function renderWall(root, sections) {
+  var flat = currentView !== 'genres';
+  var groups = flat ? [{ heading: '', items: [].concat.apply([], sections.map(function (s) { return s.items; })) }] : sections;
+  groups.forEach(function (group) {
+    if (group.heading) {
+      var head = document.createElement('div');
+      head.className = 'day';
+      head.appendChild(text('h2', group.heading));
+      if (group.note) head.appendChild(text('small', group.note));
+      root.appendChild(head);
+    } else {
+      root.appendChild(document.createElement('div')).style.height = '12px';
+    }
+    var wall = document.createElement('div');
+    wall.className = 'wall';
+    group.items.forEach(function (item) { wall.appendChild(tile(item)); });
+    root.appendChild(wall);
+  });
+}
+
+function badgeText(title, kind) {
+  if (kind === 'cinema') return 'Cinema';
+  return title.providers && title.providers.length ? title.providers[0].name : 'Streaming';
+}
+
+function tile(item) {
+  var title = item.title;
+  var release = itemRelease(item);
+  var b = button('', 'tile', function () { openDetail(item); });
+  b.setAttribute('aria-label', title.title + (release ? ', ' + badgeText(title, release.kind) + ', ' + shortDate(release.date) : ''));
+  var art = document.createElement('span');
+  art.className = 'art';
+  art.style.display = 'block';
+  if (title.poster_path) art.style.backgroundImage = 'url(' + IMG + 'w342' + title.poster_path + ')';
+  else art.appendChild(text('span', title.title, 'name'));
+  if (release) art.appendChild(text('span', badgeText(title, release.kind), 'badge ' + release.kind));
+  b.appendChild(art);
+  b.appendChild(text('span', release ? shortDate(release.date) : 'No German date', 'date'));
+  var tip = document.createElement('span');
+  tip.className = 'tip';
+  tip.appendChild(text('strong', title.title));
+  if (release) tip.appendChild(text('span', shortDate(release.date) + ' · ' + whereText(title, release.kind)));
+  if (seerrStatus && SEERR_LABELS[seerrStatus[title.tmdb_id]]) {
+    tip.appendChild(document.createElement('br'));
+    tip.appendChild(text('span', SEERR_LABELS[seerrStatus[title.tmdb_id]]));
+  }
+  b.appendChild(tip);
+  return b;
+}
+
+// Clicking a wall poster shows the full card (trailer, Seerr, synopsis) in a dialog.
+var detail = document.getElementById('detail');
+var detailReturn = null;
+function openDetail(item) {
+  detailReturn = document.activeElement;
+  detail.textContent = '';
+  var c = card(item);
+  c.appendChild(button('\u2715', 'btn x', closeDetail)).setAttribute('aria-label', 'Close');
+  detail.appendChild(c);
+  detail.hidden = false;
+  c.querySelector('.btn').focus();
+}
+function closeDetail() {
+  detail.hidden = true;
+  detail.textContent = '';
+  if (detailReturn) detailReturn.focus();
+}
+detail.onclick = function (event) { if (event.target === detail) closeDetail(); };
+
+// The release an item stands for: its calendar entry, or the title's next (else latest) German date.
+function itemRelease(item) {
+  if (item.kind) return item;
+  var all = releases(item.title, 'all').sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+  var today = isoDay(0);
+  return all.filter(function (entry) { return entry.date >= today; })[0] || all[all.length - 1] || null;
+}
+function whereText(title, kind) {
+  if (kind === 'cinema') return 'Cinema';
+  return title.providers && title.providers.length ? title.providers.map(function (p) { return p.name; }).join(', ') : 'Streaming';
+}
+
 // "Cinema · 6 Mar 2026" or "Netflix · 6 Mar 2026"; for a plain list, the next (or latest) German date.
 function releaseLine(item) {
-  var title = item.title;
-  var kind = item.kind, date = item.date;
-  if (!kind) {
-    var all = releases(title, 'all').sort(function (a, b) { return a.date < b.date ? -1 : 1; });
-    var today = isoDay(0);
-    var next = all.filter(function (entry) { return entry.date >= today; })[0] || all[all.length - 1];
-    if (!next) return null;
-    kind = next.kind; date = next.date;
-  }
-  var where = kind === 'cinema' ? 'Cinema' :
-    (title.providers && title.providers.length ? title.providers.map(function (p) { return p.name; }).join(', ') : 'Streaming');
+  var release = itemRelease(item);
+  if (!release) return null;
   var line = document.createElement('p');
   line.className = 'release';
-  line.appendChild(text('span', where, 'kind'));
-  line.appendChild(document.createTextNode(' · ' + shortDate(date)));
+  line.appendChild(text('span', whereText(item.title, release.kind), 'kind'));
+  line.appendChild(document.createTextNode(' · ' + shortDate(release.date)));
   return line;
 }
 
@@ -533,6 +664,7 @@ function seerrControl(title) {
 
 renderViews();
 renderKinds();
+renderLayout();
 
 // Seerr state loads after the list; without it the page simply shows no status.
 getJson('/api/titles', function (error, titles) {
