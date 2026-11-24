@@ -1,9 +1,44 @@
-# reelradar
-ReelRadar is a self-hosted movie and TV discovery service inspired by the discontinued Apple Trailers experience. It helps users discover upcoming and recently released films and series.
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/wordmark-dark.png">
+    <img src="docs/wordmark.png" alt="ReelRadar" width="320">
+  </picture>
+</p>
+
+<p align="center">
+  A self-hosted movie and TV discovery service, inspired by the discontinued Apple Trailers experience.<br>
+  See what is coming to German cinemas and streaming services, watch the trailer, and request it from Seerr.
+</p>
+
+## What it does
+
+- **Release calendar** of German cinema and streaming releases for the next six months, plus new trailers, recently released, genres and all titles.
+- **Movies and series**, imported daily from TMDB and KinoCheck, with "Premieres on Netflix / Apple TV / ..." where a service has announced a date.
+- **Trailers play from your own cache**: each trailer is downloaded once, transcoded to HEVC and served from the LAN, so the TV needs no YouTube player.
+- **One click to Seerr**: see whether a title is requested or in the library, and request it.
+- **Three front ends, one backend**: a responsive web page, a phone layout, and a fullscreen Samsung Tizen TV app driven by arrows, OK and Back.
+
+## Screenshots
+
+**Web**
+
+| Release calendar | Poster wall |
+| --- | --- |
+| ![Web release calendar](docs/screenshots/web-calendar.jpg) | ![Web poster wall](docs/screenshots/web-wall.jpg) |
+
+**Mobile**
+
+<img src="docs/screenshots/mobile.jpg" alt="Mobile poster wall" width="300">
+
+**TV (Samsung Tizen)**
+
+| Hero and rows | Poster wall |
+| --- | --- |
+| ![TV hero and rows](docs/screenshots/tv-rows.jpg) | ![TV poster wall](docs/screenshots/tv-wall.jpg) |
 
 ## Run / configure
 
-Docker Compose stack: `backend` (Node 24, plain `http`, SQLite at `/data/reelradar.db` in the named volume `reelradar-data`, boot counter exposed at `/api/health`) and `frontend` (nginx:alpine, placeholder page, proxies `/api/` to the backend). The frontend is published on `127.0.0.1:8180` only. Caddy is not part of this stack.
+Docker Compose stack: `backend` (Node 24, plain `http`, SQLite at `/data/reelradar.db` in the named volume `reelradar-data`, boot counter exposed at `/api/health`) and `frontend` (nginx:alpine, serves the web page and the trailer cache at `/media/`, proxies `/api/` to the backend). The frontend is published on `127.0.0.1:8180` only. Caddy is not part of this stack.
 
 ```sh
 cp .env.example .env     # fill in TMDB_API_KEY, KINOCHECK_API_KEY, SEERR_URL, SEERR_API_KEY (.env is git-ignored)
