@@ -58,3 +58,19 @@ Next:
 - GPU (owner OK'd): rei3 has a GTX 1660 SUPER (NVENC HEVC) and an old Haswell iGPU (no HEVC encode). Backend image moved from Alpine to node:24-bookworm-slim because NVIDIA libs are glibc-only; compose reserves the nvidia device with capability `video` and sets `HEVC_ENCODER=nvenc`. media.js encodes with hevc_nvenc (p5, vbr, cq 27) and falls back to libx265 on any failure. Verified in a scratch image on rei3: hevc_nvenc present, test encode gives hevc/hvc1, yt-dlp runs. 90 backend tests pass. NOT yet committed or deployed at the time of writing.
 - Next: commit and push, deploy backend + docker-compose.yml to rei3 (`up -d --build`), check `docker compose logs backend`, time `/api/stream/tv/153312`, watch GPU use with nvidia-smi, play a series trailer on the TV, then close OS-T-J0NCM. Tidy: scratch image `rr-gpu-test` and ~/rr-gpu-test on rei3. Reinstall of the TV app is not needed for this.
 - Note: `reelradar.db.pre-series` in the data volume is a copy without the WAL, so treat it as rough.
+
+## 2026-11-24: design critique of TV and web
+- Goal: owner asked for a design critique, then "Yes, file them". Filing findings as backlog tasks in OctoSprout (OS-P-3NEBD). No UI code changed; only this file touched (uncommitted).
+- Draft IDs, created in one update_task call (search OctoSprout before re-filing): OS-T-8B65B (TV shelf Up, focus restore), OS-T-0D4SE (TV no-trailer OK, dialog focus), OS-T-GXNDA (filter visible; blocks XNNEC and XE0MB), OS-T-VJZ7X (TV badges/focus/synopsis/header), OS-T-XNNEC (TV Cinema/Streaming), OS-T-0AQ3G (sort All titles), OS-T-XTPZ8 (web Back/refresh/focus), OS-T-XE0MB (phone), OS-T-065T4 (long pages), OS-T-JQ760 (web cards), OS-T-1N4NM (error recovery).
+- Not filed, because they conflict with owner decisions in OS-T-ZDB3G: wall info bar, and Back exiting the app. A short press must not open the dialog (so OK without a trailer shows a notice). Badge wording "Premieres on X" stays (OS-T-GMHY4). Search is out of scope.
+- The call became proposal OS-PROP-644E8 (over 10 records), so the tasks do NOT exist until the owner approves it in the browser. Do not re-file. Next: owner approves, then picks which to start.
+- Mockups (design only, no app code): 13 frames on a private Design canvas, https://claude.ai/artifact/EY3WyaTxsRgQZPqH4eriij (page "Mockups"; "Page 2" and its empty frame came from the canvas page, not from Claude). Owner decision: badge is a pill at the bottom of the poster (not a band). Owner decision: the web wall drops the hero (backdrop) strip. Not rendered or tested on the TV.
+- OS-PROP-644E8 approved by the owner; the checked tasks exist in backlog. Decisions and mockup links added to OS-T-VJZ7X (TV pill) and OS-T-065T4 (web wall: no strip, pills). Next: owner picks what to start.
+- Nine of the 11 tasks moved to ready; OS-T-XNNEC and OS-T-XE0MB stay in backlog because OS-T-GXNDA blocks them. Move them when GXNDA is done.
+
+## 2026-11-25: implementing the nine ready UI tasks
+- Owner said to implement the Ready tasks "like usual" (OS-P-3NEBD). All nine are built, one commit each on main: 8B65B e35c921, 0D4SE f7a2cbf, GXNDA b4549d5, 0AQ3G 725a218, VJZ7X d33d7e7, XTPZ8 f7659c1, JQ760 595e98a, 065T4 db725b8, 1N4NM 7b02202.
+- Verified: `node --test backend/test` (122 green); web in a browser at desktop width and 375px, TV at 1920x1080, against a mock serving a read-only catalogue snapshot that refuses POST. No real Seerr request was sent.
+- NOT done: deploy of frontend to rei3 and TV app install (ask the owner first). Owner checks on the TV with the real remote are open, including that holding OK for the info dialog never triggers Play (it relies on REPEAT_GAP_MS).
+- Noticed, not changed: the web detail dialog still cuts a long synopsis at 8 lines (`#detail .overview`, older than this work); the TV rows count still mixes units (the count task asked for web only).
+- OS-T-XNNEC and OS-T-XE0MB were blocked by GXNDA and are moved to ready; not implemented.
