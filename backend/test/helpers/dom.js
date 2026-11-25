@@ -18,7 +18,7 @@ function element(tag) {
     getBoundingClientRect: function () { var r = e.rect; return { left: r.left, top: r.top, width: r.width, height: r.height, right: r.left + r.width, bottom: r.top + r.height }; },
     querySelectorAll: function (selector) { return all(e).filter(function (node) { return matches(node, selector); }); },
     querySelector: function (selector) { return e.querySelectorAll(selector)[0] || null; },
-    addEventListener: function () {}, load: function () {}, pause: function () {}, play: function () {}, focus: function () {}
+    addEventListener: function (type, fn) { (e.listeners = e.listeners || {})[type] = fn; }, load: function () {}, pause: function () {}, play: function () {}, focus: function () {}
   };
   Object.defineProperty(e, 'textContent', {
     get: function () { return text; },

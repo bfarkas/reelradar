@@ -67,6 +67,7 @@ header { position: absolute; left: 80px; top: 36px; width: 1760px; height: 80px;
 #main.wall .poster .frame { width: 190px; height: 285px; }
 #main.wall .poster .cap { display: none; }
 #main.wall #message { top: 200px; }
+#main.wall #retry { top: 270px; }
 /* info dialog over the wall (long press OK) */
 #dialog { background: rgba(0, 0, 0, 0.72); }
 #dlg { position: absolute; left: 160px; top: 120px; width: 1600px; height: 840px; background: #1d1712; border: 2px solid #3a2f27; border-radius: 16px; }
@@ -96,6 +97,7 @@ header { position: absolute; left: 80px; top: 36px; width: 1760px; height: 80px;
 #pfill { width: 0; height: 8px; background: #e0412a; }
 #status { position: absolute; left: 0; top: 480px; width: 1920px; text-align: center; font-size: 44px; color: #ddd; }
 #message { position: absolute; left: 80px; top: 680px; font-size: 34px; color: #cfc3b5; }
+#retry { position: absolute; left: 80px; top: 750px; }
 #notice { position: absolute; left: 610px; bottom: 48px; width: 700px; padding: 18px 0; text-align: center; font-size: 32px; background: #1d1712; border: 2px solid #f4ede3; border-radius: 12px; }
 </style>
 </head>
@@ -119,6 +121,7 @@ header { position: absolute; left: 80px; top: 36px; width: 1760px; height: 80px;
     <div id="hero-actions"></div>
   </div>
   <div id="message">Loading titles...</div>
+  <span class="btn hidden" id="retry">Try again</span>
   <div id="list"></div>
   <div id="notice" class="hidden"></div>
 </div>
@@ -258,6 +261,7 @@ var LAYOUT_KEY = 'reelradar.layout';
 var wall = false; // poster wall layout instead of hero + rows
 try { wall = window.localStorage.getItem(LAYOUT_KEY) === 'wall'; } catch (error) {}
 var allTitles = [];
+var loadError = ''; // the message while the list could not be loaded
 var seerrStatus = {}; // titleKey -> none|requested|partial|available
 var SEERR_LABELS = { requested: 'Requested in Seerr', partial: 'Partly in the library', available: 'In the library' };
 var selection = loadSelection();
@@ -412,8 +416,9 @@ function renderList(place) {
   list.textContent = '';
   list.scrollTop = 0;
   focused.poster = null;
-  $('count').textContent = count + ' of ' + allTitles.length + ' titles' + (active ? ' · ' + active + ' filter' + (active > 1 ? 's' : '') + ' on' : '');
-  $('message').textContent = count ? '' : (allTitles.length ? 'No titles in this view match the filter.' : 'No titles imported yet.');
+  $('count').textContent = loadError ? '' : count + ' of ' + allTitles.length + ' titles' + (active ? ' · ' + active + ' filter' + (active > 1 ? 's' : '') + ' on' : '');
+  $('message').textContent = loadError || (count ? '' : (allTitles.length ? 'No titles in this view match the filter.' : 'No titles imported yet.'));
+  $('retry').className = loadError ? 'btn focusable' : 'btn hidden';
   // Calendar views come back per day; on the TV they are one row in date order.
   var rows = currentView === 'genres' ? sections :
     [{ heading: ROW_TITLE[currentView], items: [].concat.apply([], sections.map(function (s) { return s.items; })) }];
@@ -432,7 +437,7 @@ function renderList(place) {
   var target = (place && (list.querySelector('[data-shelf="' + place.shelf + '"][data-id="' + place.id + '"]') ||
     list.querySelector('[data-id="' + place.id + '"]'))) || first;
   if (!wall) showHero(target ? target.item : null);
-  setFocus(target || $('open-filter'));
+  setFocus(target || (loadError ? $('retry') : $('open-filter')));
 }
 
 // The header says that a filter is on, also in the wall, which has no count. Clear filter exists only then; a hidden one
@@ -850,17 +855,27 @@ function sendJson(method, url, callback) {
   request.send();
 }
 
-getJson(API + '/api/titles', function (error, titles) {
-  if (error) { $('message').textContent = 'Could not load titles: ' + error; setFocus($('open-filter')); return; }
-  allTitles = titles;
-  renderList();
-  // Seerr state comes second; without it the request button is still offered.
-  getJson(API + '/api/seerr', function (seerrError, statuses) {
-    if (seerrError) return;
-    seerrStatus = statuses;
-    if (!wall) refreshHero(); // posters carry no Seerr state, so the list stays as it is
+function loadTitles() {
+  getJson(API + '/api/titles', function (error, titles) {
+    if (error) { loadError = 'Could not load titles: ' + error; renderList(); return; }
+    allTitles = titles;
+    renderList();
+    // Seerr state comes second; without it the request button is still offered.
+    getJson(API + '/api/seerr', function (seerrError, statuses) {
+      if (seerrError) return;
+      seerrStatus = statuses;
+      if (!wall) refreshHero(); // posters carry no Seerr state, so the list stays as it is
+    });
   });
-});
+}
+$('retry').onactivate = function () {
+  loadError = '';
+  $('retry').className = 'btn hidden';
+  $('message').textContent = 'Loading titles...';
+  setFocus($('open-filter')); // focus must not stay on the hidden button
+  loadTitles();
+};
+loadTitles();
 </script>
 </body>
 </html>

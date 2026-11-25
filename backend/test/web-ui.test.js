@@ -276,3 +276,47 @@ test('web wall: no backdrop strip, lazy poster images, and the title where there
     assert.equal(find(ctx, item).length, 16);
   });
 });
+
+// ---- error recovery (OS-T-1N4NM) ----
+test('web: a failed load offers Try again, which survives a view change and loads the list', function () {
+  var ctx = load();
+  reply(ctx, '/api/titles', { error: 'down' }, 500);
+  function retry() { return ctx.byId.titles.querySelector('button'); }
+  assert.equal(ctx.byId.titles.querySelector('p').textContent, 'Could not load titles.');
+  assert.equal(retry().textContent, 'Try again');
+  ctx.window.follow('#/all'); // a view change keeps the message and the button
+  assert.equal(retry().textContent, 'Try again');
+  retry().onclick();
+  assert.equal(ctx.byId.titles.querySelector('p').textContent, 'Loading titles...');
+  reply(ctx, '/api/titles', { error: 'down' }, 500);
+  retry().onclick();
+  reply(ctx, '/api/titles', [movie(1)]);
+  assert.equal(ctx.byId.titles.querySelectorAll('.card').length, 1);
+  reply(ctx, '/api/seerr', {});
+});
+
+test('web player: a broken file shows a message; closing and the next trailer show none', function () {
+  var ctx = screen([movie(1)]);
+  var video = ctx.byId.video, message = ctx.document.getElementById('player-error');
+  var source = null;
+  video.getAttribute = function () { return source; };
+  video.removeAttribute = function () { source = null; };
+  function open() {
+    ctx.playTrailer(ctx.allTitles[0], ctx.document.createElement('button'));
+    reply(ctx, '/api/stream/movie/1', { url: '/media/1.mp4' });
+    source = '/media/1.mp4';
+  }
+  open();
+  assert.equal(message.hidden, true);
+  video.listeners.error();
+  assert.equal(message.textContent, 'This trailer could not be played.');
+  assert.equal(message.hidden, false);
+  assert.equal(video.hidden, true);
+  ctx.closePlayer();
+  open();
+  assert.equal(message.hidden, true);
+  assert.equal(video.hidden, false);
+  ctx.closePlayer();
+  video.listeners.error(); // the browser may report the removed source
+  assert.equal(message.hidden, true);
+});

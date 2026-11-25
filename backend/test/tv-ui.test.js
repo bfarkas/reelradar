@@ -22,7 +22,7 @@ function load(stored) {
     return byId[id];
   }
   node('main');
-  ['views', 'open-filter', 'clear-filter', 'layout-wall', 'layout-rows', 'count', 'backdrop', 'kicker', 'hero-title', 'hero-date', 'hero-text', 'hero-actions', 'message', 'list'].forEach(function (id) { node(id, 'main'); });
+  ['views', 'open-filter', 'clear-filter', 'layout-wall', 'layout-rows', 'count', 'backdrop', 'kicker', 'hero-title', 'hero-date', 'hero-text', 'hero-actions', 'message', 'retry', 'list'].forEach(function (id) { node(id, 'main'); });
   node('dialog'); ['dlg-poster', 'dlg-title', 'dlg-date', 'dlg-text', 'dlg-actions'].forEach(function (id) { node(id, 'dialog'); });
   node('filter'); ['genres', 'keywords'].forEach(function (id) { node(id, 'filter'); });
   node('player'); ['video', 'status', 'ctl', 'pi', 'ptime', 'pfill'].forEach(function (id) { node(id, 'player'); });
@@ -273,4 +273,23 @@ test('tv hero: Details opens the full synopsis, and Back returns to Details', fu
 
 test('tv filter: the hidden Clear button is really hidden (.btn sets display, so .hidden alone would lose)', function () {
   assert.match(html, /\.btn\.hidden \{ display: none; \}/);
+});
+
+// ---- error recovery (OS-T-1N4NM) ----
+['rows', 'wall'].forEach(function (layout) {
+  test('TV ' + layout + ': a failed load shows Try again with focus; OK loads the list', function () {
+    var ctx = load({ 'reelradar.layout': layout });
+    reply(ctx, '/api/titles', { error: 'database busy' }, 500);
+    var retry = ctx.byId.retry;
+    assert.equal(ctx.byId.message.textContent, 'Could not load titles: database busy');
+    assert.equal(ctx.byId.count.textContent, '');
+    assert.equal(focusedEl(ctx), retry);
+    ok(ctx);
+    assert.equal(ctx.byId.message.textContent, 'Loading titles...');
+    assert.equal(retry.className, 'btn hidden');
+    reply(ctx, '/api/titles', [movie(1, { de_theatrical: ctx.isoDay(1) })]);
+    assert.equal(ctx.byId.message.textContent, '');
+    assert.equal(retry.className, 'btn hidden');
+    assert.match(focusedEl(ctx).className, /poster/);
+  });
 });

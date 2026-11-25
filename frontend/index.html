@@ -73,6 +73,7 @@ details.check { color: var(--muted); font-size: 11px; margin-top: 8px; }
 details.check summary { cursor: pointer; }
 details.check div { margin: 3px 0; overflow-wrap: anywhere; }
 .empty { color: var(--muted); padding: 40px 0; }
+.empty[role="alert"] { padding-bottom: 12px; }
 
 /* poster wall layout */
 .layout { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
@@ -113,7 +114,8 @@ body.wall-mode .hero p.lead { display: none; }
 #player[hidden] { display: none; }
 #player video { background: #000; max-height: 85vh; max-width: 100%; width: 1100px; }
 #player .close { position: absolute; right: 20px; top: 16px; }
-#player p { color: #fff; }
+#player p { color: #fff; font-size: 17px; text-align: center; }
+#player video[hidden], #player p[hidden] { display: none; }
 
 footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; margin-top: 48px; padding: 20px 0 32px; }
 
@@ -172,6 +174,7 @@ footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 12px
 <div id="player" hidden role="dialog" aria-modal="true" aria-label="Trailer">
   <button type="button" class="btn close" id="player-close">Close</button>
   <video id="video" controls playsinline></video>
+  <p id="player-error" role="alert" hidden></p>
 </div>
 
 <script>
@@ -194,6 +197,18 @@ function button(label, className, onclick) {
 var player = document.getElementById('player');
 var video = document.getElementById('video');
 var playerReturn = null;
+// The message replaces the blank video box; '' brings the video back.
+function showPlayerError(message) {
+  var error = document.getElementById('player-error');
+  error.textContent = message;
+  error.hidden = !message;
+  video.hidden = !!message;
+}
+video.addEventListener('error', function () {
+  if (!video.getAttribute('src')) return; // closing removes the source, which is not a failure
+  showPlayerError('This trailer could not be played.');
+  document.getElementById('player-close').focus();
+});
 function hidePlayer() {
   video.pause(); video.removeAttribute('src'); video.load(); player.hidden = true;
   setModal();
@@ -216,6 +231,7 @@ function playTrailer(title, trigger) {
     trigger.disabled = false;
     trigger.textContent = 'Play trailer';
     if (error) { trigger.textContent = 'Trailer unavailable'; return; }
+    showPlayerError('');
     video.src = stream.url;
     if (player.hidden) {
       playerReturn = returnFocus;
@@ -244,6 +260,7 @@ function getJson(url, callback, method) {
 // ---- filter state: {v:1, genres, keywords, kind, service} in localStorage (may be missing or throw) ----
 var FILTER_KEY = 'reelradar.filter';
 var allTitles = [];
+var loadError = ''; // the message while the list could not be loaded
 var seerrStatus = {}; // titleKey -> none|requested|partial|available; a missing key is unknown and still offers the request
 var SEERR_LABELS = { requested: 'Requested in Seerr', partial: 'Partly in the library', available: 'In the library' };
 var selection = loadSelection();
@@ -648,6 +665,7 @@ function emptyMessage(view, chosen) {
 }
 
 function renderTitles() {
+  if (loadError) { showLoadError(); return; } // a view or filter change must not turn the failure into "no titles"
   renderServices();
   var shown = allTitles.filter(function (title) { return matchesFilter(title, scoped(currentView, selection)); });
   var sections = viewSections(currentView, shown, selection.kind);
@@ -937,22 +955,43 @@ renderViews();
 renderKinds();
 renderLayout();
 
-// Seerr state loads after the list; without it the request button is still offered.
-getJson('/api/titles', function (error, titles) {
-  if (error) {
-    document.getElementById('titles').textContent = error.message === 'network' ? 'Backend unreachable.' : 'Could not load titles.';
-    return;
-  }
-  allTitles = titles;
-  renderGenres();
-  renderKeywords();
-  renderTitles();
-  getJson('/api/seerr', function (seerrError, statuses) {
-    if (seerrError) return;
-    seerrStatus = statuses;
-    renderTitles();
+function showLoadError() {
+  var root = document.getElementById('titles');
+  var message = text('p', loadError, 'empty');
+  message.setAttribute('role', 'alert');
+  var retry = button('Try again', 'btn primary', function () {
+    loadError = '';
+    root.textContent = '';
+    root.appendChild(text('p', 'Loading titles...', 'empty'));
+    loadTitles(true);
   });
-});
+  root.textContent = '';
+  root.appendChild(message);
+  root.appendChild(retry);
+  return retry;
+}
+
+// Seerr state loads after the list; without it the request button is still offered.
+function loadTitles(retried) {
+  getJson('/api/titles', function (error, titles) {
+    if (error) {
+      loadError = error.message === 'network' ? 'Backend unreachable.' : 'Could not load titles.';
+      var retry = showLoadError();
+      if (retried) retry.focus(); // the pressed button was replaced, which drops focus
+      return;
+    }
+    allTitles = titles;
+    renderGenres();
+    renderKeywords();
+    renderTitles();
+    getJson('/api/seerr', function (seerrError, statuses) {
+      if (seerrError) return;
+      seerrStatus = statuses;
+      renderTitles();
+    });
+  });
+}
+loadTitles();
 </script>
 </body>
 </html>
