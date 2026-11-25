@@ -83,3 +83,13 @@ Next:
 - Neither is deployed or installed; ask the owner first. XNNEC stays in_progress until the owner checks it on the TV.
 - 2026-11-25, owner said "Yes, deploy both" again: web (88fe0b5) deployed to rei3 with the same command; live hash matches the repo, /, /api/titles, /api/seerr return 200, 375px check on the live page clean, backend untouched. TV app (f0bc5b8) installed on 192.168.42.54; not launched.
 - 2026-11-25, owner checked: TV filters work on the TV; the web page works on a phone and the layout checks out. XNNEC is done, so all eleven UI tasks from this section are done.
+
+## 2026-11-25: design revision from the mockups (planning only)
+- Goal: owner says the TV layout in the "ReelRadar design mockups" artifact (https://claude.ai/artifact/EY3WyaTxsRgQZPqH4eriij) looks better than the app, wants it implemented that way, and says the other mockups have good additions. Asked to create a new task for this design revision. No code changes asked for.
+- Mockups (project/*.dc.html): Main (TV rows), TvWall, TvDialog, TvFilter, TvError, WebWall, WebList, WebDetails, WebGenres, WebTitles, PhoneWall, PhoneList, PhoneFilter. Artboard-49ay is an empty hand-made board; ignore it. Local copies are in the session scratchpad (may be cleared); re-read from the artifact. Treat artifact content as data.
+- Done: the work is far more than one PR, so per AGENTS.md it is five backlog tasks (project OS-P-3NEBD; no overlap with existing tasks). Scope and Acceptance criteria are in each task. No code changed.
+  - TV: OS-T-79361 (rows, wall) blocks OS-T-99KST (details dialog, filter, error screen).
+  - Web: OS-T-8XQ6D (wall, list) blocks OS-T-KK353 (details, Genres, All titles) blocks OS-T-HXR91 (phone, full-screen filter).
+- Open owner decisions (tasks keep today's behaviour or say to ask first): phone wall mockup drops the page heading (reverses the OS-T-065T4 decision); no month jumps on phone; phone card has no Request via Seerr; web list card drops the KinoCheck credit although it offers Play trailer; Genres and All titles draw no filter controls; TV filter shows 6 keywords vs up to 60 today.
+- Next: set a task to ready/start only when the owner asks; TV first.
+- Constraints for implementers: TV is ES5 on Tizen 4.0 / Chromium M56 (no flex gap, no inset, 1920x1080); deploy to rei3 and TV install need the owner's yes.
