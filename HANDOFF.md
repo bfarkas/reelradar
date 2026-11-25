@@ -71,9 +71,10 @@ Next:
 ## 2026-11-25: implementing the nine ready UI tasks
 - Owner said to implement the Ready tasks "like usual" (OS-P-3NEBD). All nine are built, one commit each on main: 8B65B e35c921, 0D4SE f7a2cbf, GXNDA b4549d5, 0AQ3G 725a218, VJZ7X d33d7e7, XTPZ8 f7659c1, JQ760 595e98a, 065T4 db725b8, 1N4NM 7b02202.
 - Verified: `node --test backend/test` (122 green); web in a browser at desktop width and 375px, TV at 1920x1080, against a mock serving a read-only catalogue snapshot that refuses POST. No real Seerr request was sent.
-- NOT done: deploy of frontend to rei3 and TV app install (ask the owner first). Owner checks on the TV with the real remote are open, including that holding OK for the info dialog never triggers Play (it relies on REPEAT_GAP_MS).
+- Deployed and installed later that day (see below). Owner checks on the TV with the real remote are open, including that holding OK for the info dialog never triggers Play (it relies on REPEAT_GAP_MS).
 - Noticed, not changed: the web detail dialog still cuts a long synopsis at 8 lines (`#detail .overview`, older than this work); the TV rows count still mixes units (the count task asked for web only).
 - OS-T-XNNEC and OS-T-XE0MB were blocked by GXNDA and are now ready; not implemented. Part of XE0MB ("remove the hero in wall mode") is already done by 065T4.
 - Handoffs reported on all nine. done: GXNDA, 0AQ3G, XTPZ8, JQ760, 065T4, 1N4NM. in_progress until the owner's TV check: 8B65B, 0D4SE, VJZ7X.
 - Files touched: frontend/index.html, tv-app/index.html, backend/test/ (tv-ui.test.js, web-ui.test.js, helpers/dom.js, series-ui.test.js, frontend-filter.test.js).
-- Next: ask the owner before deploying (`COPYFILE_DISABLE=1 tar -cf - frontend | ssh rei3.local 'cd ~/reelradar && tar -x && docker compose up -d --build frontend'`) and before installing the TV app (commands above); then the owner's TV checks.
+- 2026-11-25, owner said "Yes, deploy both": frontend/index.html (7b02202) deployed to rei3 (`COPYFILE_DISABLE=1 tar -cf - frontend/index.html | ssh rei3.local 'cd ~/reelradar && tar -x && docker compose up -d --build --no-deps frontend'`); backend untouched. Live page hash matches the repo, /, /api/titles, /api/seerr return 200, no console errors. TV app installed on 192.168.42.54, packaged from a copy of config.xml, icon.png, index.html; not launched.
+- Next: the owner's TV checks for 8B65B, 0D4SE, VJZ7X.
