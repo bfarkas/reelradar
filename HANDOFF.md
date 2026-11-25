@@ -73,4 +73,7 @@ Next:
 - Verified: `node --test backend/test` (122 green); web in a browser at desktop width and 375px, TV at 1920x1080, against a mock serving a read-only catalogue snapshot that refuses POST. No real Seerr request was sent.
 - NOT done: deploy of frontend to rei3 and TV app install (ask the owner first). Owner checks on the TV with the real remote are open, including that holding OK for the info dialog never triggers Play (it relies on REPEAT_GAP_MS).
 - Noticed, not changed: the web detail dialog still cuts a long synopsis at 8 lines (`#detail .overview`, older than this work); the TV rows count still mixes units (the count task asked for web only).
-- OS-T-XNNEC and OS-T-XE0MB were blocked by GXNDA and are moved to ready; not implemented.
+- OS-T-XNNEC and OS-T-XE0MB were blocked by GXNDA and are now ready; not implemented. Part of XE0MB ("remove the hero in wall mode") is already done by 065T4.
+- Handoffs reported on all nine. done: GXNDA, 0AQ3G, XTPZ8, JQ760, 065T4, 1N4NM. in_progress until the owner's TV check: 8B65B, 0D4SE, VJZ7X.
+- Files touched: frontend/index.html, tv-app/index.html, backend/test/ (tv-ui.test.js, web-ui.test.js, helpers/dom.js, series-ui.test.js, frontend-filter.test.js).
+- Next: ask the owner before deploying (`COPYFILE_DISABLE=1 tar -cf - frontend | ssh rei3.local 'cd ~/reelradar && tar -x && docker compose up -d --build <web service>'`) and before installing the TV app (commands above); then the owner's TV checks.
