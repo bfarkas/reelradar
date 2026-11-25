@@ -22,7 +22,7 @@ function load(stored) {
     return byId[id];
   }
   node('main');
-  ['views', 'open-filter', 'clear-filter', 'layout-wall', 'layout-rows', 'count', 'backdrop', 'kicker', 'hero-title', 'hero-date', 'hero-text', 'hero-actions', 'message', 'retry', 'list'].forEach(function (id) { node(id, 'main'); });
+  ['views', 'open-filter', 'clear-filter', 'layout-wall', 'layout-rows', 'count', 'backdrop', 'hero-title', 'hero-date', 'hero-text', 'hero-actions', 'message', 'retry', 'list'].forEach(function (id) { node(id, 'main'); });
   node('dialog'); ['dlg-poster', 'dlg-title', 'dlg-date', 'dlg-text', 'dlg-actions'].forEach(function (id) { node(id, 'dialog'); });
   node('filter'); ['kinds', 'genres', 'keywords'].forEach(function (id) { node(id, 'filter'); });
   node('player'); ['video', 'status', 'ctl', 'pi', 'ptime', 'pfill'].forEach(function (id) { node(id, 'player'); });
@@ -162,6 +162,8 @@ function wallScreen(titles) {
   reply(ctx, '/api/titles', titles);
   return ctx;
 }
+// the notice is built from parts, and this DOM does not add up children's text
+function noticeText(ctx) { return ctx.byId.notice.children.map(function (c) { return c.textContent; }).join(''); }
 function sent(ctx) { return ctx.requests.map(function (r) { return r.name; }).filter(function (n) { return !/\/api\/(titles|seerr)$/.test(n); }); }
 function fire(ctx, ms) {
   ctx.timers.filter(function (t) { return t.ms === ms && !t.cleared; }).forEach(function (t) { t.cleared = true; t.fn(); });
@@ -170,7 +172,7 @@ function fire(ctx, ms) {
 test('tv OK: a poster without a trailer shows a notice that clears itself', function () {
   var ctx = wallScreen([movie(1, { trailer: null })]);
   ok(ctx);
-  assert.equal(ctx.byId.notice.textContent, 'No trailer · hold OK for details');
+  assert.equal(noticeText(ctx), 'No trailer · hold OK for details');
   assert.equal(ctx.byId.notice.className, '');
   fire(ctx, 3000);
   assert.equal(ctx.byId.notice.className, 'hidden');
@@ -181,7 +183,7 @@ test('tv OK: a poster without a trailer shows a notice that clears itself', func
   rows.currentView = 'all';
   reply(rows, '/api/titles', [movie(1, { trailer: null })]);
   ok(rows);
-  assert.equal(rows.byId.notice.textContent, 'No trailer');
+  assert.equal(noticeText(rows), 'No trailer');
 });
 
 test('tv dialog: a long press focuses Play and starts nothing; Back from that trailer returns to the poster', function () {
@@ -249,8 +251,8 @@ test('tv hero: Details opens the full synopsis, and Back returns to Details', fu
   ctx.currentView = 'all';
   reply(ctx, '/api/titles', [movie(1, { overview: 'A long story.' }), movie(2)]);
   var actions = ctx.byId['hero-actions'].querySelectorAll('.focusable');
-  var details = actions[actions.length - 1];
-  assert.equal(details.textContent, 'Details');
+  assert.deepEqual(actions.map(function (a) { return a.textContent; }), ['Play trailer', 'Details', 'Request via Seerr']);
+  var details = actions[1];
   ctx.setFocus(details);
   ok(ctx);
   assert.equal(ctx.layer, 'dialog');
@@ -265,7 +267,7 @@ test('tv hero: Details opens the full synopsis, and Back returns to Details', fu
   key(ctx, 'keydown', 10009);
   assert.equal(where(ctx), 'Details');
   assert.equal(focusedEl(ctx).parentNode, ctx.byId['hero-actions']);
-  assert.equal(ctx.byId['hero-actions'].children[1].textContent, 'Requested in Seerr');
+  assert.equal(ctx.byId['hero-actions'].children[2].textContent, 'Requested in Seerr');
 
   ctx.showHero({ title: movie(2), kind: null, date: null });
   assert.doesNotMatch(ctx.byId['hero-actions'].children.map(function (c) { return c.textContent; }).join(), /Details/);
@@ -346,7 +348,49 @@ test('tv kind: the choice applies in every view', function () {
   });
   ctx.currentView = 'genres';
   ctx.renderList();
-  assert.match(ctx.byId.count.textContent, /^2 of 3 titles · 1 filter on$/);
+  assert.equal(ctx.byId.count.textContent, '2 of 3 titles');
+});
+
+// ---- the count beside the row heading (OS-T-79361) ----
+test('tv count: calendar views count releases, other views titles; a filter adds "of" the unfiltered number', function () {
+  var ctx = load();
+  reply(ctx, '/api/titles', mixed(ctx)); // releases ahead: Cinema only, Streaming only, and Both once (its streaming date)
+  assert.equal(ctx.byId.count.textContent, '3 releases');
+  ctx.currentView = 'recent';
+  ctx.renderList();
+  assert.equal(ctx.byId.count.textContent, '1 release');
+  ctx.currentView = 'all';
+  ctx.renderList();
+  assert.equal(ctx.byId.count.textContent, '3 titles');
+  ctx.currentView = 'upcoming';
+  ctx.selection.kind = 'cinema';
+  ctx.renderList();
+  assert.equal(ctx.byId.count.textContent, '1 of 3 releases');
+});
+
+test('tv wall: the count goes when the wall has scrolled its heading away, and stays in rows', function () {
+  var ctx = wallScreen([movie(1), movie(2)]);
+  var cards = ctx.byId.list.querySelectorAll('.focusable');
+  ctx.byId.list.scrollTop = 92;
+  ctx.setFocus(cards[1]);
+  assert.equal(ctx.byId.count.style.visibility, 'hidden');
+  ctx.byId.list.scrollTop = 0;
+  ctx.setFocus(cards[0]);
+  assert.equal(ctx.byId.count.style.visibility, '');
+
+  var rows = genresScreen();
+  rows.byId.list.scrollTop = 442;
+  rows.setFocus(poster(rows, 'Drama', 6));
+  assert.equal(rows.byId.count.style.visibility, '');
+});
+
+test('tv hero: when the focused Request button becomes a label, focus moves to Details beside it', function () {
+  var ctx = load();
+  ctx.currentView = 'all';
+  reply(ctx, '/api/titles', [movie(1, { overview: 'A long story.' })]);
+  ctx.setFocus(ctx.byId['hero-actions'].querySelectorAll('.focusable')[2]);
+  reply(ctx, '/api/seerr', { 'movie:1': 'requested' });
+  assert.equal(where(ctx), 'Details');
 });
 
 test('tv kind: a filter saved before the choice existed still loads', function () {

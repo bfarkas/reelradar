@@ -11,60 +11,70 @@ html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; backgro
 .serif { font-family: Georgia, "Times New Roman", serif; }
 #backdrop { position: absolute; right: 0; top: 0; width: 1400px; height: 790px; background: #120e0b center / cover no-repeat; }
 #shade { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px;
-  background: linear-gradient(90deg, #120e0b 28%, rgba(18,14,11,0.85) 45%, rgba(18,14,11,0.2) 75%, rgba(18,14,11,0.35)),
-              linear-gradient(0deg, #120e0b 30%, rgba(18,14,11,0) 55%); }
-header { position: absolute; left: 80px; top: 36px; width: 1760px; height: 80px; white-space: nowrap; }
-.logo { display: inline-block; vertical-align: middle; margin-right: 20px; font-size: 46px; font-weight: bold; }
+  background: linear-gradient(90deg, #120e0b 28%, rgba(18,14,11,0.9) 48%, rgba(18,14,11,0.15) 80%, rgba(18,14,11,0.3)),
+              linear-gradient(0deg, #120e0b 34%, rgba(18,14,11,0) 58%),
+              linear-gradient(180deg, rgba(18,14,11,0.94) 0%, rgba(18,14,11,0.8) 10%, rgba(18,14,11,0) 18%); }
+header { position: absolute; left: 80px; top: 36px; width: 1760px; height: 68px; white-space: nowrap; }
+.logo { display: inline-block; vertical-align: middle; margin-right: 20px; font-size: 48px; font-weight: bold; }
 .logo span { color: #e0412a; }
-#views { display: inline-block; vertical-align: middle; margin-right: 12px; }
-#count { position: absolute; right: 80px; top: 648px; color: #a89c8e; font-size: 24px; }
-.btn { display: inline-block; vertical-align: middle; margin-right: 2px; padding: 12px 14px; font-size: 26px; border: 4px solid transparent; border-radius: 40px; color: #f4ede3; }
-.btn.on { background: #c8321e; }
+#views { display: inline-block; vertical-align: middle; }
+/* shortcut: room for Clear filter in the header; goes when it moves to the filter screen (OS-T-99KST) */
+#views.tight .btn { padding-left: 14px; padding-right: 14px; }
+#tools { position: absolute; right: 0; top: 0; }
+#count { position: absolute; right: 80px; top: 616px; line-height: 44px; color: #bdb1a3; font-size: 24px; font-variant-numeric: tabular-nums; }
+.btn { display: inline-block; vertical-align: middle; padding: 14px 20px; font-size: 26px; border: 4px solid transparent; border-radius: 40px; color: #f4ede3; }
+/* outlined pills: the line is an inner shadow, so the white focus border does not change their size */
+#open-filter, #clear-filter { margin-right: 14px; padding: 14px 22px; background: rgba(18,14,11,0.8); box-shadow: inset 0 0 0 2px #7a6a5c; }
+.btn.on, #open-filter.on { background: #c8321e; box-shadow: none; }
 .btn.hidden { display: none; }
 .btn.focus { border-color: #fff; background: rgba(255,255,255,0.14); }
-.btn.on.focus { background: #c8321e; }
+#open-filter.focus, #clear-filter.focus { box-shadow: none; background: rgba(255,255,255,0.14); }
+.btn.on.focus, #open-filter.on.focus { background: #c8321e; }
 /* layout switcher like the web page: one segmented control, the active half red */
-#layout { display: inline-block; vertical-align: middle; border: 2px solid #5a4d42; border-radius: 40px; padding: 2px; }
-#layout .btn { margin: 0; padding: 12px 22px; }
+#layout { display: inline-block; vertical-align: middle; border: 2px solid #7a6a5c; border-radius: 40px; padding: 2px; background: rgba(18,14,11,0.8); }
+#layout .btn { padding: 10px 21px; }
 .ico { display: inline-block; vertical-align: middle; width: 26px; height: 26px; }
 .ico.wall { background: linear-gradient(#f4ede3, #f4ede3) 0 0 / 11px 11px no-repeat, linear-gradient(#f4ede3, #f4ede3) 15px 0 / 11px 11px no-repeat,
   linear-gradient(#f4ede3, #f4ede3) 0 15px / 11px 11px no-repeat, linear-gradient(#f4ede3, #f4ede3) 15px 15px / 11px 11px no-repeat; }
 .ico.rows { background: linear-gradient(#f4ede3, #f4ede3) 0 2px / 26px 4px no-repeat, linear-gradient(#f4ede3, #f4ede3) 0 11px / 26px 4px no-repeat,
   linear-gradient(#f4ede3, #f4ede3) 0 20px / 26px 4px no-repeat; }
-#hero { position: absolute; left: 80px; top: 170px; width: 1150px; height: 440px; }
-#kicker { color: #e0412a; font-size: 24px; font-weight: bold; letter-spacing: 4px; text-transform: uppercase; height: 34px; }
-#hero-title { margin: 6px 0 14px; font-size: 76px; line-height: 1.05; max-height: 160px; overflow: hidden; }
-#hero-date { font-size: 30px; color: #e8dccd; height: 44px; }
-#hero-text { font-size: 27px; line-height: 1.4; color: #cfc3b5; width: 1000px; max-height: 114px; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
-#hero-text .lang { border: 2px solid #cfc3b5; border-radius: 5px; font-size: 18px; margin-right: 12px; padding: 0 7px; vertical-align: 3px; }
-#hero-actions { position: absolute; left: 0; top: 372px; white-space: nowrap; }
+#hero { position: absolute; left: 80px; top: 152px; width: 1080px; }
+#hero-date { font-size: 28px; line-height: 36px; height: 36px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #e8dccd; }
+#hero-date .kbadge { display: inline-block; margin-right: 16px; padding: 0 14px; border-radius: 18px; background: #1f5f6b; color: #fff; font-size: 22px; font-weight: bold; line-height: 34px; vertical-align: 1px; }
+#hero-title { margin-top: 16px; font-size: 72px; line-height: 1.1; letter-spacing: -0.01em; max-height: 159px; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+#hero-text { margin-top: 16px; font-size: 27px; line-height: 1.4; color: #d6cabb; width: 980px; max-height: 76px; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+#hero-text .lang { border: 2px solid #d6cabb; border-radius: 5px; font-size: 18px; margin-right: 12px; padding: 0 7px; vertical-align: 3px; }
+#hero-actions { margin-top: 32px; white-space: nowrap; }
 .action { display: inline-block; margin-right: 22px; padding: 14px 34px; font-size: 28px; font-weight: bold; border-radius: 12px; border: 4px solid #f4ede3; }
 .action.solid { background: #f4ede3; color: #1d1712; }
+#hero-actions .action { vertical-align: middle; margin-right: 20px; padding: 16px 36px; border-color: #a89c8e; background: rgba(18,14,11,0.8); }
+#hero-actions .action.solid { border-color: #f4ede3; background: #f4ede3; }
+#hero-actions .action.focus { border-color: #fff; }
 /* a dark gap and a white ring: seen on the cream button as well as on the dark ones */
 .action.focus { border-color: #fff; box-shadow: 0 0 0 4px #120e0b, 0 0 0 9px #fff; }
-.action-note { display: inline-block; font-size: 26px; color: #9fcf8f; }
-#list { position: absolute; left: 80px; top: 640px; width: 1840px; height: 440px; overflow: hidden; }
-.shelf-title { margin: 0 0 14px; font-size: 34px; height: 44px; }
-.shelf { white-space: nowrap; overflow: hidden; height: 370px; padding: 6px 0 0 6px; }
+.action-note { display: inline-block; vertical-align: middle; margin-right: 20px; font-size: 26px; color: #9fcf8f; }
+/* 10px of room left and above for the focus ring: posters start at 80,684. One shelf is 442px, and the list ends 20px
+   under a caption, so moving down a shelf puts the next heading on the count's line. */
+#list { position: absolute; left: 70px; top: 612px; width: 1850px; height: 438px; overflow: hidden; }
+.shelf-title { margin: 0 0 18px 10px; font-size: 34px; line-height: 44px; height: 44px; }
+.shelf { white-space: nowrap; overflow: hidden; height: 370px; padding: 10px 0 0 10px; }
 .poster { display: inline-block; vertical-align: top; width: 200px; margin-right: 22px; white-space: normal; }
-.poster .frame { width: 200px; height: 300px; border-radius: 10px; background: #2a221c center / cover no-repeat; border: 5px solid transparent; margin: -5px; position: relative; overflow: hidden; }
-.poster .fallback { position: absolute; left: 12px; right: 12px; top: 110px; text-align: center; font-size: 26px; }
-.poster .cap { margin-top: 14px; font-size: 21px; color: #a89c8e; white-space: nowrap; overflow: hidden; }
-.poster.focus .frame { border-color: #fff; box-shadow: 0 0 30px rgba(255,255,255,0.55); }
-.poster.focus .cap { color: #f4ede3; }
+.poster .frame { width: 200px; height: 300px; border-radius: 8px; background: #2a221c center / cover no-repeat; position: relative; overflow: hidden; }
+.poster .fallback { position: absolute; left: 16px; right: 16px; top: 96px; text-align: center; font-size: 26px; line-height: 1.25; }
+.poster .cap { margin-top: 16px; height: 30px; line-height: 30px; font-size: 24px; color: #bdb1a3; white-space: nowrap; overflow: hidden; font-variant-numeric: tabular-nums; }
+.poster.focus .frame { box-shadow: 0 0 0 4px #120e0b, 0 0 0 10px #fff; }
+.poster.focus .cap { color: #fff; }
 /* badge on posters; poster wall mode (denser grid, no hero; OK plays, long OK opens the info dialog) */
 /* a centred pill near the bottom edge; the negative right margin lets it use the whole poster before it wraps */
-.badge { position: absolute; left: 50%; bottom: 10px; margin-right: -50%; transform: translateX(-50%); max-width: 92%; box-sizing: border-box; white-space: normal; word-wrap: break-word; text-align: center; padding: 5px 12px; border-radius: 18px; background: rgba(18,14,11,0.88); font-size: 22px; line-height: 1.2; font-weight: bold; text-transform: uppercase; }
-.badge.streaming { background: #c8321e; }
+.badge { position: absolute; left: 50%; bottom: 10px; margin-right: -50%; transform: translateX(-50%); max-width: 180px; box-sizing: border-box; white-space: pre-line; word-wrap: break-word; text-align: center; padding: 6px 14px; border-radius: 20px; background: #120e0b; color: #fff; font-size: 22px; line-height: 1.15; font-weight: bold; }
+.badge.streaming { background: #a2240f; }
 .badge.series { background: #1f5f6b; }
-#kicker .kbadge { display: inline-block; margin-left: 16px; padding: 2px 12px; border-radius: 5px; background: #1f5f6b; color: #f4ede3; font-size: 20px; letter-spacing: 2px; vertical-align: 3px; }
 #main.wall #hero, #main.wall #backdrop { display: none; }
 #main.wall #shade { background: #120e0b; }
-#main.wall #count { display: none; }
-#main.wall #list { top: 128px; height: 930px; }
-#main.wall .shelf { white-space: normal; height: auto; overflow: visible; padding-top: 8px; }
-#main.wall .poster { width: 190px; margin: 0 24px 26px 0; }
-#main.wall .poster .frame { width: 190px; height: 285px; }
+#main.wall #count { top: 136px; }
+#main.wall #list { top: 132px; height: 948px; }
+#main.wall .shelf { white-space: normal; height: auto; overflow: visible; }
+#main.wall .poster { margin: 0 22.8px 24px 0; }
 #main.wall .poster .cap { display: none; }
 #main.wall #message { top: 200px; }
 #main.wall #retry { top: 270px; }
@@ -98,7 +108,7 @@ header { position: absolute; left: 80px; top: 36px; width: 1760px; height: 80px;
 #status { position: absolute; left: 0; top: 480px; width: 1920px; text-align: center; font-size: 44px; color: #ddd; }
 #message { position: absolute; left: 80px; top: 680px; font-size: 34px; color: #cfc3b5; }
 #retry { position: absolute; left: 80px; top: 750px; }
-#notice { position: absolute; left: 610px; bottom: 48px; width: 700px; padding: 18px 0; text-align: center; font-size: 32px; background: #1d1712; border: 2px solid #f4ede3; border-radius: 12px; }
+#notice { position: absolute; left: 660px; top: 968px; width: 600px; box-sizing: border-box; padding: 20px 32px; text-align: center; font-size: 30px; background: #f4ede3; color: #1d1712; border-radius: 40px; box-shadow: 0 16px 48px rgba(0,0,0,0.6); }
 </style>
 </head>
 <body>
@@ -108,15 +118,14 @@ header { position: absolute; left: 80px; top: 36px; width: 1760px; height: 80px;
   <header>
     <span class="logo serif">Reel<span>Radar</span></span>
     <div id="views"></div>
-    <span class="btn" id="open-filter">Filter</span>
-    <span class="btn hidden" id="clear-filter">Clear filter</span>
-    <span id="layout"><span class="btn focusable" id="layout-wall"><span class="ico wall"></span></span><span class="btn focusable" id="layout-rows"><span class="ico rows"></span></span></span>
+    <div id="tools">
+      <span class="btn hidden" id="clear-filter">Clear filter</span><span class="btn" id="open-filter">Filter</span><span id="layout"><span class="btn focusable" id="layout-wall"><span class="ico wall"></span></span><span class="btn focusable" id="layout-rows"><span class="ico rows"></span></span></span>
+    </div>
   </header>
   <div id="count"></div>
   <div id="hero">
-    <div id="kicker"></div>
-    <div id="hero-title" class="serif"></div>
     <div id="hero-date"></div>
+    <div id="hero-title" class="serif"></div>
     <div id="hero-text"></div>
     <div id="hero-actions"></div>
   </div>
@@ -330,12 +339,15 @@ function setFocus(target) {
   focused[layer] = target;
   if (target.item) { focused.poster = target; if (!wall && target.item !== heroItem) showHero(target.item); }
   ensureVisible(target);
+  // the wall's heading scrolls away; the count beside it is not part of the list, so it goes with it
+  if (target.item) $('count').style.visibility = wall && $('list').scrollTop > 0 ? 'hidden' : '';
 }
 function ensureVisible(target) {
   for (var box = target.parentNode; box && box !== document.body; box = box.parentNode) {
     var t = target.getBoundingClientRect(), b = box.getBoundingClientRect();
     if (box.scrollHeight > box.clientHeight) {
-      if (t.top < b.top) box.scrollTop -= b.top - t.top + 20;
+      // upwards the list leaves room for the heading (72px in both layouts), so it comes back whole with its row
+      if (t.top < b.top) box.scrollTop -= b.top - t.top + (box.id === 'list' ? 72 : 20);
       else if (t.bottom > b.bottom) box.scrollTop += t.bottom - b.bottom + 20;
     }
     if (box.scrollWidth > box.clientWidth) {
@@ -386,7 +398,6 @@ function nearest(current, items) {
 // ---- main: hero for the focused title, poster rows below ----
 var IMG = 'https://image.tmdb.org/t/p/';
 var heroItem = null;
-var KICKER = { upcoming: 'Upcoming', trailers: 'New trailer', recent: 'Just released', genres: 'Genre', all: 'ReelRadar' };
 var ROW_TITLE = { upcoming: 'Coming soon in Germany', trailers: 'Newest trailers', recent: 'Recently released in Germany', all: 'All titles' };
 
 // The release an item stands for: its calendar entry, or the title's next (else latest) German date.
@@ -418,14 +429,12 @@ function renderList(place) {
   var active = activeCount();
   renderFilterButtons();
   var sections = viewSections(currentView, shown, selection.kind);
-  var count = 0;
-  sections.forEach(function (section) { count += section.items.length; });
-  // a title is on several genre shelves; count it once
-  if (currentView === 'genres') count = shown.filter(function (title) { return inKind(title, selection.kind); }).length;
+  var count = viewCount(shown, selection.kind);
   list.textContent = '';
   list.scrollTop = 0;
   focused.poster = null;
-  $('count').textContent = loadError ? '' : count + ' of ' + allTitles.length + ' titles' + (active ? ' · ' + active + ' filter' + (active > 1 ? 's' : '') + ' on' : '');
+  $('count').textContent = loadError ? '' : countText(count, active ? viewCount(allTitles, 'all') : null);
+  $('count').style.visibility = '';
   $('message').textContent = loadError || (count ? '' : (allTitles.length ? 'No titles in this view match the filter.' : 'No titles imported yet.'));
   $('retry').className = loadError ? 'btn focusable' : 'btn hidden';
   // Calendar views come back per day; on the TV they are one row in date order.
@@ -449,13 +458,29 @@ function renderList(place) {
   setFocus(target || (loadError ? $('retry') : $('open-filter')));
 }
 
-// The header says that a filter is on, also in the wall, which has no count. Clear filter exists only then; a hidden one
-// must not be focusable.
+// What the current view lists: releases in the calendar views, else titles (once, though on several genre shelves).
+function viewCount(titles, kind) {
+  if (currentView === 'genres') return titles.filter(function (title) { return inKind(title, kind); }).length;
+  return viewSections(currentView, titles, kind).reduce(function (sum, section) { return sum + section.items.length; }, 0);
+}
+// "310 releases", or "44 of 310 releases" with a filter (total is then the unfiltered number).
+function countText(count, total) {
+  var noun = currentView === 'upcoming' || currentView === 'recent' ? 'release' : 'title';
+  var last = total === null ? count : total;
+  return (total === null ? '' : count + ' of ') + last + ' ' + noun + (last === 1 ? '' : 's');
+}
+
+// The header says that a filter is on. Clear filter exists only then; a hidden one must not be focusable.
 function renderFilterButtons() {
   var active = activeCount();
   $('open-filter').textContent = active ? 'Filter (' + active + ')' : 'Filter';
   $('open-filter').className = 'btn focusable' + (active ? ' on' : '') + (/(^| )focus( |$)/.test($('open-filter').className) ? ' focus' : '');
   $('clear-filter').className = active ? 'btn focusable' : 'btn hidden';
+  $('views').className = active ? 'tight' : '';
+}
+
+function captionDate(iso) { // "Tue 24 Nov"
+  return longDate(iso).replace(',', '').replace(/ \d{4}$/, '');
 }
 
 function posterCard(item) {
@@ -468,13 +493,14 @@ function posterCard(item) {
   var release = itemRelease(item);
   if (isSeries(title)) frame.appendChild(el('div', 'badge series', 'Series'));
   else if (release) frame.appendChild(el('div', 'badge ' + release.kind, release.kind === 'cinema' ? 'Cinema' :
-    (premiereText(title, release.kind, release.date) || (title.providers && title.providers.length ? title.providers[0].name : 'Streaming'))));
-  card.appendChild(el('div', 'cap', release ? shortDate(release.date).replace(/ \d{4}$/, '') + ' · ' + (release.kind === 'cinema' ? 'Cinema' : 'Streaming') : (availableText(title, true) || (title.trailer ? '' : 'No trailer'))));
+    // "Premieres on" and the service on two lines
+    (premiereText(title, release.kind, release.date) || (title.providers && title.providers.length ? title.providers[0].name : 'Streaming')).replace(/^Premieres on /, 'Premieres on\n')));
+  card.appendChild(el('div', 'cap', release ? captionDate(release.date) : (availableText(title, true) || (title.trailer ? '' : 'No trailer'))));
   card.setAttribute('data-id', titleKey(title));
   card.item = item;
   card.onactivate = function () {
     if (title.trailer) play(title);
-    else showNotice(wall ? 'No trailer \u00b7 hold OK for details' : 'No trailer');
+    else showNotice('No trailer', wall ? ' \u00b7 hold OK for details' : '');
   };
   card.onlongpress = function () { openDialog(item); };
   return card;
@@ -482,50 +508,49 @@ function posterCard(item) {
 
 var NOTICE_MS = 3000;
 var noticeTimer = null;
-function showNotice(message) {
-  $('notice').textContent = message;
+function showNotice(strong, rest) {
+  $('notice').textContent = '';
+  $('notice').appendChild(el('strong', '', strong));
+  if (rest) $('notice').appendChild(el('span', '', rest));
   $('notice').className = '';
   clearTimeout(noticeTimer);
   noticeTimer = setTimeout(function () { $('notice').className = 'hidden'; }, NOTICE_MS);
 }
 
-// Rows layout: the hero follows the focused poster: backdrop, title, date, synopsis, Play / Request.
+// Rows layout: the hero follows the focused poster: backdrop, date, title, synopsis, Play / Details / Request.
 function showHero(item) {
   heroItem = item;
   var actions = $('hero-actions');
   actions.textContent = '';
   if (!item) {
-    $('kicker').textContent = ''; $('hero-title').textContent = ''; $('hero-date').textContent = ''; $('hero-text').textContent = '';
+    $('hero-title').textContent = ''; $('hero-date').textContent = ''; $('hero-text').textContent = '';
     $('backdrop').style.backgroundImage = 'none';
     return;
   }
   var title = item.title;
   var release = itemRelease(item);
-  var kicker = KICKER[currentView];
-  if (currentView === 'genres' && title.genres && title.genres.length) kicker = title.genres.map(function (g) { return g.name; }).slice(0, 2).join(' · ');
-  if (release) kicker += ' · ' + (release.kind === 'cinema' ? 'Cinema' : 'Streaming');
-  $('kicker').textContent = kicker;
-  if (isSeries(title)) $('kicker').appendChild(el('span', 'kbadge', 'SERIES'));
   $('hero-title').textContent = title.title;
-  $('hero-date').textContent = release ? longDate(release.date) + '  ·  ' + whereText(title, release.kind, release.date) : releaseless(title);
+  $('hero-date').textContent = release ? longDate(release.date) + ' · ' + whereText(title, release.kind, release.date) : releaseless(title);
+  // in front, so a long line never cuts the mark off
+  if (isSeries(title)) $('hero-date').insertBefore(el('span', 'kbadge', 'Series'), $('hero-date').firstChild);
   fillSynopsis($('hero-text'), title);
   $('backdrop').style.backgroundImage = title.backdrop_path ? 'url(' + IMG + 'w1280' + title.backdrop_path + ')' : 'none';
 
   if (title.trailer) {
-    var playButton = el('span', 'action solid focusable', '\u25B6  Play trailer');
+    var playButton = el('span', 'action solid focusable', 'Play trailer');
     playButton.onactivate = function () { play(title); };
     actions.appendChild(playButton);
   } else {
     actions.appendChild(el('span', 'action-note', 'No trailer'));
   }
-  appendRequest(actions, title, function () {
-    if (heroItem && heroItem.title === title) refreshHero();
-  });
-  if (title.overview) { // the hero shows three lines; the dialog has the whole synopsis
+  if (title.overview) { // the hero shows two lines; the dialog has the whole synopsis
     var details = el('span', 'action focusable', 'Details');
     details.onactivate = function () { openDialog(item); };
     actions.appendChild(details);
   }
+  appendRequest(actions, title, function () {
+    if (heroItem && heroItem.title === title) refreshHero();
+  });
 }
 // Redraws the hero (Seerr state changed) without moving focus: it stays where it is, in whatever layer; only a hero
 // button that was focused is replaced by its successor, or by the poster when none is left.
