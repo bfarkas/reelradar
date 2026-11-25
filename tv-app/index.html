@@ -14,12 +14,13 @@ html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; backgro
   background: linear-gradient(90deg, #120e0b 28%, rgba(18,14,11,0.85) 45%, rgba(18,14,11,0.2) 75%, rgba(18,14,11,0.35)),
               linear-gradient(0deg, #120e0b 30%, rgba(18,14,11,0) 55%); }
 header { position: absolute; left: 80px; top: 36px; width: 1760px; height: 80px; white-space: nowrap; }
-.logo { display: inline-block; vertical-align: middle; margin-right: 30px; font-size: 54px; font-weight: bold; }
+.logo { display: inline-block; vertical-align: middle; margin-right: 20px; font-size: 46px; font-weight: bold; }
 .logo span { color: #e0412a; }
-#views { display: inline-block; vertical-align: middle; margin-right: 24px; }
+#views { display: inline-block; vertical-align: middle; margin-right: 12px; }
 #count { position: absolute; right: 80px; top: 648px; color: #a89c8e; font-size: 24px; }
-.btn { display: inline-block; vertical-align: middle; margin-right: 6px; padding: 12px 20px; font-size: 26px; border: 4px solid transparent; border-radius: 40px; color: #f4ede3; }
+.btn { display: inline-block; vertical-align: middle; margin-right: 2px; padding: 12px 14px; font-size: 26px; border: 4px solid transparent; border-radius: 40px; color: #f4ede3; }
 .btn.on { background: #c8321e; }
+.btn.hidden { display: none; }
 .btn.focus { border-color: #fff; background: rgba(255,255,255,0.14); }
 .btn.on.focus { background: #c8321e; }
 /* layout switcher like the web page: one segmented control, the active half red */
@@ -34,12 +35,13 @@ header { position: absolute; left: 80px; top: 36px; width: 1760px; height: 80px;
 #kicker { color: #e0412a; font-size: 24px; font-weight: bold; letter-spacing: 4px; text-transform: uppercase; height: 34px; }
 #hero-title { margin: 6px 0 14px; font-size: 76px; line-height: 1.05; max-height: 160px; overflow: hidden; }
 #hero-date { font-size: 30px; color: #e8dccd; height: 44px; }
-#hero-text { font-size: 27px; line-height: 1.4; color: #cfc3b5; width: 1000px; max-height: 114px; overflow: hidden; }
+#hero-text { font-size: 27px; line-height: 1.4; color: #cfc3b5; width: 1000px; max-height: 114px; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
 #hero-text .lang { border: 2px solid #cfc3b5; border-radius: 5px; font-size: 18px; margin-right: 12px; padding: 0 7px; vertical-align: 3px; }
 #hero-actions { position: absolute; left: 0; top: 372px; white-space: nowrap; }
 .action { display: inline-block; margin-right: 22px; padding: 14px 34px; font-size: 28px; font-weight: bold; border-radius: 12px; border: 4px solid #f4ede3; }
 .action.solid { background: #f4ede3; color: #1d1712; }
-.action.focus { border-color: #e0412a; box-shadow: 0 0 0 4px #e0412a; }
+/* a dark gap and a white ring: seen on the cream button as well as on the dark ones */
+.action.focus { border-color: #fff; box-shadow: 0 0 0 4px #120e0b, 0 0 0 9px #fff; }
 .action-note { display: inline-block; font-size: 26px; color: #9fcf8f; }
 #list { position: absolute; left: 80px; top: 640px; width: 1840px; height: 440px; overflow: hidden; }
 .shelf-title { margin: 0 0 14px; font-size: 34px; height: 44px; }
@@ -48,10 +50,11 @@ header { position: absolute; left: 80px; top: 36px; width: 1760px; height: 80px;
 .poster .frame { width: 200px; height: 300px; border-radius: 10px; background: #2a221c center / cover no-repeat; border: 5px solid transparent; margin: -5px; position: relative; overflow: hidden; }
 .poster .fallback { position: absolute; left: 12px; right: 12px; top: 110px; text-align: center; font-size: 26px; }
 .poster .cap { margin-top: 14px; font-size: 21px; color: #a89c8e; white-space: nowrap; overflow: hidden; }
-.poster.focus .frame { border-color: #e0412a; box-shadow: 0 0 30px rgba(224,65,42,0.6); }
+.poster.focus .frame { border-color: #fff; box-shadow: 0 0 30px rgba(255,255,255,0.55); }
 .poster.focus .cap { color: #f4ede3; }
 /* badge on posters; poster wall mode (denser grid, no hero; OK plays, long OK opens the info dialog) */
-.badge { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); max-width: 160px; overflow: hidden; white-space: nowrap; padding: 4px 10px; border-radius: 5px; background: rgba(18,14,11,0.88); font-size: 17px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; }
+/* a centred pill near the bottom edge; the negative right margin lets it use the whole poster before it wraps */
+.badge { position: absolute; left: 50%; bottom: 10px; margin-right: -50%; transform: translateX(-50%); max-width: 92%; box-sizing: border-box; white-space: normal; word-wrap: break-word; text-align: center; padding: 5px 12px; border-radius: 18px; background: rgba(18,14,11,0.88); font-size: 22px; line-height: 1.2; font-weight: bold; text-transform: uppercase; }
 .badge.streaming { background: #c8321e; }
 .badge.series { background: #1f5f6b; }
 #kicker .kbadge { display: inline-block; margin-left: 16px; padding: 2px 12px; border-radius: 5px; background: #1f5f6b; color: #f4ede3; font-size: 20px; letter-spacing: 2px; vertical-align: 3px; }
@@ -66,14 +69,14 @@ header { position: absolute; left: 80px; top: 36px; width: 1760px; height: 80px;
 #main.wall #message { top: 200px; }
 /* info dialog over the wall (long press OK) */
 #dialog { background: rgba(0, 0, 0, 0.72); }
-#dlg { position: absolute; left: 260px; top: 200px; width: 1400px; height: 600px; background: #1d1712; border: 2px solid #3a2f27; border-radius: 16px; }
+#dlg { position: absolute; left: 160px; top: 120px; width: 1600px; height: 840px; background: #1d1712; border: 2px solid #3a2f27; border-radius: 16px; }
 #dlg-poster { position: absolute; left: 40px; top: 40px; width: 320px; height: 480px; border-radius: 10px; background: #2a221c center / cover no-repeat; }
-#dlg-body { position: absolute; left: 400px; top: 40px; width: 960px; height: 520px; }
+#dlg-body { position: absolute; left: 400px; top: 40px; width: 1160px; height: 760px; }
 #dlg-title { font-size: 54px; line-height: 1.1; max-height: 120px; overflow: hidden; margin-bottom: 14px; }
 #dlg-date { font-size: 30px; color: #e8dccd; height: 44px; }
-#dlg-text { font-size: 27px; line-height: 1.4; color: #cfc3b5; max-height: 190px; overflow: hidden; margin-top: 10px; }
+#dlg-text { font-size: 27px; line-height: 1.4; color: #cfc3b5; max-height: 454px; overflow: hidden; margin-top: 10px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 12; }
 #dlg-text .lang { border: 2px solid #cfc3b5; border-radius: 5px; font-size: 18px; margin-right: 12px; padding: 0 7px; vertical-align: 3px; }
-#dlg-actions { position: absolute; left: 0; top: 400px; white-space: nowrap; }
+#dlg-actions { position: absolute; left: 10px; top: 670px; white-space: nowrap; }
 #filter { background: rgba(18, 14, 11, 0.97); }
 #filter h2 { margin: 40px 80px 10px; font-size: 40px; }
 #filter-hint { margin: 0 80px; color: #a89c8e; font-size: 28px; }
@@ -504,6 +507,11 @@ function showHero(item) {
   appendRequest(actions, title, function () {
     if (heroItem && heroItem.title === title) refreshHero();
   });
+  if (title.overview) { // the hero shows three lines; the dialog has the whole synopsis
+    var details = el('span', 'action focusable', 'Details');
+    details.onactivate = function () { openDialog(item); };
+    actions.appendChild(details);
+  }
 }
 // Redraws the hero (Seerr state changed) without moving focus: it stays where it is, in whatever layer; only a hero
 // button that was focused is replaced by its successor, or by the poster when none is left.
@@ -621,7 +629,10 @@ function openDialog(item) {
     playButton.onactivate = function () { closeDialog(); play(title); }; // Back from the player then lands on the poster
     actions.appendChild(playButton);
   }
-  appendRequest(actions, title, function () { if (layer === 'dialog' && dialogItem === item) openDialog(item); });
+  appendRequest(actions, title, function () {
+    if (!wall && heroItem && heroItem.title === title) refreshHero(); // the dialog may sit over the hero
+    if (layer === 'dialog' && dialogItem === item) openDialog(item);
+  });
   if (!title.trailer) actions.appendChild(el('span', 'action-note', 'No trailer  '));
   var close = el('span', 'action focusable', 'Close');
   close.onactivate = closeDialog;

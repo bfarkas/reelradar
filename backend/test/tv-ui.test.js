@@ -242,3 +242,35 @@ test('tv dialog: a request that finishes late does not reopen the dialog over an
     assert.deepEqual(JSON.parse(ctx.storage['reelradar.filter']), { v: 1, genres: [], keywords: [] });
   });
 });
+
+// ---- the hero's Details action (OS-T-VJZ7X) ----
+test('tv hero: Details opens the full synopsis, and Back returns to Details', function () {
+  var ctx = load();
+  ctx.currentView = 'all';
+  reply(ctx, '/api/titles', [movie(1, { overview: 'A long story.' }), movie(2)]);
+  var actions = ctx.byId['hero-actions'].querySelectorAll('.focusable');
+  var details = actions[actions.length - 1];
+  assert.equal(details.textContent, 'Details');
+  ctx.setFocus(details);
+  ok(ctx);
+  assert.equal(ctx.layer, 'dialog');
+  assert.equal(ctx.byId['dlg-text'].textContent, 'A long story.');
+  key(ctx, 'keydown', 10009);
+  assert.equal(focusedEl(ctx), details);
+
+  // a request made in the dialog updates the hero behind it, and focus stays on Details
+  ok(ctx);
+  ctx.byId['dlg-actions'].children[1].onactivate();
+  reply(ctx, '/api/request/movie/1', { status: 'requested' });
+  key(ctx, 'keydown', 10009);
+  assert.equal(where(ctx), 'Details');
+  assert.equal(focusedEl(ctx).parentNode, ctx.byId['hero-actions']);
+  assert.equal(ctx.byId['hero-actions'].children[1].textContent, 'Requested in Seerr');
+
+  ctx.showHero({ title: movie(2), kind: null, date: null });
+  assert.doesNotMatch(ctx.byId['hero-actions'].children.map(function (c) { return c.textContent; }).join(), /Details/);
+});
+
+test('tv filter: the hidden Clear button is really hidden (.btn sets display, so .hidden alone would lose)', function () {
+  assert.match(html, /\.btn\.hidden \{ display: none; \}/);
+});
