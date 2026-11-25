@@ -76,4 +76,4 @@ Next:
 - OS-T-XNNEC and OS-T-XE0MB were blocked by GXNDA and are now ready; not implemented. Part of XE0MB ("remove the hero in wall mode") is already done by 065T4.
 - Handoffs reported on all nine. done: GXNDA, 0AQ3G, XTPZ8, JQ760, 065T4, 1N4NM. in_progress until the owner's TV check: 8B65B, 0D4SE, VJZ7X.
 - Files touched: frontend/index.html, tv-app/index.html, backend/test/ (tv-ui.test.js, web-ui.test.js, helpers/dom.js, series-ui.test.js, frontend-filter.test.js).
-- Next: ask the owner before deploying (`COPYFILE_DISABLE=1 tar -cf - frontend | ssh rei3.local 'cd ~/reelradar && tar -x && docker compose up -d --build <web service>'`) and before installing the TV app (commands above); then the owner's TV checks.
+- Next: ask the owner before deploying (`COPYFILE_DISABLE=1 tar -cf - frontend | ssh rei3.local 'cd ~/reelradar && tar -x && docker compose up -d --build frontend'`) and before installing the TV app (commands above); then the owner's TV checks.
