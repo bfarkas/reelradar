@@ -328,9 +328,14 @@ function move(dx, dy) {
   if (!current) { setFocus(items[0]); return; }
   // Down from the hero buttons returns to the poster the hero shows.
   if (dy === 1 && current.parentNode === $('hero-actions') && focused.poster) { setFocus(focused.poster); return; }
-  // Rows layout: Up from a poster goes to the hero's first button (Play trailer).
-  var firstAction = $('hero-actions').querySelector('.focusable');
-  if (!wall && dy === -1 && current.item && firstAction) { setFocus(firstAction); return; }
+  // Rows layout: Up/Down move one shelf; only Up from the first shelf goes to the hero's first button (Play trailer).
+  if (!wall && dy && current.item) {
+    var shelves = Array.prototype.slice.call($('list').querySelectorAll('.shelf'));
+    var index = shelves.indexOf(current.parentNode);
+    if (shelves[index + dy]) { setFocus(nearest(current, shelves[index + dy].querySelectorAll('.focusable'))); return; }
+    var firstAction = $('hero-actions').querySelector('.focusable');
+    if (dy === -1 && firstAction) { setFocus(firstAction); return; }
+  }
   var a = current.getBoundingClientRect();
   var ax = a.left + a.width / 2, ay = a.top + a.height / 2;
   var best = null, bestScore = Infinity;
@@ -347,6 +352,13 @@ function move(dx, dy) {
     if (score < bestScore) { bestScore = score; best = item; }
   });
   if (best) setFocus(best);
+}
+
+// The item whose centre is closest horizontally: a short shelf must not be skipped for being off to one side.
+function nearest(current, items) {
+  function centre(e) { var r = e.getBoundingClientRect(); return r.left + r.width / 2; }
+  var x = centre(current);
+  return Array.prototype.slice.call(items).sort(function (a, b) { return Math.abs(centre(a) - x) - Math.abs(centre(b) - x); })[0];
 }
 
 // ---- main: hero for the focused title, poster rows below ----
@@ -377,7 +389,8 @@ function whereText(title, kind, date) {
   return premiereText(title, kind, date) || (title.providers && title.providers.length ? title.providers.map(function (p) { return p.name; }).join(', ') : 'Streaming');
 }
 
-function renderList() {
+// place (shelf and data-id of a poster) restores the viewer's position; without it, or when the title is gone, the first poster.
+function renderList(place) {
   var list = $('list');
   var shown = allTitles.filter(matchesFilter);
   var active = selection.genres.length + selection.keywords.length;
@@ -387,6 +400,7 @@ function renderList() {
   if (currentView === 'genres') count = shown.length;
   list.textContent = '';
   list.scrollTop = 0;
+  focused.poster = null;
   $('count').textContent = count + ' of ' + allTitles.length + ' titles' + (active ? ' · ' + active + ' filter' + (active > 1 ? 's' : '') + ' on' : '');
   $('message').textContent = count ? '' : (allTitles.length ? 'No titles in this view match the filter.' : 'No titles imported yet.');
   // Calendar views come back per day; on the TV they are one row in date order.
@@ -396,12 +410,18 @@ function renderList() {
     if (!row.items.length) return;
     list.appendChild(el('h3', 'shelf-title serif', row.heading));
     var shelf = el('div', 'shelf');
-    row.items.forEach(function (item) { shelf.appendChild(posterCard(item)); });
+    row.items.forEach(function (item) {
+      var card = posterCard(item);
+      card.setAttribute('data-shelf', row.heading);
+      shelf.appendChild(card);
+    });
     list.appendChild(shelf);
   });
   var first = list.querySelector('.focusable');
-  if (!wall) showHero(first ? first.item : null);
-  setFocus(first || $('open-filter'));
+  var target = (place && (list.querySelector('[data-shelf="' + place.shelf + '"][data-id="' + place.id + '"]') ||
+    list.querySelector('[data-id="' + place.id + '"]'))) || first;
+  if (!wall) showHero(target ? target.item : null);
+  setFocus(target || $('open-filter'));
 }
 
 function posterCard(item) {
@@ -453,11 +473,22 @@ function showHero(item) {
     actions.appendChild(el('span', 'action-note', 'No trailer'));
   }
   appendRequest(actions, title, function () {
-    if (heroItem && heroItem.title === title) {
-      showHero(heroItem);
-      setFocus($('hero-actions').querySelector('.focusable') || focused.poster);
-    }
+    if (heroItem && heroItem.title === title) refreshHero();
   });
+}
+// Redraws the hero (Seerr state changed) without moving focus: it stays where it is, in whatever layer; only a hero
+// button that was focused is replaced by its successor, or by the poster when none is left.
+function refreshHero() {
+  if (!heroItem) return;
+  var actions = $('hero-actions');
+  var old = actions.querySelector('.focus');
+  var at = old ? Array.prototype.indexOf.call(actions.querySelectorAll('.focusable'), old) : -1;
+  showHero(heroItem);
+  if (at < 0) return;
+  var now = actions.querySelectorAll('.focusable');
+  var target = now[Math.min(at, now.length - 1)] || focused.poster;
+  target.className += ' focus';
+  focused.main = target;
 }
 // Synopsis with the DE badge when the stored text is the German fallback.
 function fillSynopsis(box, title) {
@@ -592,12 +623,16 @@ function openFilter() {
   collectTags('keywords').sort(function (a, b) { return b.count - a.count || byName(a, b); }).slice(0, 60)
     .forEach(function (tag) { keywords.appendChild(tagButton('keywords', tag)); });
   keywords.scrollTop = 0;
+  filterOpenedWith = JSON.stringify(selection);
   showLayer('filter');
   setFocus(genres.querySelector('.focusable') || keywords.querySelector('.focusable'));
 }
+var filterOpenedWith = ''; // the choices when Filter opened: unchanged ones leave the list, and its scroll, alone
 function closeFilter() {
   showLayer('main');
-  renderList();
+  var poster = focused.poster;
+  if (poster && JSON.stringify(selection) === filterOpenedWith) { setFocus(poster); return; }
+  renderList(poster ? { shelf: poster.getAttribute('data-shelf'), id: poster.getAttribute('data-id') } : null);
 }
 
 // ---- player: fullscreen <video> on the backend's cached MP4 ----
@@ -773,11 +808,9 @@ getJson(API + '/api/titles', function (error, titles) {
   renderList();
   // Seerr state comes second; without it the request button is still offered.
   getJson(API + '/api/seerr', function (seerrError, statuses) {
-    if (seerrError || layer !== 'main') return;
+    if (seerrError) return;
     seerrStatus = statuses;
-    var id = focused.main && focused.main.getAttribute('data-id');
-    renderList();
-    if (id) setFocus($('list').querySelector('[data-id="' + id + '"]') || focused.main);
+    if (!wall) refreshHero(); // posters carry no Seerr state, so the list stays as it is
   });
 });
 </script>
