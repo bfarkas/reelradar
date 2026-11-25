@@ -7,45 +7,10 @@ var assert = require('node:assert/strict');
 var fs = require('node:fs');
 var path = require('node:path');
 var vm = require('node:vm');
+var element = require('./helpers/dom').element;
 
 var html = fs.readFileSync(path.join(__dirname, '..', '..', 'tv-app', 'index.html'), 'utf8');
 var script = html.slice(html.lastIndexOf('<script>') + 8, html.lastIndexOf('</script>'));
-
-function element(tag) {
-  var text = '';
-  var e = {
-    tag: tag, className: '', children: [], style: {}, attrs: {}, parentNode: null, rect: { left: 0, top: 0, width: 0, height: 0 },
-    scrollTop: 0, scrollLeft: 0, scrollHeight: 0, clientHeight: 0, scrollWidth: 0, clientWidth: 0,
-    appendChild: function (child) { child.parentNode = e; e.children.push(child); return child; },
-    insertBefore: function (child, ref) { child.parentNode = e; var at = e.children.indexOf(ref); e.children.splice(at < 0 ? e.children.length : at, 0, child); return child; },
-    setAttribute: function (name, value) { e.attrs[name] = String(value); },
-    getAttribute: function (name) { return e.attrs[name] === undefined ? null : e.attrs[name]; },
-    removeAttribute: function (name) { delete e.attrs[name]; },
-    getBoundingClientRect: function () { var r = e.rect; return { left: r.left, top: r.top, width: r.width, height: r.height, right: r.left + r.width, bottom: r.top + r.height }; },
-    querySelectorAll: function (selector) { return all(e).filter(function (node) { return matches(node, selector); }); },
-    querySelector: function (selector) { return e.querySelectorAll(selector)[0] || null; },
-    addEventListener: function () {}, load: function () {}, pause: function () {}, play: function () {}
-  };
-  Object.defineProperty(e, 'textContent', {
-    get: function () { return text; },
-    set: function (value) { text = value; e.children.forEach(function (c) { c.parentNode = null; }); e.children = []; }
-  });
-  Object.defineProperty(e, 'firstChild', { get: function () { return e.children[0] || null; } });
-  return e;
-}
-function all(root) {
-  return [].concat.apply([], root.children.map(function (child) { return [child].concat(all(child)); }));
-}
-// '.a', '.a.b' and '[data-x="y"]' combinations: all the script needs.
-function matches(node, selector) {
-  var parts = selector.match(/\.[\w-]+|\[[\w-]+="[^"]*"\]/g);
-  assert.equal(parts.join(''), selector, 'unsupported selector ' + selector);
-  return parts.every(function (part) {
-    if (part[0] === '.') return (' ' + node.className + ' ').indexOf(' ' + part.slice(1) + ' ') !== -1;
-    var m = part.match(/^\[([\w-]+)="([^"]*)"\]$/);
-    return node.attrs[m[1]] === m[2];
-  });
-}
 
 // The static elements of the page, nested as in the markup.
 function load(stored) {
@@ -256,4 +221,24 @@ test('tv dialog: a request that finishes late does not reopen the dialog over an
   ctx.openDialog(cards[1].item);
   reply(ctx, '/api/request/movie/1', { status: 'requested' });
   assert.equal(ctx.byId['dlg-title'].textContent, 'Movie 2');
+});
+
+// ---- an active filter shows in the header, in both layouts (OS-T-GXNDA) ----
+['rows', 'wall'].forEach(function (layout) {
+  test('tv filter: a saved filter shows on the button in ' + layout + ' layout; Clear exists only then', function () {
+    var ctx = load({ 'reelradar.layout': layout, 'reelradar.filter': JSON.stringify({ v: 1, genres: [ACTION.id], keywords: [99] }) });
+    ctx.currentView = 'all';
+    reply(ctx, '/api/titles', catalogue());
+    assert.equal(ctx.byId['open-filter'].textContent, 'Filter (2)');
+    assert.match(ctx.byId['open-filter'].className, /\bon\b/);
+    assert.match(ctx.byId['clear-filter'].className, /\bfocusable\b/);
+
+    ctx.setFocus(ctx.byId['clear-filter']);
+    ok(ctx);
+    assert.equal(ctx.byId['clear-filter'].className, 'btn hidden'); // not focusable, so the remote cannot land on it
+    assert.equal(ctx.byId['open-filter'].textContent, 'Filter');
+    assert.doesNotMatch(ctx.byId['open-filter'].className, /\bon\b/);
+    assert.equal(focusedEl(ctx).item.title.tmdb_id, 1);
+    assert.deepEqual(JSON.parse(ctx.storage['reelradar.filter']), { v: 1, genres: [], keywords: [] });
+  });
 });

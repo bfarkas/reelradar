@@ -35,7 +35,8 @@ header.top .wrap { align-items: center; display: flex; gap: 28px; min-height: 64
 
 .bar { align-items: center; display: flex; flex-wrap: wrap; gap: 10px; padding: 20px 0 8px; }
 .chip { background: var(--chip); border: 1px solid var(--line); border-radius: 999px; cursor: pointer; font-size: 13px; font-weight: 600; padding: 7px 14px; }
-.chip[aria-pressed="true"] { background: var(--red); border-color: var(--red); color: #fff; }
+.chip[aria-pressed="true"], .chip.on { background: var(--red); border-color: var(--red); color: #fff; }
+#active-tags .chip { margin: 0 6px 6px 0; }
 select.chip { appearance: none; -webkit-appearance: none; padding-right: 28px; background-image: linear-gradient(45deg, transparent 50%, var(--ink) 50%), linear-gradient(135deg, var(--ink) 50%, transparent 50%); background-position: calc(100% - 15px) 50%, calc(100% - 10px) 50%; background-size: 5px 5px; background-repeat: no-repeat; }
 #count { color: var(--muted); font-size: 13px; margin-left: auto; }
 
@@ -137,11 +138,12 @@ footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 12px
   <div class="bar">
     <span id="kinds"></span>
     <select class="chip" id="service" aria-label="Streaming service"></select>
-    <button type="button" class="chip" id="filter-toggle" aria-pressed="false">Genres &amp; keywords</button>
-    <button type="button" class="chip" id="filter-clear">Clear filter</button>
+    <button type="button" class="chip" id="filter-toggle" aria-expanded="false" aria-controls="filter">Genres &amp; keywords</button>
+    <button type="button" class="chip" id="filter-clear" hidden>Clear filter</button>
     <span class="layout" id="layout" role="group" aria-label="Layout"></span>
     <span id="count"></span>
   </div>
+  <div id="active-tags" role="group" aria-label="Active genre and keyword filters"></div>
   <section id="filter" hidden>
     <h2>Genres</h2>
     <div id="genres"></div>
@@ -410,6 +412,35 @@ function toggleButton(kind, tag) {
   return b;
 }
 
+// What is filtering the list, visible with the panel closed: the number on its button, a removable chip per genre or
+// keyword, and Clear filter only when there is something to clear.
+function renderActive() {
+  var count = selection.genres.length + selection.keywords.length;
+  var toggle = document.getElementById('filter-toggle');
+  toggle.textContent = 'Genres & keywords' + (count ? ' (' + count + ')' : '');
+  toggle.className = count ? 'chip on' : 'chip';
+  document.getElementById('filter-clear').hidden = !(count || selection.kind !== 'all' || selection.service);
+  var root = document.getElementById('active-tags');
+  root.textContent = '';
+  ['genres', 'keywords'].forEach(function (kind) {
+    var names = {};
+    collectTags(kind).forEach(function (tag) { names[tag.id] = tag.name; });
+    selection[kind].forEach(function (id) {
+      var name = names[id] || (kind === 'genres' ? 'Unknown genre' : 'Unknown keyword'); // saved, but gone from the catalogue
+      var chip = button(name + ' \u2715', 'chip on', function () {
+        selection[kind].splice(selection[kind].indexOf(id), 1);
+        saveSelection();
+        renderGenres();
+        renderKeywords();
+        renderTitles();
+        toggle.focus(); // the chip is gone
+      });
+      chip.setAttribute('aria-label', 'Remove filter ' + name);
+      root.appendChild(chip);
+    });
+  });
+}
+
 function renderGenres() {
   var root = document.getElementById('genres');
   var genres = collectTags('genres').sort(byName);
@@ -506,7 +537,7 @@ function renderViews() {
 document.getElementById('filter-toggle').onclick = function () {
   var panel = document.getElementById('filter');
   panel.hidden = !panel.hidden;
-  this.setAttribute('aria-pressed', panel.hidden ? 'false' : 'true');
+  this.setAttribute('aria-expanded', panel.hidden ? 'false' : 'true');
 };
 document.getElementById('filter-clear').onclick = function () {
   selection = { v: 1, genres: [], keywords: [], kind: 'all', service: 0 };
@@ -515,6 +546,7 @@ document.getElementById('filter-clear').onclick = function () {
   renderKeywords();
   renderKinds();
   renderTitles();
+  document.getElementById('filter-toggle').focus(); // Clear filter has just hidden itself
 };
 document.getElementById('keyword-search').oninput = renderKeywords;
 
@@ -554,8 +586,9 @@ function renderTitles() {
   var shown = allTitles.filter(function (title) { return matchesFilter(title, scoped(currentView, selection)); });
   var sections = viewSections(currentView, shown, selection.kind);
   var count = viewCount(currentView, sections);
-  var noun = currentView === 'upcoming' || currentView === 'recent' ? ' releases' : ' titles';
-  document.getElementById('count').textContent = count + noun + ' of ' + allTitles.length + ' titles';
+  var noun = currentView === 'upcoming' || currentView === 'recent' ? ' release' : ' title';
+  document.getElementById('count').textContent = count + noun + (count === 1 ? '' : 's');
+  renderActive();
   setHeroImage(sections);
   render(sections);
 }

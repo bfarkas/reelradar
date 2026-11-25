@@ -104,7 +104,7 @@ header { position: absolute; left: 80px; top: 36px; width: 1760px; height: 80px;
     <span class="logo serif">Reel<span>Radar</span></span>
     <div id="views"></div>
     <span class="btn" id="open-filter">Filter</span>
-    <span class="btn" id="clear-filter">Clear filter</span>
+    <span class="btn hidden" id="clear-filter">Clear filter</span>
     <span id="layout"><span class="btn focusable" id="layout-wall"><span class="ico wall"></span></span><span class="btn focusable" id="layout-rows"><span class="ico rows"></span></span></span>
   </header>
   <div id="count"></div>
@@ -396,6 +396,7 @@ function renderList(place) {
   var list = $('list');
   var shown = allTitles.filter(matchesFilter);
   var active = selection.genres.length + selection.keywords.length;
+  renderFilterButtons();
   var sections = viewSections(currentView, shown, 'all');
   var count = 0;
   sections.forEach(function (section) { count += section.items.length; });
@@ -424,6 +425,15 @@ function renderList(place) {
     list.querySelector('[data-id="' + place.id + '"]'))) || first;
   if (!wall) showHero(target ? target.item : null);
   setFocus(target || $('open-filter'));
+}
+
+// The header says that a filter is on, also in the wall, which has no count. Clear filter exists only then; a hidden one
+// must not be focusable.
+function renderFilterButtons() {
+  var active = selection.genres.length + selection.keywords.length;
+  $('open-filter').textContent = active ? 'Filter (' + active + ')' : 'Filter';
+  $('open-filter').className = 'btn focusable' + (active ? ' on' : '') + (/(^| )focus( |$)/.test($('open-filter').className) ? ' focus' : '');
+  $('clear-filter').className = active ? 'btn focusable' : 'btn hidden';
 }
 
 function posterCard(item) {
@@ -565,9 +575,8 @@ function renderLayout() {
 });
 renderLayout();
 renderViews();
-$('open-filter').className += ' focusable';
+renderFilterButtons();
 $('open-filter').onactivate = openFilter;
-$('clear-filter').className += ' focusable';
 $('clear-filter').onactivate = function () {
   selection = { v: 1, genres: [], keywords: [] };
   saveSelection();
