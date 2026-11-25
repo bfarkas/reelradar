@@ -93,6 +93,7 @@ header { position: absolute; left: 80px; top: 36px; width: 1760px; height: 80px;
 #pfill { width: 0; height: 8px; background: #e0412a; }
 #status { position: absolute; left: 0; top: 480px; width: 1920px; text-align: center; font-size: 44px; color: #ddd; }
 #message { position: absolute; left: 80px; top: 680px; font-size: 34px; color: #cfc3b5; }
+#notice { position: absolute; left: 610px; bottom: 48px; width: 700px; padding: 18px 0; text-align: center; font-size: 32px; background: #1d1712; border: 2px solid #f4ede3; border-radius: 12px; }
 </style>
 </head>
 <body>
@@ -116,6 +117,7 @@ header { position: absolute; left: 80px; top: 36px; width: 1760px; height: 80px;
   </div>
   <div id="message">Loading titles...</div>
   <div id="list"></div>
+  <div id="notice" class="hidden"></div>
 </div>
 <div id="dialog" class="layer hidden">
   <div id="dlg">
@@ -438,9 +440,21 @@ function posterCard(item) {
   card.appendChild(el('div', 'cap', release ? shortDate(release.date).replace(/ \d{4}$/, '') + ' · ' + (release.kind === 'cinema' ? 'Cinema' : 'Streaming') : (availableText(title, true) || (title.trailer ? '' : 'No trailer'))));
   card.setAttribute('data-id', titleKey(title));
   card.item = item;
-  card.onactivate = function () { if (title.trailer) play(title); };
+  card.onactivate = function () {
+    if (title.trailer) play(title);
+    else showNotice(wall ? 'No trailer \u00b7 hold OK for details' : 'No trailer');
+  };
   card.onlongpress = function () { openDialog(item); };
   return card;
+}
+
+var NOTICE_MS = 3000;
+var noticeTimer = null;
+function showNotice(message) {
+  $('notice').textContent = message;
+  $('notice').className = '';
+  clearTimeout(noticeTimer);
+  noticeTimer = setTimeout(function () { $('notice').className = 'hidden'; }, NOTICE_MS);
 }
 
 // Rows layout: the hero follows the focused poster: backdrop, title, date, synopsis, Play / Request.
@@ -572,8 +586,11 @@ function okDown(press, now) {
   return { press: press, event: 'hold' };
 }
 var okPress = null;
+var dialogItem = null;
 
+// Play comes first and has focus; without a trailer Close has it, so a stray OK never sends a Seerr request.
 function openDialog(item) {
+  dialogItem = item;
   var title = item.title;
   var release = itemRelease(item);
   $('dlg-poster').style.backgroundImage = title.poster_path ? 'url(' + IMG + 'w342' + title.poster_path + ')' : 'none';
@@ -584,14 +601,20 @@ function openDialog(item) {
   fillSynopsis($('dlg-text'), title);
   var actions = $('dlg-actions');
   actions.textContent = '';
-  appendRequest(actions, title, function () { if (layer === 'dialog') openDialog(item); });
+  var playButton = null;
+  if (title.trailer) {
+    playButton = el('span', 'action solid focusable', '\u25B6  Play trailer');
+    playButton.onactivate = function () { closeDialog(); play(title); }; // Back from the player then lands on the poster
+    actions.appendChild(playButton);
+  }
+  appendRequest(actions, title, function () { if (layer === 'dialog' && dialogItem === item) openDialog(item); });
   if (!title.trailer) actions.appendChild(el('span', 'action-note', 'No trailer  '));
   var close = el('span', 'action focusable', 'Close');
   close.onactivate = closeDialog;
   actions.appendChild(close);
   $('dialog').className = 'layer';
   layer = 'dialog';
-  setFocus(actions.querySelector('.focusable'));
+  setFocus(playButton || close);
 }
 function closeDialog() {
   $('dialog').className = 'layer hidden';

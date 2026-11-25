@@ -24,6 +24,7 @@ function fakeElement(tag) {
     insertBefore: function (child, ref) { var at = e.children.indexOf(ref); e.children.splice(at < 0 ? e.children.length : at, 0, child); return child; },
     setAttribute: function (name, value) { e.attrs[name] = value; },
     getAttribute: function (name) { return e.attrs[name] === undefined ? null : e.attrs[name]; },
+    getBoundingClientRect: function () { return { left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0 }; },
     querySelector: function () { return null; }, removeAttribute: function () {}, addEventListener: function () {}, load: function () {}, pause: function () {}, play: function () {}
   };
   Object.defineProperty(e, 'textContent', { get: function () { return text; }, set: function (value) { text = value; e.children = []; } });

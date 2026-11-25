@@ -187,3 +187,73 @@ test('tv focus: Seerr status loading moves no focus, from the header, a poster, 
   assert.equal(focusedEl(ctx), tag);
   assert.match(ctx.byId['hero-actions'].children[1].textContent, /Requested in Seerr/); // applied, not dropped
 });
+
+// ---- OK on posters and the wall dialog (OS-T-0D4SE) ----
+function key(ctx, type, code) { ctx.handlers[type]({ keyCode: code, preventDefault: function () {} }); }
+function ok(ctx) { key(ctx, 'keydown', 13); key(ctx, 'keyup', 13); }
+function wallScreen(titles) {
+  var ctx = load({ 'reelradar.layout': 'wall' });
+  ctx.currentView = 'all';
+  reply(ctx, '/api/titles', titles);
+  return ctx;
+}
+function sent(ctx) { return ctx.requests.map(function (r) { return r.name; }).filter(function (n) { return !/\/api\/(titles|seerr)$/.test(n); }); }
+function fire(ctx, ms) {
+  ctx.timers.filter(function (t) { return t.ms === ms && !t.cleared; }).forEach(function (t) { t.cleared = true; t.fn(); });
+}
+
+test('tv OK: a poster without a trailer shows a notice that clears itself', function () {
+  var ctx = wallScreen([movie(1, { trailer: null })]);
+  ok(ctx);
+  assert.equal(ctx.byId.notice.textContent, 'No trailer · hold OK for details');
+  assert.equal(ctx.byId.notice.className, '');
+  fire(ctx, 3000);
+  assert.equal(ctx.byId.notice.className, 'hidden');
+  assert.equal(ctx.layer, 'main'); // a short press never opens the dialog
+  assert.deepEqual(sent(ctx), []);
+
+  var rows = load();
+  rows.currentView = 'all';
+  reply(rows, '/api/titles', [movie(1, { trailer: null })]);
+  ok(rows);
+  assert.equal(rows.byId.notice.textContent, 'No trailer');
+});
+
+test('tv dialog: a long press focuses Play and starts nothing; Back from that trailer returns to the poster', function () {
+  var ctx = wallScreen([movie(1), movie(2)]);
+  var card = ctx.byId.list.querySelector('[data-id="movie:2"]');
+  ctx.setFocus(card);
+  key(ctx, 'keydown', 13);
+  fire(ctx, 600);
+  key(ctx, 'keydown', 13); // Tizen repeats while OK is held
+  key(ctx, 'keyup', 13);
+  assert.equal(ctx.layer, 'dialog');
+  assert.match(where(ctx), /Play trailer/);
+  assert.deepEqual(sent(ctx), []);
+  ok(ctx);
+  assert.equal(ctx.layer, 'player');
+  assert.deepEqual(sent(ctx), ['GET /api/stream/movie/2']);
+  key(ctx, 'keydown', 10009); // Back
+  assert.equal(ctx.layer, 'main');
+  assert.equal(focusedEl(ctx), card);
+});
+
+test('tv dialog: without a trailer Close has focus, so OK sends no request', function () {
+  var ctx = wallScreen([movie(1, { trailer: null })]);
+  ctx.openDialog(ctx.byId.list.querySelector('.focusable').item);
+  assert.equal(where(ctx), 'Close');
+  ok(ctx);
+  assert.equal(ctx.layer, 'main');
+  assert.deepEqual(sent(ctx), []);
+});
+
+test('tv dialog: a request that finishes late does not reopen the dialog over another title', function () {
+  var ctx = wallScreen([movie(1), movie(2)]);
+  var cards = ctx.byId.list.querySelectorAll('.focusable');
+  ctx.openDialog(cards[0].item);
+  ctx.byId['dlg-actions'].children[1].onactivate();
+  ctx.closeDialog();
+  ctx.openDialog(cards[1].item);
+  reply(ctx, '/api/request/movie/1', { status: 'requested' });
+  assert.equal(ctx.byId['dlg-title'].textContent, 'Movie 2');
+});
