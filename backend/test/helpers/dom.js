@@ -29,15 +29,17 @@ function element(tag) {
 function all(root) {
   return [].concat.apply([], root.children.map(function (child) { return [child].concat(all(child)); }));
 }
-// '.a', '.a.b' and '[data-x="y"]' combinations: all the script needs.
+// '.a', '.a.b', '[data-x="y"]', tag names and comma lists: all the scripts need.
 function matches(node, selector) {
-  var parts = selector.match(/\.[\w-]+|\[[\w-]+="[^"]*"\]/g);
-  assert.equal(parts.join(''), selector, 'unsupported selector ' + selector);
-  return parts.every(function (part) {
-    if (part[0] === '.') return (' ' + node.className + ' ').indexOf(' ' + part.slice(1) + ' ') !== -1;
-    var m = part.match(/^\[([\w-]+)="([^"]*)"\]$/);
-    return node.attrs[m[1]] === m[2];
+  return selector.split(',').some(function (one) {
+    var parts = one.trim().match(/^[a-z]+|\.[\w-]+|\[[\w-]+="[^"]*"\]/g) || [];
+    assert.equal(parts.join(''), one.trim(), 'unsupported selector ' + selector);
+    return parts.every(function (part) {
+      if (part[0] === '.') return (' ' + node.className + ' ').indexOf(' ' + part.slice(1) + ' ') !== -1;
+      if (part[0] !== '[') return node.tag === part;
+      var m = part.match(/^\[([\w-]+)="([^"]*)"\]$/);
+      return node.attrs[m[1]] === m[2];
+    });
   });
 }
-
 module.exports = { element: element, all: all, matches: matches };

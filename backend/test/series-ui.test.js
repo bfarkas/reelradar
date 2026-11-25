@@ -25,7 +25,7 @@ function fakeElement(tag) {
     setAttribute: function (name, value) { e.attrs[name] = value; },
     getAttribute: function (name) { return e.attrs[name] === undefined ? null : e.attrs[name]; },
     getBoundingClientRect: function () { return { left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0 }; },
-    querySelector: function () { return null; }, removeAttribute: function () {}, addEventListener: function () {}, load: function () {}, pause: function () {}, play: function () {}
+    querySelector: function () { return null; }, querySelectorAll: function () { return []; }, removeAttribute: function () {}, addEventListener: function () {}, load: function () {}, pause: function () {}, play: function () {}
   };
   Object.defineProperty(e, 'textContent', { get: function () { return text; }, set: function (value) { text = value; e.children = []; } });
   Object.defineProperty(e, 'firstChild', { get: function () { return e.children[0] || null; } });
@@ -63,7 +63,7 @@ function load(file) {
   });
   var context = {
     document: document, byId: byId, requests: requests,
-    window: { localStorage: { getItem: function () { return null; }, setItem: function () {} } },
+    window: { localStorage: { getItem: function () { return null; }, setItem: function () {} }, location: { hash: '' }, history: { state: null } },
     XMLHttpRequest: function () { this.open = function (method, url) { requests.push(method + ' ' + url); }; this.send = function () {}; },
     clearTimeout: clearTimeout, setTimeout: setTimeout,
     console: console

@@ -23,6 +23,20 @@ function load(options) {
     }
     return byId[id];
   }
+  // history as the browser keeps it: entries of {state, hash}; back() and a link click fire popstate.
+  var entries = [{ state: null, hash: options.hash || '' }], at = 0;
+  var win = {
+    localStorage: { getItem: function (k) { return storage[k] === undefined ? null : storage[k]; }, setItem: function (k, v) { storage[k] = v; } },
+    location: { get hash() { return entries[at].hash; } },
+    history: {
+      get state() { return entries[at].state; },
+      get length() { return at + 1; },
+      pushState: function (state) { entries.splice(at + 1, entries.length, { state: state, hash: entries[at].hash }); at += 1; },
+      back: function () { win.history.go(-1); },
+      go: function (n) { at = Math.max(0, at + n); if (win.onpopstate) win.onpopstate({ state: entries[at].state }); }
+    },
+    follow: function (hash) { entries.splice(at + 1, entries.length, { state: null, hash: hash }); at += 1; win.onpopstate({ state: null }); }
+  };
   var context = {
     byId: byId, requests: requests, handlers: handlers, storage: storage,
     document: {
@@ -32,7 +46,7 @@ function load(options) {
       getElementById: node,
       addEventListener: function (type, fn) { handlers[type] = fn; }
     },
-    window: { localStorage: { getItem: function (k) { return storage[k] === undefined ? null : storage[k]; }, setItem: function (k, v) { storage[k] = v; } } },
+    window: win,
     XMLHttpRequest: function () {
       var request = this;
       request.open = function (method, url) { request.name = method + ' ' + url; };
@@ -98,4 +112,64 @@ test('web filter: the count uses one unit', function () {
   ctx.allTitles = [movie(1)];
   ctx.renderTitles();
   assert.equal(ctx.byId.count.textContent, '1 title');
+});
+
+// ---- Back, refresh and dialogs keep the viewer's place (OS-T-XTPZ8) ----
+function current(ctx) {
+  var link = ctx.byId.views.children.filter(function (a) { return a.attrs['aria-current'] === 'page'; });
+  assert.equal(link.length, 1);
+  return link[0].textContent;
+}
+test('web history: the hash picks the view on load, and Back returns to the previous one', function () {
+  assert.equal(current(screen([movie(1)], { hash: '#/genres' })), 'Genres');
+  assert.equal(current(screen([movie(1)], { hash: '#nonsense' })), 'Release calendar');
+  var ctx = screen([movie(1)]);
+  var links = ctx.byId.views.children;
+  assert.deepEqual(links.map(function (a) { return a.href; }), ['#/upcoming', '#/trailers', '#/recent', '#/genres', '#/all']);
+  ctx.window.follow('#/all');
+  assert.equal(current(ctx), 'All titles');
+  assert.equal(ctx.byId.views.children[0], links[0], 'the nav is not rebuilt, so focus stays on the link');
+  ctx.window.history.back();
+  assert.equal(current(ctx), 'Release calendar');
+});
+
+test('web history: Back closes the player, then the details, then goes to the previous view', function () {
+  var ctx = screen([movie(1)]);
+  ctx.window.follow('#/all');
+  var opener = ctx.byId.titles.querySelector('button'), focused = [];
+  opener.focus = function () { focused.push('opener'); };
+  ctx.openDetail({ title: movie(1), kind: null, date: null }, opener);
+  var play = ctx.byId.detail.querySelector('.primary');
+  play.focus = function () { focused.push('play'); };
+  ctx.playTrailer(movie(1), play);
+  reply(ctx, '/api/stream/movie/1', { url: '/media/x.mp4' });
+  assert.equal(ctx.byId.player.hidden, false);
+  assert.equal(ctx.byId.page.inert, true);
+  assert.equal(ctx.byId.detail.inert, true);
+
+  ctx.window.history.back();
+  assert.equal(ctx.byId.player.hidden, true);
+  assert.equal(ctx.byId.detail.hidden, false);
+  assert.equal(ctx.byId.detail.inert, false);
+  ctx.window.history.back();
+  assert.equal(ctx.byId.detail.hidden, true);
+  assert.equal(ctx.byId.page.inert, false);
+  assert.deepEqual(focused, ['play', 'opener']);
+  assert.equal(current(ctx), 'All titles');
+  ctx.window.history.back();
+  assert.equal(current(ctx), 'Release calendar');
+});
+
+test('web history: closing by button, backdrop or Escape leaves no entry behind', function () {
+  var ctx = screen([movie(1)]);
+  var item = { title: movie(1), kind: null, date: null };
+  function open() { ctx.openDetail(item, null); assert.equal(ctx.window.history.length, 2); }
+  open(); ctx.closeDetail(); assert.equal(ctx.window.history.length, 1);
+  open(); ctx.byId.detail.onclick({ target: ctx.byId.detail }); assert.equal(ctx.window.history.length, 1);
+  open(); ctx.handlers.keydown({ key: 'Escape' }); assert.equal(ctx.window.history.length, 1);
+  ctx.playTrailer(movie(1), element('button'));
+  reply(ctx, '/api/stream/movie/1', { url: '/media/x.mp4' });
+  ctx.byId['player-close'].onclick();
+  assert.equal(ctx.window.history.length, 1);
+  assert.equal(ctx.byId.player.hidden, true);
 });

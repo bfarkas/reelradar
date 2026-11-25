@@ -24,8 +24,8 @@ header.top .wrap { align-items: center; display: flex; gap: 28px; min-height: 64
 .logo { font-family: var(--serif); font-size: 28px; font-weight: 700; letter-spacing: -0.5px; white-space: nowrap; }
 .logo span { color: var(--red); }
 #views { display: flex; gap: 22px; overflow-x: auto; scrollbar-width: none; }
-#views button { background: none; border: 0; border-bottom: 2px solid transparent; cursor: pointer; font-size: 14px; padding: 20px 0 18px; white-space: nowrap; }
-#views button[aria-pressed="true"] { border-color: var(--red); font-weight: 600; }
+#views a { border-bottom: 2px solid transparent; color: inherit; font-size: 14px; padding: 20px 0 18px; text-decoration: none; white-space: nowrap; }
+#views a[aria-current="page"] { border-color: var(--red); font-weight: 600; }
 
 .hero { background: linear-gradient(90deg, var(--paper) 30%, rgba(246,240,230,0.75) 55%, rgba(200,50,30,0.55)), var(--red) center / cover no-repeat; border-bottom: 1px solid var(--line); }
 .hero .wrap { padding-bottom: 36px; padding-top: 40px; }
@@ -112,7 +112,7 @@ footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 12px
   .wrap { padding: 0 16px; }
   header.top .wrap { flex-direction: column; align-items: flex-start; gap: 0; padding-top: 10px; }
   #views { max-width: 100%; }
-  #views button { padding: 12px 0 10px; }
+  #views a { padding: 12px 0 10px; }
   .hero .wrap { padding: 24px 16px; }
   .grid { grid-template-columns: 1fr; }
   .posterwrap { flex-basis: 88px; width: 88px; }
@@ -123,6 +123,7 @@ footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 12px
 </style>
 </head>
 <body>
+<div id="page">
 <header class="top"><div class="wrap">
   <div class="logo">Reel<span>Radar</span></div>
   <nav id="views" aria-label="Views"></nav>
@@ -154,14 +155,16 @@ footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 12px
   <div id="titles"><p class="empty">Loading titles...</p></div>
 </main>
 
-<div id="detail" hidden role="dialog" aria-label="Title details"></div>
+<footer><div class="wrap">This product uses the TMDB API but is not endorsed or certified by TMDB. Streaming availability from JustWatch via TMDB.</div></footer>
+</div>
 
-<div id="player" hidden role="dialog" aria-label="Trailer">
+<div id="detail" hidden role="dialog" aria-modal="true" aria-label="Title details"></div>
+
+<div id="player" hidden role="dialog" aria-modal="true" aria-label="Trailer">
   <button type="button" class="btn close" id="player-close">Close</button>
   <video id="video" controls playsinline></video>
 </div>
 
-<footer><div class="wrap">This product uses the TMDB API but is not endorsed or certified by TMDB. Streaming availability from JustWatch via TMDB.</div></footer>
 <script>
 // ES5, like the TV app.
 var IMG = 'https://image.tmdb.org/t/p/';
@@ -181,7 +184,13 @@ function button(label, className, onclick) {
 // ---- trailer: the cached MP4 from /api/stream, same as the TV app ----
 var player = document.getElementById('player');
 var video = document.getElementById('video');
-function closePlayer() { video.pause(); video.removeAttribute('src'); video.load(); player.hidden = true; }
+var playerReturn = null;
+function hidePlayer() {
+  video.pause(); video.removeAttribute('src'); video.load(); player.hidden = true;
+  setModal();
+  if (playerReturn) playerReturn();
+}
+function closePlayer() { if (player.hidden) return; hidePlayer(); window.history.back(); }
 document.getElementById('player-close').onclick = closePlayer;
 player.onclick = function (event) { if (event.target === player) closePlayer(); };
 document.addEventListener('keydown', function (event) {
@@ -191,6 +200,7 @@ document.addEventListener('keydown', function (event) {
 });
 
 function playTrailer(title, trigger) {
+  var returnFocus = keepPlace(trigger); // before disabling, which drops focus
   trigger.disabled = true;
   trigger.textContent = 'Loading...';
   getJson('/api/stream/' + mediaType(title) + '/' + title.tmdb_id, function (error, stream) {
@@ -198,7 +208,13 @@ function playTrailer(title, trigger) {
     trigger.textContent = 'Play trailer';
     if (error) { trigger.textContent = 'Trailer unavailable'; return; }
     video.src = stream.url;
-    player.hidden = false;
+    if (player.hidden) {
+      playerReturn = returnFocus;
+      player.hidden = false;
+      setModal();
+      pushOverlay();
+      document.getElementById('player-close').focus();
+    }
     video.play();
   });
 }
@@ -525,13 +541,49 @@ function renderServices() {
   };
 }
 
+// ---- history: the view is in the hash (#/genres). An open dialog or player adds an entry, so Back closes it first.
+function viewFromHash() {
+  var name = window.location.hash.replace(/^#\//, ''); // the slash keeps #/genres apart from the element id "genres"
+  return VIEWS.some(function (view) { return view[0] === name; }) ? name : 'upcoming';
+}
+function pushOverlay() {
+  window.history.pushState({ overlays: [detail.hidden ? '' : 'detail', player.hidden ? '' : 'player'].filter(Boolean) }, '');
+}
+// Back, Forward, a nav link or an edited address. Only closes overlays: Forward does not reopen one.
+window.onpopstate = function (event) {
+  var wanted = (event.state && event.state.overlays) || [];
+  if (!player.hidden && wanted.indexOf('player') === -1) hidePlayer();
+  if (!detail.hidden && wanted.indexOf('detail') === -1) hideDetail();
+  var view = viewFromHash();
+  if (view !== currentView) { currentView = view; renderViews(); renderTitles(); }
+};
+// While a dialog is open nothing behind it can be focused or clicked.
+function setModal() {
+  document.getElementById('page').inert = !detail.hidden || !player.hidden;
+  detail.inert = !player.hidden;
+}
+// -> a function that puts focus back on the opener; if the list was redrawn meanwhile, on the control in its place.
+function keepPlace(opener) {
+  function controls() { return document.getElementById('titles').querySelectorAll('button, a'); }
+  var at = opener ? Array.prototype.indexOf.call(controls(), opener) : -1;
+  return function () {
+    var target = opener && opener.isConnected !== false ? opener : controls()[at];
+    if (target) target.focus();
+  };
+}
+
 function renderViews() {
   var nav = document.getElementById('views');
-  nav.textContent = '';
-  VIEWS.forEach(function (view) {
-    var b = button(view[1], '', function () { currentView = view[0]; renderViews(); renderTitles(); });
-    b.setAttribute('aria-pressed', view[0] === currentView ? 'true' : 'false');
-    nav.appendChild(b);
+  if (!nav.children.length) {
+    VIEWS.forEach(function (view) {
+      var link = text('a', view[1]); // built once, so a clicked link keeps focus
+      link.href = '#/' + view[0];
+      nav.appendChild(link);
+    });
+  }
+  VIEWS.forEach(function (view, i) {
+    if (view[0] === currentView) nav.children[i].setAttribute('aria-current', 'page');
+    else nav.children[i].removeAttribute('aria-current');
   });
   var hero = HERO[currentView];
   document.getElementById('hero-kicker').textContent = hero[0];
@@ -667,7 +719,7 @@ function badgeText(title, kind, date) {
 function tile(item) {
   var title = item.title;
   var release = itemRelease(item);
-  var b = button('', 'tile', function () { openDetail(item); });
+  var b = button('', 'tile', function () { openDetail(item, this); });
   b.setAttribute('aria-label', (isSeries(title) ? 'Series, ' : '') + title.title + (release ? ', ' + badgeText(title, release.kind, release.date) + ', ' + shortDate(release.date) : ''));
   var art = document.createElement('span');
   art.className = 'art';
@@ -694,20 +746,24 @@ function tile(item) {
 // Clicking a wall poster shows the full card (trailer, Seerr, synopsis) in a dialog.
 var detail = document.getElementById('detail');
 var detailReturn = null;
-function openDetail(item) {
-  detailReturn = document.activeElement;
+function openDetail(item, opener) {
+  detailReturn = keepPlace(opener);
   detail.textContent = '';
   var c = card(item);
   c.appendChild(button('\u2715', 'btn x', closeDetail)).setAttribute('aria-label', 'Close');
   detail.appendChild(c);
   detail.hidden = false;
+  setModal();
+  pushOverlay();
   c.querySelector('.btn').focus();
 }
-function closeDetail() {
+function hideDetail() {
   detail.hidden = true;
   detail.textContent = '';
-  if (detailReturn) detailReturn.focus();
+  setModal();
+  if (detailReturn) detailReturn();
 }
+function closeDetail() { if (detail.hidden) return; hideDetail(); window.history.back(); }
 detail.onclick = function (event) { if (event.target === detail) closeDetail(); };
 
 // The release an item stands for: its calendar entry, or the title's next (else latest) German date.
@@ -803,6 +859,10 @@ function seerrControl(title) {
   return b;
 }
 
+// A reload with a dialog open leaves its history entries behind; step back to the view's own one.
+var leftOver = window.history.state && window.history.state.overlays;
+if (leftOver && leftOver.length) window.history.go(-leftOver.length);
+currentView = viewFromHash();
 renderViews();
 renderKinds();
 renderLayout();

@@ -22,7 +22,7 @@ function stub() {
 function load() {
   var context = {
     document: stub(),
-    window: { localStorage: { getItem: function () { return null; }, setItem: function () {} } },
+    window: { localStorage: { getItem: function () { return null; }, setItem: function () {} }, location: { hash: '' }, history: { state: null } },
     XMLHttpRequest: function () { this.open = function () {}; this.send = function () {}; },
     console: console
   };
