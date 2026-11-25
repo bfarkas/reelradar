@@ -101,3 +101,8 @@ Next:
 - Decisions: Clear filter stays (left of Filter) until OS-T-99KST; while it shows, `#views.tight` narrows the view pills (they overlapped it by 11px) - remove with Clear filter. `#kicker` is gone; `#hero-date` sits above the title and carries the Series pill in front so a long line can't cut it. No play glyph on the hero button. Count says release(s) in calendar views, title(s) elsewhere, "x of y" with a filter; " · n filters on" dropped. #count is outside the list: in the wall it hides once scrolled. Scrolling up keeps 72px in #list so the heading returns with its row (also fixes hidden genre headings). Rows: shelf 442px, list 438px, so each shelf heading lands on the count's line. Shared views block unchanged.
 - Next: OS-T-99KST (TV details dialog, filter screen, error screen) when the owner asks; then web OS-T-8XQ6D, OS-T-KK353, OS-T-HXR91. docs/screenshots/tv-*.jpg still show the old design.
 - Preview tip: launch config `tv-app-preview`; the pane only captures a corner at 1920x1080, so scale document.body for screenshots (restore before testing focus).
+
+## 2026-11-25: new logo task (planning only)
+- Owner asked for a backlog task to add the logos in `logo/` after all other design tasks. Created OS-T-28VS2 (backlog), blocked by OS-T-99KST and OS-T-HXR91, so it follows all four open redesign tasks. Nothing implemented.
+- `logo/` now holds the designer's final package "Next frame" (C0). It is untracked; the task covers committing it. The uncommitted OS-T-G3P92 note about concepts A/B/C does not match the folder any more (that task is archived).
+- Owner decisions in the task: licence line (package vs repo LICENSE); artwork is AI-assisted with no trademark clearance. GitHub social preview upload is manual.
