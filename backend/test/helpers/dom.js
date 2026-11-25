@@ -10,6 +10,7 @@ function element(tag) {
     tag: tag, className: '', children: [], style: {}, attrs: {}, parentNode: null, rect: { left: 0, top: 0, width: 0, height: 0 },
     scrollTop: 0, scrollLeft: 0, scrollHeight: 0, clientHeight: 0, scrollWidth: 0, clientWidth: 0,
     appendChild: function (child) { child.parentNode = e; e.children.push(child); return child; },
+    removeChild: function (child) { e.children.splice(e.children.indexOf(child), 1); child.parentNode = null; return child; },
     insertBefore: function (child, ref) { child.parentNode = e; var at = e.children.indexOf(ref); e.children.splice(at < 0 ? e.children.length : at, 0, child); return child; },
     setAttribute: function (name, value) { e.attrs[name] = String(value); },
     getAttribute: function (name) { return e.attrs[name] === undefined ? null : e.attrs[name]; },

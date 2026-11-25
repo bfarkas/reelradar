@@ -45,7 +45,7 @@ select.chip { appearance: none; -webkit-appearance: none; padding-right: 28px; b
 #filter .chip { margin: 0 6px 6px 0; }
 #keyword-search { background: var(--chip); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 8px; max-width: 100%; padding: 8px 10px; width: 22em; }
 
-.day { align-items: baseline; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; margin: 28px 0 14px; padding-bottom: 6px; }
+.day { align-items: baseline; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; margin: 28px 0 14px; padding-bottom: 6px; scroll-margin-top: 110px; }
 .day h2 { font-family: var(--serif); font-size: 24px; margin: 0; }
 .day small { color: var(--muted); font-size: 12px; }
 .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); }
@@ -57,7 +57,7 @@ select.chip { appearance: none; -webkit-appearance: none; padding-right: 28px; b
 .card h3 { font-family: var(--serif); font-size: 18px; line-height: 1.15; margin: 2px 0 3px; }
 .card .open { background: none; border: 0; cursor: pointer; display: block; font: inherit; padding: 0; text-align: left; width: 100%; }
 .card h3 .open:hover { color: var(--red-dark); }
-.posterwrap .name { color: #f4ede3; font-family: var(--serif); font-size: 14px; left: 8px; pointer-events: none; position: absolute; right: 8px; text-align: center; top: 40%; }
+.posterwrap .name { color: #f4ede3; overflow-wrap: break-word; font-family: var(--serif); font-size: 14px; left: 8px; pointer-events: none; position: absolute; right: 8px; text-align: center; top: 40%; }
 .credit { font-size: 11px; margin: 8px 0 0; }
 .meta { color: var(--muted); font-size: 12px; margin: 0 0 6px; }
 .release { font-size: 12px; font-weight: 600; margin: 0 0 4px; }
@@ -80,19 +80,24 @@ details.check div { margin: 3px 0; overflow-wrap: anywhere; }
 .layout button[aria-pressed="true"] { background: var(--red); color: #fff; }
 .wall { display: grid; gap: 16px 12px; grid-template-columns: repeat(auto-fill, minmax(122px, 1fr)); }
 .tile { background: none; border: 0; cursor: pointer; padding: 0; position: relative; text-align: center; }
-.tile .art { aspect-ratio: 2 / 3; background: #2a221c center / cover no-repeat; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.18); color: #f4ede3; font-family: var(--serif); font-size: 15px; overflow: hidden; position: relative; }
-.tile .art .name { left: 8px; position: absolute; right: 8px; top: 40%; }
+.tile .art { aspect-ratio: 2 / 3; background: #2a221c; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.18); color: #f4ede3; font-family: var(--serif); font-size: 15px; overflow: hidden; position: relative; }
+.tile .art .name { left: 8px; overflow-wrap: break-word; position: absolute; right: 8px; top: 40%; }
 .tile:hover .art, .tile:focus-visible .art { box-shadow: 0 0 0 3px var(--red), 0 6px 18px rgba(200,50,30,0.35); }
 .tile:focus { outline: none; }
 .badge { background: rgba(20,15,12,0.88); border-radius: 4px; color: #fff; font-family: var(--sans); font-size: 10px; font-weight: 800; left: 50%; letter-spacing: 1px; max-width: 88%; overflow: hidden; padding: 3px 7px; position: absolute; text-overflow: ellipsis; text-transform: uppercase; top: 7px; transform: translateX(-50%); white-space: nowrap; }
 .badge.streaming { background: var(--red); }
 .badge.series { background: #1f5f6b; }
-.badge.expected { line-height: 1.25; text-align: center; white-space: normal; }
+/* on wall posters the badge is a centred pill near the bottom; the negative margin lets it use the whole poster before wrapping */
+.tile .badge { border-radius: 999px; bottom: 7px; line-height: 1.25; margin-right: -50%; max-width: 94%; overflow-wrap: break-word; padding: 3px 9px; text-align: center; top: auto; white-space: normal; }
+.tile .art img { display: block; height: 100%; object-fit: cover; width: 100%; }
+.months { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 8px; }
+.more { display: block; margin: 14px auto 0; }
 .tile .date { color: var(--muted); display: block; font-size: 12px; margin-top: 6px; }
 .tip { background: var(--ink); border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,0.3); color: #fff; display: none; font-size: 12px; left: 50%; padding: 8px 10px; position: absolute; text-align: left; top: 72%; transform: translateX(-50%); width: 170px; z-index: 3; }
 .tip strong { display: block; font-size: 13px; margin-bottom: 2px; }
 @media (hover: hover) { .tile:hover .tip { display: block; } }
-body.wall-mode .hero .wrap { padding-bottom: 18px; padding-top: 22px; }
+body.wall-mode .hero { background: none; border-bottom: 0; }
+body.wall-mode .hero .wrap { padding-bottom: 0; padding-top: 22px; }
 body.wall-mode .hero h1 { font-size: clamp(28px, 4vw, 40px); font-style: italic; margin-bottom: 0; }
 body.wall-mode .hero p.lead { display: none; }
 #detail { align-items: center; background: rgba(10, 8, 6, 0.6); display: flex; inset: 0; justify-content: center; padding: 16px; position: fixed; z-index: 9; }
@@ -658,9 +663,13 @@ function renderTitles() {
 function setHeroImage(sections) {
   var first = sections.length && sections[0].items.length ? sections[0].items[0].title : null;
   var hero = document.getElementById('hero');
+  if (layout === 'wall') { hero.style.backgroundImage = ''; return; } // the wall has no backdrop strip, only the heading
   hero.style.backgroundImage = 'linear-gradient(90deg, #f6f0e6 30%, rgba(246,240,230,0.8) 52%, rgba(200,50,30,0.45))' +
     (first && first.backdrop_path ? ', url(' + IMG + 'w1280' + first.backdrop_path + ')' : '');
 }
+
+var GENRE_CAP = 12; // titles a genre starts with: all of them made a phone page of 1,378 posters
+var expandedGenres = {};
 
 function render(sections) {
   var root = document.getElementById('titles');
@@ -669,31 +678,16 @@ function render(sections) {
     root.appendChild(text('p', emptyMessage(currentView, selection), 'empty'));
     return;
   }
-  if (layout === 'wall') { renderWall(root, sections); return; }
-  sections.forEach(function (section) {
-    if (section.heading) {
-      var day = document.createElement('div');
-      day.className = 'day';
-      day.appendChild(text('h2', section.heading));
-      if (section.note) day.appendChild(text('small', section.note));
-      root.appendChild(day);
-    } else {
-      root.appendChild(document.createElement('div')).style.height = '12px';
-    }
-    var grid = document.createElement('div');
-    grid.className = 'grid';
-    section.items.forEach(function (item) { grid.appendChild(card(item)); });
-    root.appendChild(grid);
-  });
-}
-
-// Poster wall: calendar views become one flat grid in date order; genre shelves keep their headings.
-function renderWall(root, sections) {
-  var flat = currentView !== 'genres';
-  var groups = flat ? [{ heading: '', items: [].concat.apply([], sections.map(function (s) { return s.items; })) }] : sections;
+  var wall = layout === 'wall';
+  var calendar = currentView === 'upcoming' || currentView === 'recent';
+  // The wall groups calendar views by week, a day per heading would leave rows of one or two posters.
+  var groups = !wall || currentView === 'genres' ? sections : calendar ? byWeek(sections) :
+    [{ heading: '', items: [].concat.apply([], sections.map(function (s) { return s.items; })) }];
+  var months = [], seen = {};
   groups.forEach(function (group) {
+    var head = null;
     if (group.heading) {
-      var head = document.createElement('div');
+      head = document.createElement('div');
       head.className = 'day';
       head.appendChild(text('h2', group.heading));
       if (group.note) head.appendChild(text('small', group.note));
@@ -701,11 +695,67 @@ function renderWall(root, sections) {
     } else {
       root.appendChild(document.createElement('div')).style.height = '12px';
     }
-    var wall = document.createElement('div');
-    wall.className = 'wall';
-    group.items.forEach(function (item) { wall.appendChild(tile(item)); });
-    root.appendChild(wall);
+    if (calendar) group.items.forEach(function (item) {
+      var month = item.date.slice(0, 7);
+      if (!seen[month]) { seen[month] = true; months.push({ month: month, head: head }); }
+    });
+    var grid = document.createElement('div');
+    grid.className = wall ? 'wall' : 'grid';
+    root.appendChild(grid);
+    fill(root, grid, group, wall ? tile : card);
   });
+  if (months.length > 1) root.insertBefore(monthNav(months), root.firstChild);
+}
+
+// The group's posters or cards; a genre shows the first few until "Show all", which appends the rest in place.
+function fill(root, grid, group, make) {
+  var capped = currentView === 'genres' && !expandedGenres[group.heading] && group.items.length > GENRE_CAP;
+  function add(item) { return grid.appendChild(make(item)); }
+  (capped ? group.items.slice(0, GENRE_CAP) : group.items).forEach(add);
+  if (!capped) return;
+  var more = button('Show all ' + group.items.length, 'btn more', function () {
+    expandedGenres[group.heading] = true; // kept when the list is redrawn
+    var first = group.items.slice(GENRE_CAP).map(add)[0];
+    root.removeChild(more);
+    (make === tile ? first : first.querySelector('.open')).focus();
+  });
+  more.setAttribute('aria-label', 'Show all ' + group.items.length + ' titles in ' + group.heading);
+  root.appendChild(more);
+}
+
+// Monday of the date's week.
+function weekStart(iso) {
+  var d = new Date(iso + 'T12:00:00Z');
+  d.setUTCDate(d.getUTCDate() - (d.getUTCDay() + 6) % 7);
+  return d.toISOString().slice(0, 10);
+}
+// Calendar days (in order) -> one group per week.
+function byWeek(days) {
+  var weeks = [];
+  days.forEach(function (day) {
+    var start = weekStart(day.date);
+    var last = weeks[weeks.length - 1];
+    if (!last || last.start !== start) { last = { start: start, heading: 'Week of ' + shortDate(start), items: [] }; weeks.push(last); }
+    last.items = last.items.concat(day.items);
+  });
+  weeks.forEach(function (week) { week.note = week.items.length + (week.items.length === 1 ? ' release' : ' releases'); });
+  return weeks;
+}
+
+// Jumps to the first heading with a release of that month. Buttons, not anchors: the hash holds the view.
+function monthNav(months) {
+  var nav = document.createElement('nav');
+  nav.className = 'months';
+  nav.setAttribute('aria-label', 'Jump to month');
+  months.forEach(function (entry) {
+    nav.appendChild(button(MONTHS[Number(entry.month.slice(5)) - 1] + ' ' + entry.month.slice(0, 4), 'chip', function () {
+      var heading = entry.head.firstChild;
+      heading.setAttribute('tabindex', '-1');
+      heading.focus({ preventScroll: true });
+      entry.head.scrollIntoView();
+    }));
+  });
+  return nav;
 }
 
 // "Premieres on Netflix": a streaming release whose service is only expected (TMDB's release note), not yet listed as streaming.
@@ -728,10 +778,15 @@ function tile(item) {
   var art = document.createElement('span');
   art.className = 'art';
   art.style.display = 'block';
-  if (title.poster_path) art.style.backgroundImage = 'url(' + IMG + 'w342' + title.poster_path + ')';
-  else art.appendChild(text('span', title.title, 'name'));
+  if (title.poster_path) {
+    var image = document.createElement('img');
+    image.alt = '';
+    image.loading = 'lazy'; // before src, so that off-screen posters are not fetched
+    image.src = IMG + 'w342' + title.poster_path;
+    art.appendChild(image);
+  } else art.appendChild(text('span', title.title, 'name'));
   if (isSeries(title)) art.appendChild(text('span', 'Series', 'badge series'));
-  else if (release) art.appendChild(text('span', badgeText(title, release.kind, release.date), 'badge ' + release.kind + (premiereText(title, release.kind, release.date) ? ' expected' : '')));
+  else if (release) art.appendChild(text('span', badgeText(title, release.kind, release.date), 'badge ' + release.kind));
   b.appendChild(art);
   b.appendChild(text('span', release ? shortDate(release.date) : availableText(title, true) || (isSeries(title) ? '' : 'No German date'), 'date'));
   var tip = document.createElement('span');

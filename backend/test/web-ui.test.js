@@ -197,3 +197,82 @@ test('web cards: poster and title open details; logs only there; KinoCheck stays
     ctx.closeDetail();
   });
 });
+
+// ---- long pages: weeks in the wall, month jumps, genre caps, lazy posters (OS-T-065T4) ----
+function find(ctx, selector) { return ctx.byId.titles.querySelectorAll(selector); }
+function headings(ctx) { return find(ctx, 'h2').map(function (h) { return h.textContent; }); }
+function calendar(ctx, layout, view, dates) {
+  ctx.layout = layout;
+  ctx.currentView = view;
+  ctx.allTitles = dates.map(function (date, i) { return movie(i + 1, { de_theatrical: date, poster_path: '/p' + i + '.jpg' }); });
+  ctx.renderTitles();
+}
+
+test('web wall: the calendar is grouped by week in date order, with month jumps in both layouts', function () {
+  var ctx = screen([]);
+  assert.equal(ctx.weekStart('2026-11-30'), '2026-11-30'); // a Monday
+  assert.equal(ctx.weekStart('2026-12-06'), '2026-11-30'); // its Sunday
+  assert.equal(ctx.weekStart('2027-01-01'), '2026-12-28');
+  var dates = [ctx.isoDay(1), ctx.isoDay(45), ctx.isoDay(46), ctx.isoDay(100)];
+  calendar(ctx, 'wall', 'upcoming', dates);
+  var starts = dates.map(ctx.weekStart).filter(function (v, i, all) { return all.indexOf(v) === i; });
+  assert.deepEqual(headings(ctx), starts.map(function (start) { return 'Week of ' + ctx.shortDate(start); }));
+  assert.equal(find(ctx, '.tile').length, 4);
+  ['wall', 'list'].forEach(function (layout) {
+    calendar(ctx, layout, 'upcoming', dates);
+    var nav = ctx.byId.titles.children[0];
+    assert.equal(nav.className, 'months', layout);
+    var months = dates.map(function (d) { return d.slice(0, 7); }).filter(function (v, i, all) { return all.indexOf(v) === i; });
+    assert.equal(nav.children.length, months.length);
+    var scrolled = [];
+    find(ctx, '.day').forEach(function (head) { head.scrollIntoView = function () { scrolled.push(head); }; });
+    nav.children[nav.children.length - 1].onclick();
+    assert.equal(scrolled[0], find(ctx, '.day')[find(ctx, '.day').length - 1], layout);
+  });
+  ctx.layout = 'list';
+  ctx.currentView = 'all';
+  ctx.renderTitles();
+  assert.equal(find(ctx, '.months').length, 0);
+});
+
+test('web wall: no backdrop strip, lazy poster images, and the title where there is no poster', function () {
+  var ctx = screen([]);
+  ctx.allTitles = [movie(1, { poster_path: '/a.jpg', backdrop_path: '/b.jpg' }), movie(2, { poster_path: null })];
+  ctx.currentView = 'all';
+  ctx.layout = 'wall';
+  ctx.renderTitles();
+  assert.equal(ctx.byId.hero.style.backgroundImage, '');
+  var tiles = find(ctx, '.tile');
+  var image = tiles[0].querySelector('img');
+  assert.equal(image.loading, 'lazy');
+  assert.match(image.src, /w342\/a\.jpg$/);
+  assert.equal(tiles[0].querySelector('.art').style.backgroundImage, undefined);
+  assert.equal(tiles[1].querySelector('img'), null);
+  assert.equal(tiles[1].querySelector('.name').textContent, 'Movie 2');
+  ctx.layout = 'list';
+  ctx.renderTitles();
+  assert.match(ctx.byId.hero.style.backgroundImage, /w1280\/b\.jpg/);
+});
+
+['list', 'wall'].forEach(function (layout) {
+  test('web genres (' + layout + '): 12 per genre until Show all; counts cover every title', function () {
+    var ctx = screen([]);
+    var titles = [];
+    for (var i = 1; i <= 15; i += 1) titles.push(movie(i));
+    ctx.allTitles = titles.concat(movie(99, { genres: [ACTION] }));
+    ctx.currentView = 'genres';
+    ctx.layout = layout;
+    ctx.renderTitles();
+    var item = layout === 'wall' ? '.tile' : '.card';
+    assert.equal(find(ctx, item).length, 13);
+    assert.equal(ctx.byId.count.textContent, '16 titles');
+    assert.deepEqual(find(ctx, 'small').map(function (n) { return n.textContent; }), ['1 titles', '15 titles']);
+    var more = find(ctx, '.more');
+    assert.deepEqual(more.map(function (b) { return b.textContent; }), ['Show all 15']);
+    more[0].onclick();
+    assert.equal(find(ctx, item).length, 16);
+    assert.equal(find(ctx, '.more').length, 0);
+    ctx.renderTitles(); // Seerr state arriving redraws the list
+    assert.equal(find(ctx, item).length, 16);
+  });
+});
