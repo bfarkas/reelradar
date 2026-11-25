@@ -343,7 +343,12 @@ function viewSections(view, titles, kind) {
       return { heading: name, note: byName[name].length + ' titles', items: byName[name].map(asItem) };
     });
   }
+  kept.sort(byTitle);
   return [{ heading: '', items: kept.map(asItem) }];
+}
+// A to Z, ignoring case and accents. Equal titles go by id: the TV's engine does not keep their order by itself.
+function byTitle(a, b) {
+  return a.title.localeCompare(b.title, 'en', { sensitivity: 'base' }) || (titleKey(a) < titleKey(b) ? -1 : 1);
 }
 
 var DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];

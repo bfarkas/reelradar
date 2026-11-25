@@ -295,3 +295,19 @@ test('tv: hero, wall dialog and poster badge say "Premieres on X"; a series is u
   assert.equal(ctx.byId['hero-date'].textContent, 'Available on Netflix in Germany');
   assert.deepEqual(badges(ctx.posterCard(tv), 'badge').map(function (b) { return b.textContent; }), ['Series']);
 });
+
+// ---- All titles is A to Z (OS-T-0AQ3G) ----
+['frontend/index.html', 'tv-app/index.html'].forEach(function (file) {
+  test(file.split('/')[0] + ': All titles is A to Z, ignoring case and accents; other views keep their order', function () {
+    var ctx = load(file);
+    var names = ['zebra', 'Émile', 'Rebecca', 'eden', 'Port of Shadows', 'Die Sünderin'];
+    var titles = names.map(function (name, i) { return movie({ tmdb_id: i + 1, title: name, trailer: { key: 'k', published_at: '2026-11-0' + (i + 1) } }); });
+    function order(view) { return Array.from(ctx.viewSections(view, titles, 'all')[0].items, function (item) { return item.title.title; }); }
+    assert.deepEqual(order('all'), ['Die Sünderin', 'eden', 'Émile', 'Port of Shadows', 'Rebecca', 'zebra']);
+    assert.deepEqual(order('trailers'), names.slice().reverse());
+    assert.deepEqual(order('genres'), names);
+    assert.deepEqual(titles.map(function (t) { return t.title; }), names, 'the catalogue itself is not reordered');
+    var twins = [movie({ tmdb_id: 9, title: 'Twin' }), movie({ tmdb_id: 10, title: 'twin' })];
+    assert.deepEqual(Array.from(ctx.viewSections('all', twins, 'all')[0].items, function (item) { return item.title.tmdb_id; }), [10, 9]);
+  });
+});
