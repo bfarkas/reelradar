@@ -173,3 +173,27 @@ test('web history: closing by button, backdrop or Escape leaves no entry behind'
   assert.equal(ctx.window.history.length, 1);
   assert.equal(ctx.byId.player.hidden, true);
 });
+
+// ---- list cards open details; decision logs stay in the dialog (OS-T-JQ760) ----
+test('web cards: poster and title open details; logs only there; KinoCheck stays; no poster shows the title', function () {
+  var title = movie(1, { poster_path: null, trailer: { key: 'k', published_at: '2026-11-01', kinocheck_url: 'https://kinocheck.com/x' },
+    decisions: [{ key: 'abc', source: 'tmdb', playable: true, reason: 'original language' }] });
+  var ctx = screen([title]);
+  var card = ctx.card({ title: title, kind: null, date: null });
+  function everything(root) { return [root.textContent].concat(root.querySelectorAll('div, p, a, summary, span, button, h3, details').map(function (n) { return n.textContent; })).join('|'); }
+  function kinocheck(root) { return root.querySelectorAll('a').filter(function (a) { return a.href === 'https://kinocheck.com/x'; }).length; }
+  assert.doesNotMatch(everything(card), /Trailer check|original language/);
+  assert.equal(kinocheck(card), 1);
+  assert.equal(card.querySelector('.posterwrap').querySelector('.name').textContent, 'Movie 1');
+  var openers = card.querySelectorAll('.open');
+  assert.equal(openers.length, 2);
+  openers.forEach(function (opener) {
+    assert.equal(opener.tag, 'button'); // a native button: Enter and Space work
+    opener.onclick.call(opener);
+    assert.equal(ctx.byId.detail.hidden, false);
+    assert.match(everything(ctx.byId.detail), /Trailer check\|.*original language/);
+    assert.equal(kinocheck(ctx.byId.detail), 1);
+    assert.equal(ctx.byId.detail.querySelectorAll('.open').length, 0);
+    ctx.closeDetail();
+  });
+});

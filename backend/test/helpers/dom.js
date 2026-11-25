@@ -32,7 +32,7 @@ function all(root) {
 // '.a', '.a.b', '[data-x="y"]', tag names and comma lists: all the scripts need.
 function matches(node, selector) {
   return selector.split(',').some(function (one) {
-    var parts = one.trim().match(/^[a-z]+|\.[\w-]+|\[[\w-]+="[^"]*"\]/g) || [];
+    var parts = one.trim().match(/^[a-z][a-z0-9]*|\.[\w-]+|\[[\w-]+="[^"]*"\]/g) || [];
     assert.equal(parts.join(''), one.trim(), 'unsupported selector ' + selector);
     return parts.every(function (part) {
       if (part[0] === '.') return (' ' + node.className + ' ').indexOf(' ' + part.slice(1) + ' ') !== -1;
