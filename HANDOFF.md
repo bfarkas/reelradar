@@ -96,8 +96,8 @@ Next:
 
 ## 2026-11-25: TV redesign, rows and wall (OS-T-79361, in_progress)
 - Goal: owner said "Yes, start TV". Make tv-app/index.html match mockups Main.dc.html (rows) and TvWall.dc.html (wall). Full Scope/Acceptance in the task. Dialog, filter and error screen are the next task (OS-T-99KST).
-- State: done, committed and pushed. `node --test backend/test` 129 pass; 1920x1080 browser check against the live backend (read-only) clean. NOT installed on the TV; not checked on the TV.
+- State: done, committed and pushed. `node --test backend/test` 129 pass; 1920x1080 browser check against the live backend (read-only) clean. Owner said "Yes, install": c8066cc installed on the TV (192.168.42.54), not launched. Not yet checked on the TV.
 - Files: tv-app/index.html, backend/test/tv-ui.test.js, backend/test/series-ui.test.js.
 - Decisions: Clear filter stays (left of Filter) until OS-T-99KST; while it shows, `#views.tight` narrows the view pills (they overlapped it by 11px) - remove with Clear filter. `#kicker` is gone; `#hero-date` sits above the title and carries the Series pill in front so a long line can't cut it. No play glyph on the hero button. Count says release(s) in calendar views, title(s) elsewhere, "x of y" with a filter; " · n filters on" dropped. #count is outside the list: in the wall it hides once scrolled. Scrolling up keeps 72px in #list so the heading returns with its row (also fixes hidden genre headings). Rows: shelf 442px, list 438px, so each shelf heading lands on the count's line. Shared views block unchanged.
-- Next: ask the owner before installing on the TV; after their TV check mark OS-T-79361 done, then OS-T-99KST. docs/screenshots/tv-*.jpg still show the old design.
+- Next: wait for the owner's TV check; if it passes mark OS-T-79361 done, then OS-T-99KST when they ask. docs/screenshots/tv-*.jpg still show the old design.
 - Preview tip: launch config `tv-app-preview`; the pane only captures a corner at 1920x1080, so scale document.body for screenshots (restore before testing focus).
