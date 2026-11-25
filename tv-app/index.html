@@ -79,10 +79,10 @@ header { position: absolute; left: 80px; top: 36px; width: 1760px; height: 80px;
 #dlg-text .lang { border: 2px solid #cfc3b5; border-radius: 5px; font-size: 18px; margin-right: 12px; padding: 0 7px; vertical-align: 3px; }
 #dlg-actions { position: absolute; left: 10px; top: 670px; white-space: nowrap; }
 #filter { background: rgba(18, 14, 11, 0.97); }
-#filter h2 { margin: 40px 80px 10px; font-size: 40px; }
+#filter h2 { margin: 24px 80px 10px; font-size: 40px; }
 #filter-hint { margin: 0 80px; color: #a89c8e; font-size: 28px; }
 .tags { margin: 0 70px; }
-#keywords { height: 520px; overflow: hidden; }
+#keywords { height: 430px; overflow: hidden; }
 .tag { display: inline-block; margin: 10px; padding: 12px 26px; font-size: 30px; background: #2a221c; border: 4px solid #2a221c; border-radius: 30px; }
 .tag.on { background: #c8321e; border-color: #c8321e; }
 .tag.focus { border-color: #fff; }
@@ -137,6 +137,8 @@ header { position: absolute; left: 80px; top: 36px; width: 1760px; height: 80px;
   </div>
 </div>
 <div id="filter" class="layer hidden">
+  <h2>Releases</h2>
+  <div class="tags" id="kinds"></div>
   <h2>Genres</h2>
   <div class="tags" id="genres"></div>
   <h2>Keywords</h2>
@@ -280,9 +282,15 @@ function el(tag, className, text) {
 function loadSelection() {
   try {
     var value = JSON.parse(window.localStorage.getItem(FILTER_KEY));
-    if (value && value.v === 1 && value.genres instanceof Array && value.keywords instanceof Array) return value;
+    if (value && value.v === 1 && value.genres instanceof Array && value.keywords instanceof Array) {
+      value.kind = value.kind || 'all'; // filters saved before there was a Cinema/Streaming choice
+      return value;
+    }
   } catch (error) {}
-  return { v: 1, genres: [], keywords: [] };
+  return { v: 1, genres: [], keywords: [], kind: 'all' };
+}
+function activeCount() {
+  return selection.genres.length + selection.keywords.length + (selection.kind === 'all' ? 0 : 1);
 }
 function saveSelection() {
   try { window.localStorage.setItem(FILTER_KEY, JSON.stringify(selection)); } catch (error) {}
@@ -407,12 +415,13 @@ function whereText(title, kind, date) {
 function renderList(place) {
   var list = $('list');
   var shown = allTitles.filter(matchesFilter);
-  var active = selection.genres.length + selection.keywords.length;
+  var active = activeCount();
   renderFilterButtons();
-  var sections = viewSections(currentView, shown, 'all');
+  var sections = viewSections(currentView, shown, selection.kind);
   var count = 0;
   sections.forEach(function (section) { count += section.items.length; });
-  if (currentView === 'genres') count = shown.length;
+  // a title is on several genre shelves; count it once
+  if (currentView === 'genres') count = shown.filter(function (title) { return inKind(title, selection.kind); }).length;
   list.textContent = '';
   list.scrollTop = 0;
   focused.poster = null;
@@ -443,7 +452,7 @@ function renderList(place) {
 // The header says that a filter is on, also in the wall, which has no count. Clear filter exists only then; a hidden one
 // must not be focusable.
 function renderFilterButtons() {
-  var active = selection.genres.length + selection.keywords.length;
+  var active = activeCount();
   $('open-filter').textContent = active ? 'Filter (' + active + ')' : 'Filter';
   $('open-filter').className = 'btn focusable' + (active ? ' on' : '') + (/(^| )focus( |$)/.test($('open-filter').className) ? ' focus' : '');
   $('clear-filter').className = active ? 'btn focusable' : 'btn hidden';
@@ -596,7 +605,7 @@ renderViews();
 renderFilterButtons();
 $('open-filter').onactivate = openFilter;
 $('clear-filter').onactivate = function () {
-  selection = { v: 1, genres: [], keywords: [] };
+  selection = { v: 1, genres: [], keywords: [], kind: 'all' };
   saveSelection();
   renderList();
 };
@@ -666,11 +675,25 @@ function tagButton(kind, tag) {
   };
   return button;
 }
+// Exactly one release kind is chosen: OK moves the choice, and pressing the chosen one keeps it.
+function kindButton(kind) {
+  var button = el('span', 'tag focusable' + (selection.kind === kind[0] ? ' on' : ''), kind[1]);
+  button.onactivate = function () {
+    selection.kind = kind[0];
+    var chosen = $('kinds').querySelector('.on');
+    if (chosen) removeClass(chosen, 'on');
+    button.className = button.className.replace('tag', 'tag on');
+    saveSelection();
+  };
+  return button;
+}
 function byName(a, b) { return a.name < b.name ? -1 : a.name > b.name ? 1 : 0; }
 function openFilter() {
   var genres = $('genres'), keywords = $('keywords');
   genres.textContent = '';
   keywords.textContent = '';
+  $('kinds').textContent = '';
+  KINDS.forEach(function (kind) { $('kinds').appendChild(kindButton(kind)); });
   collectTags('genres').sort(byName).forEach(function (tag) { genres.appendChild(tagButton('genres', tag)); });
   // shortcut: top 60 keywords by count, no text search (typing with the remote is painful); add paging if users miss some.
   collectTags('keywords').sort(function (a, b) { return b.count - a.count || byName(a, b); }).slice(0, 60)
@@ -678,7 +701,7 @@ function openFilter() {
   keywords.scrollTop = 0;
   filterOpenedWith = JSON.stringify(selection);
   showLayer('filter');
-  setFocus(genres.querySelector('.focusable') || keywords.querySelector('.focusable'));
+  setFocus($('kinds').querySelector('.on') || $('kinds').querySelector('.focusable'));
 }
 var filterOpenedWith = ''; // the choices when Filter opened: unchanged ones leave the list, and its scroll, alone
 function closeFilter() {

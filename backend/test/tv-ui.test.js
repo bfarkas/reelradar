@@ -24,7 +24,7 @@ function load(stored) {
   node('main');
   ['views', 'open-filter', 'clear-filter', 'layout-wall', 'layout-rows', 'count', 'backdrop', 'kicker', 'hero-title', 'hero-date', 'hero-text', 'hero-actions', 'message', 'retry', 'list'].forEach(function (id) { node(id, 'main'); });
   node('dialog'); ['dlg-poster', 'dlg-title', 'dlg-date', 'dlg-text', 'dlg-actions'].forEach(function (id) { node(id, 'dialog'); });
-  node('filter'); ['genres', 'keywords'].forEach(function (id) { node(id, 'filter'); });
+  node('filter'); ['kinds', 'genres', 'keywords'].forEach(function (id) { node(id, 'filter'); });
   node('player'); ['video', 'status', 'ctl', 'pi', 'ptime', 'pfill'].forEach(function (id) { node(id, 'player'); });
   var body = element('body');
   var storage = stored || {};
@@ -239,7 +239,7 @@ test('tv dialog: a request that finishes late does not reopen the dialog over an
     assert.equal(ctx.byId['open-filter'].textContent, 'Filter');
     assert.doesNotMatch(ctx.byId['open-filter'].className, /\bon\b/);
     assert.equal(focusedEl(ctx).item.title.tmdb_id, 1);
-    assert.deepEqual(JSON.parse(ctx.storage['reelradar.filter']), { v: 1, genres: [], keywords: [] });
+    assert.deepEqual(JSON.parse(ctx.storage['reelradar.filter']), { v: 1, genres: [], keywords: [], kind: 'all' });
   });
 });
 
@@ -292,4 +292,66 @@ test('tv filter: the hidden Clear button is really hidden (.btn sets display, so
     assert.equal(retry.className, 'btn hidden');
     assert.match(focusedEl(ctx).className, /poster/);
   });
+});
+
+// ---- Cinema/Streaming filter (OS-T-XNNEC) ----
+function kinds(ctx) { return ctx.byId.kinds.children; }
+function chosen(ctx) { return Array.from(kinds(ctx)).filter(function (k) { return /(^| )on( |$)/.test(k.className); }).map(function (k) { return k.textContent; }); }
+function mixed(ctx) {
+  return [movie(1, { title: 'Cinema only', de_theatrical: ctx.isoDay(3) }), movie(2, { title: 'Streaming only', de_digital: ctx.isoDay(4) }),
+    movie(3, { title: 'Both', de_theatrical: ctx.isoDay(-5), de_digital: ctx.isoDay(5), trailer: { key: 'k3', published_at: '2026-11-02' } })];
+}
+function listed(ctx) { return ctx.byId.list.querySelectorAll('.focusable').map(function (c) { return c.item.title.tmdb_id; }).sort().join(); }
+
+test('tv kind: Filter offers three kinds, exactly one chosen; it is remembered and Clear resets it', function () {
+  var ctx = load();
+  reply(ctx, '/api/titles', mixed(ctx));
+  ctx.openFilter();
+  assert.deepEqual(Array.from(kinds(ctx), function (k) { return k.textContent; }), ['All releases', 'Cinema', 'Streaming']);
+  assert.deepEqual(chosen(ctx), ['All releases']);
+  assert.equal(focusedEl(ctx), kinds(ctx)[0]);
+  ctx.setFocus(kinds(ctx)[1]);
+  ok(ctx);
+  ok(ctx); // pressing the chosen one keeps it
+  assert.deepEqual(chosen(ctx), ['Cinema']);
+  assert.match(focusedEl(ctx).className, /\bfocus\b/);
+  ctx.closeFilter();
+  assert.equal(ctx.byId['open-filter'].textContent, 'Filter (1)');
+  assert.match(ctx.byId['open-filter'].className, /\bon\b/);
+  assert.match(ctx.byId['clear-filter'].className, /\bfocusable\b/);
+  assert.equal(JSON.parse(ctx.storage['reelradar.filter']).kind, 'cinema');
+  var again = load({ 'reelradar.filter': ctx.storage['reelradar.filter'] });
+  assert.equal(again.selection.kind, 'cinema');
+  assert.equal(again.byId['open-filter'].textContent, 'Filter (1)');
+  ctx.setFocus(ctx.byId['clear-filter']);
+  ok(ctx);
+  assert.equal(ctx.selection.kind, 'all');
+  assert.equal(ctx.byId['open-filter'].textContent, 'Filter');
+});
+
+test('tv kind: the choice applies in every view', function () {
+  var ctx = load();
+  reply(ctx, '/api/titles', mixed(ctx));
+  var expected = {
+    cinema: { upcoming: '1', trailers: '1,3', recent: '3', genres: '1,3', all: '1,3' },
+    streaming: { upcoming: '2,3', trailers: '2,3', recent: '', genres: '2,3', all: '2,3' }
+  };
+  Object.keys(expected).forEach(function (kind) {
+    ctx.selection.kind = kind;
+    Object.keys(expected[kind]).forEach(function (view) {
+      ctx.currentView = view;
+      ctx.renderList();
+      assert.equal(listed(ctx), expected[kind][view], kind + ' ' + view);
+    });
+  });
+  ctx.currentView = 'genres';
+  ctx.renderList();
+  assert.match(ctx.byId.count.textContent, /^2 of 3 titles · 1 filter on$/);
+});
+
+test('tv kind: a filter saved before the choice existed still loads', function () {
+  var ctx = load({ 'reelradar.filter': JSON.stringify({ v: 1, genres: [DRAMA.id], keywords: [] }) });
+  assert.equal(ctx.selection.kind, 'all');
+  assert.deepEqual(Array.from(ctx.selection.genres), [DRAMA.id]);
+  assert.equal(ctx.byId['open-filter'].textContent, 'Filter (1)');
 });
