@@ -124,12 +124,24 @@ footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 12px
   header.top .wrap { flex-direction: column; align-items: flex-start; gap: 0; padding-top: 10px; }
   #views { max-width: 100%; }
   #views a { padding: 12px 0 10px; }
-  .hero .wrap { padding: 24px 16px; }
+  /* list mode puts artwork behind the heading: this near-solid wash keeps its text at 4.5:1 even over black */
+  .hero .wrap { background: rgba(246,240,230,0.96); padding: 24px 16px; }
+  .hero .kicker { color: var(--red-dark); }
+  body.wall-mode .hero .wrap { padding-top: 12px; }
+  body.wall-mode .hero h1 { font-size: 26px; }
+  .chip, .layout button { min-height: 44px; min-width: 44px; }
+  .bar { gap: 8px; padding: 8px 0 0; }
+  /* services live behind the one Filter button */
+  #service { display: none; order: 1; width: 100%; }
+  .bar.filtering #service { display: block; }
+  .months { flex-wrap: nowrap; overflow-x: auto; padding: 6px 3px 3px; scrollbar-width: none; }
+  .months .chip { flex: none; }
+  .day { margin: 4px 0 10px; }
+  .day h2 { font-size: 20px; }
   .grid { grid-template-columns: 1fr; }
   .posterwrap { flex-basis: 88px; width: 88px; }
   .wall { gap: 12px 8px; grid-template-columns: repeat(3, 1fr); }
   #detail .card .posterwrap { flex-basis: 96px; width: 96px; }
-  #count { margin-left: 0; width: 100%; }
 }
 </style>
 </head>
@@ -147,7 +159,7 @@ footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 12px
 </div></section>
 
 <main class="wrap">
-  <div class="bar">
+  <div class="bar" id="bar">
     <span id="kinds"></span>
     <select class="chip" id="service" aria-label="Streaming service"></select>
     <button type="button" class="chip" id="filter-toggle" aria-expanded="false" aria-controls="filter">Genres &amp; keywords</button>
@@ -407,6 +419,7 @@ function shortDate(iso) {
 var currentView = 'upcoming';
 var LAYOUT_KEY = 'reelradar.layout';
 var layout = 'list';
+var phone = window.matchMedia ? window.matchMedia('(max-width: 720px)') : { matches: false };
 try { layout = window.localStorage.getItem(LAYOUT_KEY) === 'wall' ? 'wall' : 'list'; } catch (error) {}
 
 function renderLayout() {
@@ -464,11 +477,25 @@ function toggleButton(kind, tag) {
 function renderActive() {
   var count = selection.genres.length + selection.keywords.length;
   var toggle = document.getElementById('filter-toggle');
-  toggle.textContent = 'Genres & keywords' + (count ? ' (' + count + ')' : '');
+  var service = phone.matches ? selection.service : 0; // on a phone the services select is behind this button too
+  if (service) count += 1;
+  toggle.textContent = (phone.matches ? 'Filter' : 'Genres & keywords') + (count ? ' (' + count + ')' : '');
   toggle.className = count ? 'chip on' : 'chip';
   document.getElementById('filter-clear').hidden = !(count || selection.kind !== 'all' || selection.service);
   var root = document.getElementById('active-tags');
   root.textContent = '';
+  if (service) {
+    var tag = serviceTags(currentView).filter(function (known) { return known.id === service; })[0];
+    var serviceName = tag ? tag.name : 'Unknown service';
+    var serviceChip = button(serviceName + ' \u2715', 'chip on', function () {
+      selection.service = 0;
+      saveSelection();
+      renderTitles();
+      toggle.focus();
+    });
+    serviceChip.setAttribute('aria-label', 'Remove filter ' + serviceName);
+    root.appendChild(serviceChip);
+  }
   ['genres', 'keywords'].forEach(function (kind) {
     var names = {};
     collectTags(kind).forEach(function (tag) { names[tag.id] = tag.name; });
@@ -621,6 +648,7 @@ document.getElementById('filter-toggle').onclick = function () {
   var panel = document.getElementById('filter');
   panel.hidden = !panel.hidden;
   this.setAttribute('aria-expanded', panel.hidden ? 'false' : 'true');
+  document.getElementById('bar').className = panel.hidden ? 'bar' : 'bar filtering';
 };
 document.getElementById('filter-clear').onclick = function () {
   selection = { v: 1, genres: [], keywords: [], kind: 'all', service: 0 };
@@ -632,6 +660,7 @@ document.getElementById('filter-clear').onclick = function () {
   document.getElementById('filter-toggle').focus(); // Clear filter has just hidden itself
 };
 document.getElementById('keyword-search').oninput = renderKeywords;
+phone.onchange = renderActive; // the Filter button's label and count differ on a phone
 
 // ---- list ----
 // Entries a calendar lists, titles otherwise; genre shelves repeat a title, so count it once.

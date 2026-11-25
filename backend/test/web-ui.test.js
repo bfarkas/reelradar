@@ -54,6 +54,7 @@ function load(options) {
     },
     console: console
   };
+  if (options.phone) win.matchMedia = function () { return { matches: true }; };
   vm.createContext(context);
   vm.runInContext(script, context);
   return context;
@@ -78,6 +79,22 @@ function screen(titles, options) {
   reply(ctx, '/api/titles', titles);
   return ctx;
 }
+
+// ---- phone width (OS-T-XE0MB) ----
+test('web phone: one Filter button also counts the service and shows it as a removable chip', function () {
+  var saved = { v: 1, genres: [DRAMA.id], keywords: [], kind: 'all', service: 8 };
+  var titles = [movie(1, { providers: [{ id: 8, name: 'Netflix' }], de_digital: '2099-01-01' })];
+  var ctx = screen(titles, { phone: true, storage: { 'reelradar.filter': JSON.stringify(saved) } });
+  var chips = ctx.byId['active-tags'].children;
+  assert.equal(ctx.byId['filter-toggle'].textContent, 'Filter (2)');
+  assert.deepEqual(Array.from(chips, function (c) { return c.textContent; }), ['Netflix ✕', 'Drama ✕']);
+  chips[0].onclick();
+  assert.equal(ctx.selection.service, 0);
+  assert.equal(ctx.byId['filter-toggle'].textContent, 'Filter (1)');
+
+  var desktop = screen(titles, { storage: { 'reelradar.filter': JSON.stringify(saved) } });
+  assert.equal(desktop.byId['filter-toggle'].textContent, 'Genres & keywords (1)');
+});
 
 // ---- an active filter is visible with the panel closed (OS-T-GXNDA) ----
 test('web filter: a saved filter shows as a number and removable chips; Clear only when something is set', function () {
