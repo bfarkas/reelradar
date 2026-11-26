@@ -32,9 +32,12 @@ header { position: absolute; left: var(--tv-safe-x); top: var(--tv-safe-y); widt
 #tools .rr-btn { margin: 0 16px 0 0; background: rgba(7,27,30,0.8); }
 #tools .rr-btn.is-on { background: var(--fg); border-color: var(--fg); color: var(--bg); }
 #tools .rr-btn.focus { background: var(--brand-white); color: var(--brand-teal); }
-.rr-seg { background: rgba(21,71,77,0.9); }
-.rr-seg__opt { display: inline-block; vertical-align: middle; line-height: 56px; }
-.rr-seg__opt.is-on { background: var(--brand-white); color: var(--brand-teal); }
+/* Wall / Rows: an outlined pill like Filter; the current layout has the raised fill, focus the white fill like every TV button */
+#layout { padding: 2px; border: 2px solid var(--line-strong); background: rgba(7,27,30,0.8); }
+#layout .rr-seg__opt { display: inline-block; vertical-align: top; width: 80px; height: 56px; padding: 0; text-align: center; line-height: 56px; color: var(--fg-muted); box-shadow: none; }
+#layout .rr-seg__opt.is-on { background: var(--surface-raised); color: var(--fg); }
+#layout .rr-seg__opt.focus { background: var(--brand-white); color: var(--brand-teal); }
+#layout .ico { vertical-align: top; margin-top: 15px; }
 #count { position: absolute; right: var(--tv-safe-x); top: 600px; line-height: 44px; color: var(--fg-muted); font-size: 24px; font-variant-numeric: tabular-nums; }
 .ico { display: inline-block; vertical-align: middle; width: 26px; height: 26px; }
 .ico.wall { background: linear-gradient(currentColor, currentColor) 0 0 / 11px 11px no-repeat, linear-gradient(currentColor, currentColor) 15px 0 / 11px 11px no-repeat,
@@ -57,9 +60,10 @@ header { position: absolute; left: var(--tv-safe-x); top: var(--tv-safe-y); widt
 /* Rows: posters start at the safe edge (96 px); the 24 px to their left holds the focus ring and its scale.
    A shelf is 426 px (44 heading + 14 + 14 padding + 354), the same as the list, so a step down shows one whole shelf. */
 #list { position: absolute; left: 72px; top: 600px; width: 1848px; height: 426px; overflow: hidden; }
-.shelf-title { margin: 0 0 14px 24px; font-size: 36px; font-weight: 700; line-height: 44px; height: 44px; white-space: nowrap; }
+.shelf-title { margin: 0 0 6px 24px; font-size: 36px; font-weight: 700; line-height: 44px; height: 44px; white-space: nowrap; }
 .shelf-title .note { margin-left: 20px; font-size: 26px; font-weight: 500; color: var(--fg-muted); }
-.shelf { white-space: nowrap; overflow: hidden; height: 354px; padding: 14px 0 0 24px; }
+/* 22px above the posters: a focused one grows 9px (scale 1.06) and its ring adds 8px, which the shelf must not clip */
+.shelf { white-space: nowrap; overflow: hidden; height: 354px; padding: 22px 0 0 24px; }
 .frame { background: var(--poster-empty) center / cover no-repeat; box-shadow: inset 0 0 0 2px var(--line); }
 .frame.art { box-shadow: none; }
 .frame .fallback { position: absolute; left: 16px; right: 16px; top: 38%; text-align: center; font-size: 26px; line-height: 32px; font-weight: 700; color: var(--fg); }
@@ -78,11 +82,9 @@ header { position: absolute; left: var(--tv-safe-x); top: var(--tv-safe-y); widt
 #main.wall .rr-tvposter__cap { display: none; }
 #main.wall #message { top: 200px; }
 #main.wall #retry { top: 270px; }
-/* the wall has no captions: the focused poster's title, date and where sit in a strip under the list */
+/* the wall has no captions; under the list it only says what OK does */
 #info { display: none; position: absolute; left: var(--tv-safe-x); top: 954px; width: 1728px; height: 72px; white-space: nowrap; }
 #main.wall #info { display: block; }
-#info-title { font-size: 36px; line-height: 44px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; max-width: 1160px; display: inline-block; vertical-align: top; }
-#info-meta { margin-left: 24px; font-size: 28px; line-height: 44px; color: var(--fg-muted); display: inline-block; vertical-align: top; font-variant-numeric: tabular-nums; }
 #info-hint { position: absolute; right: 0; top: 0; font-size: 24px; line-height: 44px; color: var(--fg-muted); }
 .key { display: inline-block; padding: 0 10px; margin: 0 8px 0 0; border-radius: 6px; border: 2px solid var(--line-strong); color: var(--fg); font-weight: 700; line-height: 34px; }
 /* info dialog over the wall (long press OK) */
@@ -141,7 +143,7 @@ header { position: absolute; left: var(--tv-safe-x); top: var(--tv-safe-y); widt
   <div id="message">Loading titles...</div>
   <span class="rr-btn rr-btn--primary hidden" id="retry">Try again</span>
   <div id="list"></div>
-  <div id="info"><span id="info-title"></span><span id="info-meta"></span><span id="info-hint"><span class="key">OK</span>Play trailer &nbsp; <span class="key">Hold OK</span>Details</span></div>
+  <div id="info"><span id="info-hint"><span class="key">OK</span>Play trailer &nbsp; <span class="key">Hold OK</span>Details</span></div>
   <div id="notice" class="hidden"></div>
 </div>
 <div id="dialog" class="layer hidden">
@@ -347,7 +349,7 @@ function setFocus(target) {
   if (!target) return;
   target.className += ' focus';
   focused[layer] = target;
-  if (target.item) { focused.poster = target; if (!wall && target.item !== heroItem) showHero(target.item); if (wall) showInfo(target.item); }
+  if (target.item) { focused.poster = target; if (!wall && target.item !== heroItem) showHero(target.item); }
   ensureVisible(target);
   if (target.item) loadArt(target);
   // the wall's heading scrolls away; the count beside it is not part of the list, so it goes with it
@@ -357,11 +359,11 @@ function ensureVisible(target) {
   for (var box = target.parentNode; box && box !== document.body; box = box.parentNode) {
     var t = target.getBoundingClientRect(), b = box.getBoundingClientRect();
     if (box.scrollHeight > box.clientHeight) {
-      // Rows: the list moves a whole shelf (its heading is 58px over it), measured on the shelf because the focused
+      // Rows: the list moves a whole shelf (its heading is 50px over it), measured on the shelf because the focused
       // poster is scaled. The wall: upwards leaves room for a week's heading (72px), so it comes back whole with its row.
       var rows = box.id === 'list' && !wall && target.item;
       var v = rows ? target.parentNode.getBoundingClientRect() : t;
-      if (v.top < b.top) box.scrollTop -= b.top - v.top + (rows ? 58 : box.id === 'list' ? 72 : 20);
+      if (v.top < b.top) box.scrollTop -= b.top - v.top + (rows ? 50 : box.id === 'list' ? 72 : 20);
       else if (v.bottom > b.bottom) box.scrollTop += v.bottom - b.bottom + (rows ? 0 : 20);
     }
     if (box.scrollWidth > box.clientWidth) { // 24px: the poster stays inside the safe area, ring and scale included
@@ -390,6 +392,7 @@ function move(dx, dy) {
   items.forEach(function (item) {
     if (item === current) return;
     var b = item.getBoundingClientRect();
+    if (!b.width && !b.height) return; // not drawn (the wall hides the hero): its buttons sit at 0,0 and would win
     var bx = b.left + b.width / 2, by = b.top + b.height / 2;
     var along = dx ? (bx - ax) * dx : (by - ay) * dy;
     var across = dx ? Math.abs(by - ay) : Math.abs(bx - ax);
@@ -506,7 +509,6 @@ function renderList(place) {
   var target = (place && (list.querySelector('[data-shelf="' + place.shelf + '"][data-id="' + place.id + '"]') ||
     list.querySelector('[data-id="' + place.id + '"]'))) || first;
   if (!wall) showHero(target ? target.item : null);
-  if (wall) showInfo(target ? target.item : null);
   setFocus(target || (loadError ? $('retry') : $('open-filter')));
   loadArt();
 }
@@ -531,13 +533,6 @@ function loadArt(around) {
     card.firstChild.className += ' art';
     card.art = null;
   });
-}
-
-// Wall: the focused poster's title, date and where, since the wall has no captions.
-function showInfo(item) {
-  $('info-title').textContent = item ? item.title.title : '';
-  var release = item && itemRelease(item);
-  $('info-meta').textContent = !item ? '' : release ? releaseText(item.title, release) : releaseless(item.title);
 }
 
 // What the current view lists: releases in the calendar views, else titles (once, though on several genre shelves).

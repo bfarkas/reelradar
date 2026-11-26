@@ -169,6 +169,20 @@ function fire(ctx, ms) {
   ctx.timers.filter(function (t) { return t.ms === ms && !t.cleared; }).forEach(function (t) { t.cleared = true; t.fn(); });
 }
 
+test('tv wall: Up from the first row reaches the header, never the hidden hero buttons', function () {
+  var ctx = wallScreen([movie(1), movie(2)]);
+  var hidden = ctx.byId['hero-actions'].appendChild(ctx.document.createElement('span'));
+  hidden.className = 'rr-btn focusable'; // display:none on the wall: its rectangle is all zeros
+  var header = ctx.byId['layout-wall'];
+  header.className = 'rr-seg__opt focusable';
+  header.rect = { left: 1672, top: 60, width: 80, height: 56 };
+  var first = ctx.byId.list.querySelector('.poster');
+  first.rect = { left: 96, top: 190, width: 200, height: 300 };
+  ctx.setFocus(first);
+  ctx.move(0, -1);
+  assert.equal(focusedEl(ctx), header);
+});
+
 test('tv OK: a poster without a trailer shows a notice that clears itself', function () {
   var ctx = wallScreen([movie(1, { trailer: null })]);
   ok(ctx);
