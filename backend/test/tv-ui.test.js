@@ -22,9 +22,10 @@ function load(stored) {
     return byId[id];
   }
   node('main');
-  ['views', 'open-filter', 'clear-filter', 'layout-wall', 'layout-rows', 'count', 'backdrop', 'hero-title', 'hero-date', 'hero-text', 'hero-actions', 'message', 'retry', 'list'].forEach(function (id) { node(id, 'main'); });
-  node('dialog'); ['dlg-poster', 'dlg-title', 'dlg-date', 'dlg-text', 'dlg-actions'].forEach(function (id) { node(id, 'dialog'); });
-  node('filter'); ['kinds', 'genres', 'keywords'].forEach(function (id) { node(id, 'filter'); });
+  ['views', 'open-filter', 'layout-wall', 'layout-rows', 'count', 'backdrop', 'hero-title', 'hero-date', 'hero-text', 'hero-actions', 'message', 'list'].forEach(function (id) { node(id, 'main'); });
+  node('dialog'); ['dlg-poster', 'dlg-title', 'dlg-date', 'dlg-genres', 'dlg-text', 'dlg-actions'].forEach(function (id) { node(id, 'dialog'); });
+  node('filter'); ['filter-count', 'filter-clear', 'filter-show', 'kinds', 'genres', 'keywords'].forEach(function (id) { node(id, 'filter'); });
+  node('error'); node('retry', 'error').className = 'rr-btn rr-btn--primary focusable';
   node('player'); ['video', 'status', 'ctl', 'pi', 'ptime', 'pfill'].forEach(function (id) { node(id, 'player'); });
   var body = element('body');
   var storage = stored || {};
@@ -239,24 +240,62 @@ test('tv dialog: a request that finishes late does not reopen the dialog over an
   assert.equal(ctx.byId['dlg-title'].textContent, 'Movie 2');
 });
 
-// ---- an active filter shows in the header, in both layouts (OS-T-GXNDA) ----
+// ---- an active filter shows in the header, in both layouts (OS-T-GXNDA); clearing it is on the filter screen ----
 ['rows', 'wall'].forEach(function (layout) {
-  test('tv filter: a saved filter shows on the button in ' + layout + ' layout; Clear exists only then', function () {
+  test('tv filter: a saved filter shows on the button in ' + layout + ' layout; Clear filter and Show clear it', function () {
     var ctx = load({ 'reelradar.layout': layout, 'reelradar.filter': JSON.stringify({ v: 1, genres: [ACTION.id], keywords: [99] }) });
     ctx.currentView = 'all';
     reply(ctx, '/api/titles', catalogue());
     assert.equal(ctx.byId['open-filter'].textContent, 'Filter (2)');
     assert.match(ctx.byId['open-filter'].className, /\bon\b/);
-    assert.match(ctx.byId['clear-filter'].className, /\bfocusable\b/);
 
-    ctx.setFocus(ctx.byId['clear-filter']);
-    ok(ctx);
-    assert.match(ctx.byId['clear-filter'].className, /\bhidden\b/); assert.doesNotMatch(ctx.byId['clear-filter'].className, /focusable/); // not focusable, so the remote cannot land on it
+    ctx.openFilter();
+    assert.equal(ctx.byId['filter-count'].textContent, '3 of 7 titles');
+    assert.equal(ctx.byId['filter-show'].textContent, 'Show 3 titles');
+    ctx.byId['filter-clear'].onactivate();
+    assert.equal(ctx.layer, 'filter');
+    assert.equal(ctx.byId['filter-count'].textContent, '7 titles');
+    ctx.byId['filter-show'].onactivate();
+    assert.equal(ctx.layer, 'main');
+    assert.equal(ctx.byId.count.textContent, '7 titles');
     assert.equal(ctx.byId['open-filter'].textContent, 'Filter');
     assert.doesNotMatch(ctx.byId['open-filter'].className, /\bon\b/);
-    assert.equal(focusedEl(ctx).item.title.tmdb_id, 1);
     assert.deepEqual(JSON.parse(ctx.storage['reelradar.filter']), { v: 1, genres: [], keywords: [], kind: 'all' });
   });
+});
+
+test('tv filter: the count and Show follow every choice, say zero in words, and match the list', function () {
+  var ctx = load();
+  reply(ctx, '/api/titles', mixed(ctx));
+  ctx.openFilter();
+  assert.equal(ctx.byId['filter-count'].textContent, '3 releases');
+  kinds(ctx)[1].onactivate(); // Cinema
+  assert.equal(ctx.byId['filter-count'].textContent, '1 of 3 releases');
+  assert.equal(ctx.byId['filter-show'].textContent, 'Show 1 release');
+  ctx.selection.keywords = [99];
+  ctx.renderFilterCount();
+  assert.equal(ctx.byId['filter-count'].textContent, 'No releases match this filter');
+  assert.equal(ctx.byId['filter-show'].textContent, 'Show 0 releases');
+  ctx.selection.keywords = [];
+  ctx.byId['filter-show'].onactivate();
+  assert.equal(ctx.byId.count.textContent, '1 of 3 releases');
+});
+
+test('tv filter: Up and Down take the next row of chips, even when a chip further on lines up better', function () {
+  var ctx = load();
+  reply(ctx, '/api/titles', [movie(1, { genres: [ACTION, COMEDY, DRAMA] })]);
+  ctx.openFilter();
+  var chips = ctx.byId.genres.children; // laid out as three rows: a narrow chip, a wide one off to the side, a narrow one
+  chips[0].rect = { left: 96, top: 300, width: 100, height: 56 };
+  chips[1].rect = { left: 400, top: 372, width: 300, height: 56 };
+  chips[2].rect = { left: 96, top: 444, width: 100, height: 56 };
+  ctx.setFocus(chips[0]);
+  ctx.move(0, 1);
+  assert.equal(focusedEl(ctx), chips[1]);
+  ctx.move(0, 1);
+  assert.equal(focusedEl(ctx), chips[2]);
+  ctx.move(0, -1);
+  assert.equal(focusedEl(ctx), chips[1]);
 });
 
 // ---- the hero's Details action (OS-T-VJZ7X) ----
@@ -287,25 +326,28 @@ test('tv hero: Details opens the full synopsis, and Back returns to Details', fu
   assert.doesNotMatch(ctx.byId['hero-actions'].children.map(function (c) { return c.textContent; }).join(), /Details/);
 });
 
-test('tv filter: the hidden Clear button is really hidden (.rr-btn sets display, so .hidden alone could lose)', function () {
-  assert.match(html, /\.rr-btn\.hidden \{ display: none; \}/);
-});
-
 // ---- error recovery (OS-T-1N4NM) ----
 ['rows', 'wall'].forEach(function (layout) {
-  test('TV ' + layout + ': a failed load shows Try again with focus; OK loads the list', function () {
+  test('TV ' + layout + ': a failed load shows the error screen with Try again; it stays until a load works', function () {
     var ctx = load({ 'reelradar.layout': layout });
     reply(ctx, '/api/titles', { error: 'database busy' }, 500);
     var retry = ctx.byId.retry;
-    assert.equal(ctx.byId.message.textContent, 'Could not load titles: database busy');
-    assert.equal(ctx.byId.count.textContent, '');
+    assert.equal(ctx.layer, 'error');
+    assert.match(ctx.byId.main.className, /(^| )hidden( |$)/); // no header controls
     assert.equal(focusedEl(ctx), retry);
     ok(ctx);
-    assert.equal(ctx.byId.message.textContent, 'Loading titles...');
-    assert.match(retry.className, /(^| )hidden$/);
+    ok(ctx); // a second press while loading sends nothing
+    assert.equal(retry.textContent, 'Trying\u2026');
+    assert.equal(ctx.layer, 'error');
+    assert.equal(ctx.requests.filter(function (r) { return !r.done; }).length, 1);
+    reply(ctx, '/api/titles', { error: 'database busy' }, 500);
+    assert.equal(retry.textContent, 'Try again');
+    ok(ctx);
     reply(ctx, '/api/titles', [movie(1, { de_theatrical: ctx.isoDay(1) })]);
+    assert.equal(ctx.layer, 'main');
+    assert.doesNotMatch(ctx.byId.main.className, /(^| )hidden( |$)/);
+    assert.match(ctx.byId.error.className, /(^| )hidden( |$)/);
     assert.equal(ctx.byId.message.textContent, '');
-    assert.match(retry.className, /(^| )hidden$/);
     assert.match(focusedEl(ctx).className, /poster/);
   });
 });
@@ -334,13 +376,13 @@ test('tv kind: Filter offers three kinds, exactly one chosen; it is remembered a
   ctx.closeFilter();
   assert.equal(ctx.byId['open-filter'].textContent, 'Filter (1)');
   assert.match(ctx.byId['open-filter'].className, /\bon\b/);
-  assert.match(ctx.byId['clear-filter'].className, /\bfocusable\b/);
   assert.equal(JSON.parse(ctx.storage['reelradar.filter']).kind, 'cinema');
   var again = load({ 'reelradar.filter': ctx.storage['reelradar.filter'] });
   assert.equal(again.selection.kind, 'cinema');
   assert.equal(again.byId['open-filter'].textContent, 'Filter (1)');
-  ctx.setFocus(ctx.byId['clear-filter']);
-  ok(ctx);
+  ctx.openFilter();
+  ctx.byId['filter-clear'].onactivate();
+  ctx.closeFilter();
   assert.equal(ctx.selection.kind, 'all');
   assert.equal(ctx.byId['open-filter'].textContent, 'Filter');
 });

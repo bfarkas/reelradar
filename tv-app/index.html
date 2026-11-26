@@ -25,8 +25,6 @@ header { position: absolute; left: var(--tv-safe-x); top: var(--tv-safe-y); widt
 /* the current view: a raised teal fill and full-strength text; focus (white fill and ring) still reads over it */
 #views .rr-btn.is-on { background: var(--surface-raised); color: var(--fg); }
 #views .rr-btn.is-on.focus { background: var(--brand-white); color: var(--brand-teal); }
-/* shortcut: room for Clear filter in the header; goes when it moves to the filter screen (OS-T-99KST) */
-#views.tight .rr-btn { padding: 0 12px; }
 #tools { position: absolute; right: 0; top: 0; }
 #tools > * { vertical-align: middle; }
 #tools .rr-btn { margin: 0 16px 0 0; background: rgba(7,27,30,0.8); }
@@ -81,7 +79,6 @@ header { position: absolute; left: var(--tv-safe-x); top: var(--tv-safe-y); widt
 #main.wall .rr-tvposter { margin: 0 18px 24px 0; }
 #main.wall .rr-tvposter__cap { display: none; }
 #main.wall #message { top: 200px; }
-#main.wall #retry { top: 270px; }
 /* the wall has no captions; under the list it only says what OK does */
 #info { display: none; position: absolute; left: var(--tv-safe-x); top: 954px; width: 1728px; height: 72px; white-space: nowrap; }
 #main.wall #info { display: block; }
@@ -89,19 +86,29 @@ header { position: absolute; left: var(--tv-safe-x); top: var(--tv-safe-y); widt
 .key { display: inline-block; padding: 0 10px; margin: 0 8px 0 0; border-radius: 6px; border: 2px solid var(--line-strong); color: var(--fg); font-weight: 700; line-height: 34px; }
 /* info dialog over the wall (long press OK) */
 #dialog { background: var(--scrim); }
-#dlg { position: absolute; left: 160px; top: 120px; width: 1600px; height: 840px; background: var(--surface); border: 2px solid var(--line); border-radius: 16px; box-shadow: var(--shadow-pop); }
-#dlg-poster { position: absolute; left: 40px; top: 40px; width: 320px; height: 480px; border-radius: 10px; background: var(--poster-empty) center / cover no-repeat; }
-#dlg-body { position: absolute; left: 400px; top: 40px; width: 1160px; height: 760px; }
-#dlg-title { font-size: 52px; line-height: 60px; max-height: 120px; overflow: hidden; margin-bottom: 12px; }
-#dlg-date { font-size: 28px; line-height: 36px; font-weight: 500; color: var(--fg); font-variant-numeric: tabular-nums; }
-#dlg-text { font-size: 28px; line-height: 40px; color: var(--fg-muted); max-height: 400px; overflow: hidden; margin-top: 16px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 10; }
-#dlg-actions { margin-top: 36px; white-space: nowrap; }
-#filter { background: rgba(7, 27, 30, 0.97); box-sizing: border-box; padding: var(--tv-safe-y) var(--tv-safe-x) 0; }
-#filter h2 { margin: 0 0 16px; font-size: 36px; line-height: 44px; font-weight: 700; }
-#filter h2 small { margin-left: 24px; font-size: 24px; font-weight: 500; color: var(--fg-muted); }
-#filter .rr-chips { margin-bottom: 20px; }
-#filter-clear { position: absolute; right: var(--tv-safe-x); top: var(--tv-safe-y); }
-#keywords { height: 322px; overflow: hidden; }
+#dlg { position: absolute; left: 260px; top: 220px; width: 1400px; height: 640px; box-sizing: border-box; background: var(--surface); border: 2px solid var(--line); border-radius: 16px; box-shadow: var(--shadow-pop); }
+#dlg-poster { position: absolute; left: 48px; top: 48px; width: 360px; height: 540px; border-radius: 8px; background: var(--poster-empty) center / cover no-repeat; }
+#dlg-body { position: absolute; left: 464px; top: 48px; width: 884px; height: 540px; }
+#dlg-title { font-size: 52px; line-height: 60px; max-height: 120px; overflow: hidden; margin-bottom: 8px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+#dlg-date { font-size: 28px; line-height: 36px; font-weight: 500; color: var(--fg); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#dlg-genres { margin-top: 4px; font-size: 26px; line-height: 34px; color: var(--fg-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#dlg-text { font-size: 28px; line-height: 40px; color: var(--fg-muted); max-height: 200px; overflow: hidden; margin-top: 20px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 5; }
+#dlg-actions { position: absolute; left: 0; bottom: 0; white-space: nowrap; }
+/* filter screen: Clear filter and Show sit top right, beside the title and the live count; neither is orange */
+#filter { background: var(--bg); box-sizing: border-box; padding: var(--tv-safe-y) var(--tv-safe-x) 0; }
+#filter h1 { margin: 0 0 32px; font-size: 48px; line-height: 64px; font-weight: 800; letter-spacing: -0.02em; white-space: nowrap; }
+#filter h1 small { margin-left: 32px; font-size: 28px; font-weight: 500; letter-spacing: 0; color: var(--fg-muted); font-variant-numeric: tabular-nums; }
+#filter-tools { position: absolute; right: var(--tv-safe-x); top: var(--tv-safe-y); }
+#filter h2 { margin: 0 0 14px; font-size: 36px; line-height: 44px; font-weight: 700; }
+#filter .rr-chips { margin-bottom: 16px; }
+.rr-chip__count { margin-left: 12px; }
+/* four whole rows, so a fourth row of genres still fits above the safe edge; the padding keeps the focus ring inside */
+#filter #keywords { height: 272px; overflow: hidden; margin: -10px -10px 0; padding: 10px; }
+/* titles cannot be loaded: the lockup, what to check and Try again; no header controls */
+#error .logo { position: absolute; left: var(--tv-safe-x); top: var(--tv-safe-y); }
+#error-body { position: absolute; left: var(--tv-safe-x); top: 380px; width: 1100px; }
+#error h1 { margin: 0 0 24px; font-size: 72px; line-height: 78px; font-weight: 800; letter-spacing: -0.02em; }
+#error p { margin: 0 0 48px; font-size: 32px; line-height: 46px; color: var(--fg-muted); }
 #player { background: #000; }
 #video { width: 1920px; height: 1080px; }
 #ctl { position: absolute; left: 0; bottom: 0; width: 1920px; height: 260px; background: linear-gradient(0deg, rgba(0,0,0,0.8), rgba(0,0,0,0)); }
@@ -117,7 +124,6 @@ header { position: absolute; left: var(--tv-safe-x); top: var(--tv-safe-y); widt
 #status { position: absolute; left: var(--tv-safe-x); top: 480px; width: 1728px; text-align: center; font-size: 40px; line-height: 52px; color: var(--fg); }
 #status small { display: block; margin-top: 16px; font-size: 28px; color: var(--fg-muted); }
 #message { position: absolute; left: var(--tv-safe-x); top: 680px; width: 1728px; font-size: 32px; line-height: 44px; color: var(--fg-muted); }
-#retry { position: absolute; left: var(--tv-safe-x); top: 750px; }
 #notice { position: absolute; left: 610px; top: 930px; width: 700px; box-sizing: border-box; padding: 18px 32px; text-align: center; font-size: 28px; line-height: 36px; font-weight: 600; background: var(--surface-raised); color: var(--brand-white); border-radius: 40px; box-shadow: inset 0 0 0 2px var(--line-strong), var(--shadow-pop); }
 #notice span { font-weight: 500; color: var(--fg-muted); }
 </style>
@@ -130,7 +136,7 @@ header { position: absolute; left: var(--tv-safe-x); top: var(--tv-safe-y); widt
     <img class="logo" src="design/logo-on-dark.svg" alt="ReelRadar">
     <div id="views"></div>
     <div id="tools">
-      <span class="rr-btn rr-btn--secondary hidden" id="clear-filter">Clear filter</span><span class="rr-btn rr-btn--secondary" id="open-filter">Filter</span><span id="layout" class="rr-seg"><span class="rr-seg__opt focusable" id="layout-wall"><span class="ico wall"></span></span><span class="rr-seg__opt focusable" id="layout-rows"><span class="ico rows"></span></span></span>
+      <span class="rr-btn rr-btn--secondary" id="open-filter">Filter</span><span id="layout" class="rr-seg"><span class="rr-seg__opt focusable" id="layout-wall"><span class="ico wall"></span></span><span class="rr-seg__opt focusable" id="layout-rows"><span class="ico rows"></span></span></span>
     </div>
   </header>
   <div id="count"></div>
@@ -141,7 +147,6 @@ header { position: absolute; left: var(--tv-safe-x); top: var(--tv-safe-y); widt
     <div id="hero-actions"></div>
   </div>
   <div id="message">Loading titles...</div>
-  <span class="rr-btn rr-btn--primary hidden" id="retry">Try again</span>
   <div id="list"></div>
   <div id="info"><span id="info-hint"><span class="key">OK</span>Play trailer &nbsp; <span class="key">Hold OK</span>Details</span></div>
   <div id="notice" class="hidden"></div>
@@ -152,24 +157,34 @@ header { position: absolute; left: var(--tv-safe-x); top: var(--tv-safe-y); widt
     <div id="dlg-body">
       <div id="dlg-title" class="display"></div>
       <div id="dlg-date"></div>
+      <div id="dlg-genres"></div>
       <div id="dlg-text"></div>
       <div id="dlg-actions"></div>
     </div>
   </div>
 </div>
 <div id="filter" class="layer hidden">
-  <span class="rr-btn rr-btn--secondary focusable" id="filter-clear">Clear all</span>
+  <h1>Filter <small id="filter-count"></small></h1>
+  <div id="filter-tools"><span class="rr-btn rr-btn--secondary focusable" id="filter-clear">Clear filter</span> <span class="rr-btn rr-btn--secondary focusable" id="filter-show"></span></div>
   <h2>Releases</h2>
   <div class="rr-chips" id="kinds"></div>
   <h2>Genres</h2>
   <div class="rr-chips" id="genres"></div>
-  <h2>Keywords <small id="filter-hint">OK picks · Back shows the titles · any choice matches</small></h2>
+  <h2>Keywords</h2>
   <div class="rr-chips" id="keywords"></div>
 </div>
 <div id="player" class="layer hidden">
   <video id="video"></video>
   <div id="status"></div>
   <div id="ctl" class="hidden"><div id="ptitle"></div><span id="pi" class="pi playing"></span><span id="ptime"></span><span id="phint">OK pauses · Left and Right skip 10 s · Back closes</span><div id="pbar"><div id="pfill"></div></div></div>
+</div>
+<div id="error" class="layer hidden">
+  <img class="logo" src="design/logo-on-dark.svg" alt="ReelRadar">
+  <div id="error-body">
+    <h1>Can’t reach ReelRadar</h1>
+    <p>Check that the ReelRadar server is running and that the TV is on your home network.</p>
+    <span class="rr-btn rr-btn--primary focusable" id="retry">Try again</span>
+  </div>
 </div>
 <script>
 // ES5 only. API on rei3 (LAN, behind Caddy).
@@ -284,12 +299,12 @@ var LAYOUT_KEY = 'reelradar.layout';
 var wall = false; // poster wall layout instead of hero + rows
 try { wall = window.localStorage.getItem(LAYOUT_KEY) === 'wall'; } catch (error) {}
 var allTitles = [];
-var loadError = ''; // the message while the list could not be loaded
+var loadFailed = false; // the error screen shows while the titles cannot be loaded
 var seerrStatus = {}; // titleKey -> none|requested|partial|available
 var SEERR_LABELS = { requested: 'Requested in Seerr', partial: 'Partly in the library', available: 'In the library' };
 var selection = loadSelection();
-var layer = 'main';           // main | filter | player | dialog (dialog sits over main)
-var focused = { main: null, filter: null, dialog: null };
+var layer = 'main';           // main | filter | player | error | dialog (dialog sits over main)
+var focused = { main: null, filter: null, error: null, dialog: null };
 var playToken = 0;
 
 function $(id) { return document.getElementById(id); }
@@ -363,8 +378,9 @@ function ensureVisible(target) {
       // poster is scaled. The wall: upwards leaves room for a week's heading (72px), so it comes back whole with its row.
       var rows = box.id === 'list' && !wall && target.item;
       var v = rows ? target.parentNode.getBoundingClientRect() : t;
-      if (v.top < b.top) box.scrollTop -= b.top - v.top + (rows ? 50 : box.id === 'list' ? 72 : 20);
-      else if (v.bottom > b.bottom) box.scrollTop += v.bottom - b.bottom + (rows ? 0 : 20);
+      // keywords: 10px is the ring's room; more would show a sliver of the row before
+      if (v.top < b.top) box.scrollTop -= b.top - v.top + (rows ? 50 : box.id === 'list' ? 72 : box.id === 'keywords' ? 10 : 20);
+      else if (v.bottom > b.bottom) box.scrollTop += v.bottom - b.bottom + (rows ? 0 : box.id === 'keywords' ? 10 : 20);
     }
     if (box.scrollWidth > box.clientWidth) { // 24px: the poster stays inside the safe area, ring and scale included
       if (t.left < b.left) box.scrollLeft -= b.left - t.left + 24;
@@ -386,6 +402,13 @@ function move(dx, dy) {
     var firstAction = $('hero-actions').querySelector('.focusable');
     if (dy === -1 && firstAction) { setFocus(firstAction); return; }
   }
+  // Filter: Up and Down take the very next row of chips, then the one closest sideways. Plain nearest-neighbour jumps
+  // rows, and so leaves chips of the keyword box unreached or the box part-scrolled.
+  if (layer === 'filter' && dy) {
+    var row = nextRow(current, items, dy);
+    if (row.length) setFocus(nearest(current, row));
+    return;
+  }
   var a = current.getBoundingClientRect();
   var ax = a.left + a.width / 2, ay = a.top + a.height / 2;
   var best = null, bestScore = Infinity;
@@ -403,6 +426,15 @@ function move(dx, dy) {
     if (score < bestScore) { bestScore = score; best = item; }
   });
   if (best) setFocus(best);
+}
+
+// The items of the nearest line above (dy -1) or below (dy 1) the current one.
+function nextRow(current, items, dy) {
+  function middle(e) { var r = e.getBoundingClientRect(); return r.top + r.height / 2; }
+  var from = middle(current);
+  var beyond = items.filter(function (item) { return (middle(item) - from) * dy > current.getBoundingClientRect().height / 2; });
+  var gap = Math.min.apply(null, beyond.map(function (item) { return Math.abs(middle(item) - from); }));
+  return beyond.filter(function (item) { return Math.abs(middle(item) - from) - gap < 10; });
 }
 
 // The item whose centre is closest horizontally: a short shelf must not be skipped for being off to one side.
@@ -477,6 +509,14 @@ function releaseText(title, release) {
 
 // place (shelf and data-id of a poster) restores the viewer's position; without it, or when the title is gone, the first poster.
 function renderList(place) {
+  if (loadFailed) {
+    showLayer('error');
+    $('retry').textContent = 'Try again';
+    $('retry').busy = false;
+    setFocus($('retry'));
+    return;
+  }
+  if (layer === 'error') showLayer('main');
   var list = $('list');
   var shown = allTitles.filter(matchesFilter);
   var active = activeCount();
@@ -486,10 +526,9 @@ function renderList(place) {
   list.textContent = '';
   list.scrollTop = 0;
   focused.poster = null;
-  $('count').textContent = loadError ? '' : countText(count, active ? viewCount(allTitles, 'all') : null);
+  $('count').textContent = countText(count, active ? viewCount(allTitles, 'all') : null);
   $('count').style.visibility = '';
-  $('message').textContent = loadError || (count ? '' : (allTitles.length ? 'No titles in this view match the filter.' : 'No titles imported yet.'));
-  $('retry').className = loadError ? RETRY + ' focusable' : RETRY + ' hidden';
+  $('message').textContent = count ? '' : (allTitles.length ? 'No titles in this view match the filter.' : 'No titles imported yet.');
   // Calendar views come back per day; on the TV they are a shelf per week.
   var rows = currentView === 'genres' ? sections : currentView === 'upcoming' || currentView === 'recent' ? byWeek(sections) :
     [{ heading: ROW_TITLE[currentView], items: [].concat.apply([], sections.map(function (s) { return s.items; })) }];
@@ -509,10 +548,9 @@ function renderList(place) {
   var target = (place && (list.querySelector('[data-shelf="' + place.shelf + '"][data-id="' + place.id + '"]') ||
     list.querySelector('[data-id="' + place.id + '"]'))) || first;
   if (!wall) showHero(target ? target.item : null);
-  setFocus(target || (loadError ? $('retry') : $('open-filter')));
+  setFocus(target || $('open-filter'));
   loadArt();
 }
-var RETRY = 'rr-btn rr-btn--primary';
 
 // Posters are fetched only near what is on screen: 300 background images at once stall the TV.
 // shortcut: loads the shelves around the focused one (rows) or the next few rows (wall); upgrade to an
@@ -540,20 +578,18 @@ function viewCount(titles, kind) {
   if (currentView === 'genres') return titles.filter(function (title) { return inKind(title, kind); }).length;
   return viewSections(currentView, titles, kind).reduce(function (sum, section) { return sum + section.items.length; }, 0);
 }
+function noun(n) { return (currentView === 'upcoming' || currentView === 'recent' ? 'release' : 'title') + (n === 1 ? '' : 's'); }
 // "310 releases", or "44 of 310 releases" with a filter (total is then the unfiltered number).
 function countText(count, total) {
-  var noun = currentView === 'upcoming' || currentView === 'recent' ? 'release' : 'title';
   var last = total === null ? count : total;
-  return (total === null ? '' : count + ' of ') + last + ' ' + noun + (last === 1 ? '' : 's');
+  return (total === null ? '' : count + ' of ') + last + ' ' + noun(last);
 }
 
-// The header says that a filter is on. Clear filter exists only then; a hidden one must not be focusable.
+// The header says that a filter is on; clearing it is on the filter screen.
 function renderFilterButtons() {
   var active = activeCount();
   $('open-filter').textContent = active ? 'Filter (' + active + ')' : 'Filter';
   $('open-filter').className = 'rr-btn rr-btn--secondary focusable' + (active ? ' is-on' : '') + (/(^| )focus( |$)/.test($('open-filter').className) ? ' focus' : '');
-  $('clear-filter').className = 'rr-btn rr-btn--secondary ' + (active ? 'focusable' : 'hidden');
-  $('views').className = active ? 'tight' : '';
 }
 
 function captionDate(iso) { // "Tue 24 Nov", plus the year when it is not this year's
@@ -706,11 +742,6 @@ renderLayout();
 renderViews();
 renderFilterButtons();
 $('open-filter').onactivate = openFilter;
-$('clear-filter').onactivate = function () {
-  selection = { v: 1, genres: [], keywords: [], kind: 'all' };
-  saveSelection();
-  renderList();
-};
 
 // ---- wall: long press OK opens an info dialog, short press plays ----
 // Tizen 4.0 repeats keydown while OK is held, so the hold time is measured from the first keydown.
@@ -736,6 +767,7 @@ function openDialog(item) {
   if (isSeries(title)) $('dlg-poster').appendChild(el('div', 'badge series', 'Series'));
   $('dlg-title').textContent = title.title;
   $('dlg-date').textContent = release ? releaseText(title, release) : releaseless(title);
+  $('dlg-genres').textContent = (title.genres || []).map(function (genre) { return genre.name; }).join(' \u00b7 ');
   fillSynopsis($('dlg-text'), title);
   var actions = $('dlg-actions');
   actions.textContent = '';
@@ -744,12 +776,11 @@ function openDialog(item) {
     playButton = el('span', 'rr-btn rr-btn--primary focusable', 'Play trailer');
     playButton.onactivate = function () { closeDialog(); play(title); }; // Back from the player then lands on the poster
     actions.appendChild(playButton);
-  }
+  } else actions.appendChild(el('span', 'action-note muted', 'No trailer'));
   appendRequest(actions, title, function () {
     if (!wall && heroItem && heroItem.title === title) refreshHero(); // the dialog may sit over the hero
     if (layer === 'dialog' && dialogItem === item) openDialog(item);
   });
-  if (!title.trailer) actions.appendChild(el('span', 'action-note muted', 'No trailer'));
   var close = el('span', 'rr-btn rr-btn--secondary focusable', 'Close');
   close.onactivate = closeDialog;
   actions.appendChild(close);
@@ -766,14 +797,15 @@ function closeDialog() {
 // ---- filter panel ----
 function tagButton(kind, tag) {
   var ids = selection[kind];
-  var button = el('span', 'rr-chip focusable' + (ids.indexOf(tag.id) !== -1 ? ' is-on' : ''),
-    tag.name + (kind === 'keywords' ? ' (' + tag.count + ')' : ''));
+  var button = el('span', 'rr-chip focusable' + (ids.indexOf(tag.id) !== -1 ? ' is-on' : ''), tag.name);
+  if (kind === 'keywords') button.appendChild(el('span', 'rr-chip__count', String(tag.count)));
   button.onactivate = function () {
     var index = ids.indexOf(tag.id);
     if (index === -1) ids.push(tag.id); else ids.splice(index, 1);
     if (index === -1) button.className += ' is-on';
     else removeClass(button, 'is-on');
     saveSelection();
+    renderFilterCount();
   };
   return button;
 }
@@ -786,8 +818,16 @@ function kindButton(kind) {
     if (chosen) removeClass(chosen, 'is-on');
     button.className += ' is-on';
     saveSelection();
+    renderFilterCount();
   };
   return button;
+}
+// Live on every choice, and counted the way the list counts, so Show names what it will show.
+function renderFilterCount() {
+  var count = viewCount(allTitles.filter(matchesFilter), selection.kind);
+  $('filter-count').textContent = !allTitles.length ? '' : count ? countText(count, activeCount() ? viewCount(allTitles, 'all') : null) :
+    'No ' + noun(0) + ' match this filter';
+  $('filter-show').textContent = 'Show ' + count + ' ' + noun(count);
 }
 function byName(a, b) { return a.name < b.name ? -1 : a.name > b.name ? 1 : 0; }
 function openFilter() {
@@ -802,10 +842,12 @@ function openFilter() {
     .forEach(function (tag) { keywords.appendChild(tagButton('keywords', tag)); });
   keywords.scrollTop = 0;
   filterOpenedWith = JSON.stringify(selection);
+  renderFilterCount();
   showLayer('filter');
   setFocus($('kinds').querySelector('.is-on') || $('kinds').querySelector('.focusable'));
 }
-// Clear all, inside the filter screen; Back then shows the whole list.
+// Show closes the screen, as Back does. Clear filter stays on it; the list then shows everything.
+$('filter-show').onactivate = closeFilter;
 $('filter-clear').onactivate = function () {
   var openedWith = filterOpenedWith; // closing compares with the choices from before Filter opened
   selection = { v: 1, genres: [], keywords: [], kind: 'all' };
@@ -918,7 +960,7 @@ function playerKey(code) {
 }
 
 function showLayer(name) {
-  ['main', 'filter', 'player'].forEach(function (id) {
+  ['main', 'filter', 'player', 'error'].forEach(function (id) {
     $(id).className = 'layer' + (id === 'main' && wall ? ' wall' : '') + (id === name ? '' : ' hidden');
   });
   layer = name;
@@ -997,7 +1039,8 @@ function sendJson(method, url, callback) {
 
 function loadTitles() {
   getJson(API + '/api/titles', function (error, titles) {
-    if (error) { loadError = 'Could not load titles: ' + error; renderList(); return; }
+    loadFailed = !!error; // the screen says what to check; the cause (a status, a bad answer) helps nobody on a sofa
+    if (error) { renderList(); return; }
     allTitles = titles;
     renderList();
     // Seerr state comes second; without it the request button is still offered.
@@ -1008,11 +1051,11 @@ function loadTitles() {
     });
   });
 }
+// The error screen stays until the titles are there, so a second failure does not flash the empty list.
 $('retry').onactivate = function () {
-  loadError = '';
-  $('retry').className = RETRY + ' hidden';
-  $('message').textContent = 'Loading titles...';
-  setFocus($('open-filter')); // focus must not stay on the hidden button
+  if ($('retry').busy) return;
+  $('retry').busy = true;
+  $('retry').textContent = 'Trying\u2026';
   loadTitles();
 };
 loadTitles();
