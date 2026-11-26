@@ -8,6 +8,24 @@
         "value": "inter",
         "createdAt": "2026-11-26T19:59:34.624Z",
         "reason": "Owner's design kit (OS-T-NAHF3, design/README.md) pins Inter; the logo wordmark is Inter ExtraBold"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "frontend/index.html"
+        ],
+        "createdAt": "2026-11-26T20:31:54.472Z",
+        "reason": "Claude triage: the only dark-glow hit is the kit focus ring's page-colour gap (0 0 0 2px var(--bg), #0d3438), a focus indicator, not a decorative glow"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "tv-app/index.html"
+        ],
+        "createdAt": "2026-11-26T20:31:54.484Z",
+        "reason": "Claude triage: the only dark-glow hit is the kit focus ring's page-colour gap (0 0 0 2px var(--bg), #0d3438), a focus indicator, not a decorative glow"
       }
     ]
   }
