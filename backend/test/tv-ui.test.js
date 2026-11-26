@@ -237,7 +237,7 @@ test('tv dialog: a request that finishes late does not reopen the dialog over an
 
     ctx.setFocus(ctx.byId['clear-filter']);
     ok(ctx);
-    assert.equal(ctx.byId['clear-filter'].className, 'btn hidden'); // not focusable, so the remote cannot land on it
+    assert.match(ctx.byId['clear-filter'].className, /\bhidden\b/); assert.doesNotMatch(ctx.byId['clear-filter'].className, /focusable/); // not focusable, so the remote cannot land on it
     assert.equal(ctx.byId['open-filter'].textContent, 'Filter');
     assert.doesNotMatch(ctx.byId['open-filter'].className, /\bon\b/);
     assert.equal(focusedEl(ctx).item.title.tmdb_id, 1);
@@ -273,8 +273,8 @@ test('tv hero: Details opens the full synopsis, and Back returns to Details', fu
   assert.doesNotMatch(ctx.byId['hero-actions'].children.map(function (c) { return c.textContent; }).join(), /Details/);
 });
 
-test('tv filter: the hidden Clear button is really hidden (.btn sets display, so .hidden alone would lose)', function () {
-  assert.match(html, /\.btn\.hidden \{ display: none; \}/);
+test('tv filter: the hidden Clear button is really hidden (.rr-btn sets display, so .hidden alone could lose)', function () {
+  assert.match(html, /\.rr-btn\.hidden \{ display: none; \}/);
 });
 
 // ---- error recovery (OS-T-1N4NM) ----
@@ -288,17 +288,17 @@ test('tv filter: the hidden Clear button is really hidden (.btn sets display, so
     assert.equal(focusedEl(ctx), retry);
     ok(ctx);
     assert.equal(ctx.byId.message.textContent, 'Loading titles...');
-    assert.equal(retry.className, 'btn hidden');
+    assert.match(retry.className, /(^| )hidden$/);
     reply(ctx, '/api/titles', [movie(1, { de_theatrical: ctx.isoDay(1) })]);
     assert.equal(ctx.byId.message.textContent, '');
-    assert.equal(retry.className, 'btn hidden');
+    assert.match(retry.className, /(^| )hidden$/);
     assert.match(focusedEl(ctx).className, /poster/);
   });
 });
 
 // ---- Cinema/Streaming filter (OS-T-XNNEC) ----
 function kinds(ctx) { return ctx.byId.kinds.children; }
-function chosen(ctx) { return Array.from(kinds(ctx)).filter(function (k) { return /(^| )on( |$)/.test(k.className); }).map(function (k) { return k.textContent; }); }
+function chosen(ctx) { return Array.from(kinds(ctx)).filter(function (k) { return /(^| )is-on( |$)/.test(k.className); }).map(function (k) { return k.textContent; }); }
 function mixed(ctx) {
   return [movie(1, { title: 'Cinema only', de_theatrical: ctx.isoDay(3) }), movie(2, { title: 'Streaming only', de_digital: ctx.isoDay(4) }),
     movie(3, { title: 'Both', de_theatrical: ctx.isoDay(-5), de_digital: ctx.isoDay(5), trailer: { key: 'k3', published_at: '2026-11-02' } })];
@@ -398,4 +398,19 @@ test('tv kind: a filter saved before the choice existed still loads', function (
   assert.equal(ctx.selection.kind, 'all');
   assert.deepEqual(Array.from(ctx.selection.genres), [DRAMA.id]);
   assert.equal(ctx.byId['open-filter'].textContent, 'Filter (1)');
+});
+
+test('tv calendar: releases are shelved by week, this week first, the year only when it is not this year', function () {
+  var ctx = load();
+  var today = ctx.isoDay(0), later = ctx.isoDay(180);
+  reply(ctx, '/api/titles', [movie(1, { de_theatrical: today }), movie(2, { de_theatrical: ctx.isoDay(14) }), movie(3, { de_digital: later })]);
+  var weeks = ctx.byWeek(ctx.viewSections('upcoming', ctx.allTitles, 'all'));
+  assert.equal(weeks.length, 3);
+  assert.equal(weeks[0].heading, 'This week');
+  assert.equal(weeks[2].items[0].title.tmdb_id, 3);
+  assert.equal(ctx.byId.list.querySelectorAll('.shelf').length, 3);
+  var sameYear = later.slice(0, 4) === today.slice(0, 4);
+  assert.equal(/ \d{4}$/.test(weeks[2].heading), !sameYear);
+  assert.equal(/ \d{4}$/.test(ctx.captionDate(later)), !sameYear);
+  assert.doesNotMatch(ctx.captionDate(today), / \d{4}$/);
 });

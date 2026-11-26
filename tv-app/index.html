@@ -6,110 +6,118 @@
 <link rel="stylesheet" href="design/tokens.css">
 <link rel="stylesheet" href="design/components.css">
 <style>
-/* Fixed 1920x1080 stage, Tizen 4.0 (Chromium M56): no flex gap, no inset. Design kit (design/README.md): Teal & Orange, Inter, focus is a white ring, text on orange is teal. */
+/* Fixed 1920x1080 stage, Tizen 4.0 (Chromium M56): no flex gap, no inset. Kit rules (design/README.md): text on orange is
+   teal, focus is a white ring, orange only on the one primary action, nothing under 24px or outside the
+   96 x 54 safe area (--tv-safe-x / --tv-safe-y). Components come from design/components.css. */
 html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); color: var(--fg); }
 .layer { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: hidden; }
-.hidden { display: none; }
-.serif { font-weight: 800; letter-spacing: -0.02em; } /* the display voice (was a serif) */
+.hidden, .rr-btn.hidden { display: none; }
+.display { font-weight: 800; letter-spacing: -0.02em; }
 #backdrop { position: absolute; right: 0; top: 0; width: 1400px; height: 790px; background: var(--bg) center / cover no-repeat; }
 #shade { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px;
   background: linear-gradient(90deg, #071B1E 28%, rgba(7,27,30,0.9) 48%, rgba(7,27,30,0.15) 80%, rgba(7,27,30,0.3)),
               linear-gradient(0deg, #071B1E 34%, rgba(7,27,30,0) 58%),
               linear-gradient(180deg, rgba(7,27,30,0.94) 0%, rgba(7,27,30,0.8) 10%, rgba(7,27,30,0) 18%); }
-header { position: absolute; left: 80px; top: 36px; width: 1760px; height: 68px; white-space: nowrap; }
-.logo { display: inline-block; vertical-align: middle; height: 48px; margin-right: 40px; }
+header { position: absolute; left: var(--tv-safe-x); top: var(--tv-safe-y); width: 1728px; height: 64px; white-space: nowrap; }
+.logo { display: inline-block; vertical-align: middle; height: 44px; margin-right: 24px; }
 #views { display: inline-block; vertical-align: middle; }
+#views .rr-btn { margin: 0; padding: 0 18px; color: var(--fg-muted); }
+/* the current view: a raised teal fill and full-strength text; focus (white fill and ring) still reads over it */
+#views .rr-btn.is-on { background: var(--surface-raised); color: var(--fg); }
+#views .rr-btn.is-on.focus { background: var(--brand-white); color: var(--brand-teal); }
 /* shortcut: room for Clear filter in the header; goes when it moves to the filter screen (OS-T-99KST) */
-#views.tight .btn { padding-left: 14px; padding-right: 14px; }
+#views.tight .rr-btn { padding: 0 12px; }
 #tools { position: absolute; right: 0; top: 0; }
-#count { position: absolute; right: 80px; top: 616px; line-height: 44px; color: var(--fg-muted); font-size: 24px; font-variant-numeric: tabular-nums; }
-.btn { display: inline-block; vertical-align: middle; padding: 14px 20px; font-size: 26px; border: 4px solid transparent; border-radius: 40px; color: var(--fg); font-weight: 600; }
-/* outlined pills: the line is an inner shadow, so the white focus border does not change their size */
-#open-filter, #clear-filter { margin-right: 14px; padding: 14px 22px; background: rgba(7,27,30,0.8); box-shadow: inset 0 0 0 2px var(--line-strong); }
-.btn.on, #open-filter.on { background: var(--accent); box-shadow: none; color: var(--on-accent); }
-.btn.hidden { display: none; }
-.btn.focus { border-color: var(--brand-white); background: var(--brand-white); color: var(--brand-teal); }
-#open-filter.focus, #clear-filter.focus { box-shadow: none; background: var(--brand-white); }
-.btn.on.focus, #open-filter.on.focus { background: var(--accent); color: var(--on-accent); }
-/* layout switcher like the web page: one segmented control, the active half orange */
-#layout { display: inline-block; vertical-align: middle; border: 2px solid var(--line-strong); border-radius: 40px; padding: 2px; background: rgba(7,27,30,0.8); }
-#layout .btn { padding: 10px 21px; }
+#tools > * { vertical-align: middle; }
+#tools .rr-btn { margin: 0 16px 0 0; background: rgba(7,27,30,0.8); }
+#tools .rr-btn.is-on { background: var(--fg); border-color: var(--fg); color: var(--bg); }
+#tools .rr-btn.focus { background: var(--brand-white); color: var(--brand-teal); }
+.rr-seg { background: rgba(21,71,77,0.9); }
+.rr-seg__opt { display: inline-block; vertical-align: middle; line-height: 56px; }
+.rr-seg__opt.is-on { background: var(--brand-white); color: var(--brand-teal); }
+#count { position: absolute; right: var(--tv-safe-x); top: 600px; line-height: 44px; color: var(--fg-muted); font-size: 24px; font-variant-numeric: tabular-nums; }
 .ico { display: inline-block; vertical-align: middle; width: 26px; height: 26px; }
 .ico.wall { background: linear-gradient(currentColor, currentColor) 0 0 / 11px 11px no-repeat, linear-gradient(currentColor, currentColor) 15px 0 / 11px 11px no-repeat,
   linear-gradient(currentColor, currentColor) 0 15px / 11px 11px no-repeat, linear-gradient(currentColor, currentColor) 15px 15px / 11px 11px no-repeat; }
 .ico.rows { background: linear-gradient(currentColor, currentColor) 0 2px / 26px 4px no-repeat, linear-gradient(currentColor, currentColor) 0 11px / 26px 4px no-repeat,
   linear-gradient(currentColor, currentColor) 0 20px / 26px 4px no-repeat; }
-#hero { position: absolute; left: 80px; top: 152px; width: 1080px; }
-#hero-date { font-size: 28px; line-height: 36px; height: 36px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--fg); font-weight: 500; }
-#hero-date .kbadge { display: inline-block; margin-right: 16px; padding: 0 14px; border-radius: 18px; background: var(--series); color: var(--brand-white); font-size: 22px; font-weight: 700; line-height: 34px; vertical-align: 1px; }
-#hero-title { margin-top: 16px; font-size: 72px; line-height: 1.1; max-height: 159px; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-#hero-text { margin-top: 16px; font-size: 27px; line-height: 1.4; color: var(--fg-muted); width: 980px; max-height: 76px; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-#hero-text .lang { border: 2px solid currentColor; border-radius: 5px; font-size: 18px; margin-right: 12px; padding: 0 7px; vertical-align: 3px; }
-#hero-actions { margin-top: 32px; white-space: nowrap; }
-.action { display: inline-block; margin-right: 22px; padding: 14px 34px; font-size: 28px; font-weight: 600; border-radius: 40px; border: 4px solid var(--fg); }
-.action.solid { background: var(--accent); color: var(--on-accent); }
-#hero-actions .action { vertical-align: middle; margin-right: 20px; padding: 16px 36px; border-color: var(--line-strong); background: rgba(7,27,30,0.8); }
-#hero-actions .action.solid { border-color: var(--accent); background: var(--accent); }
-#hero-actions .action.focus { border-color: var(--brand-white); }
-/* a dark gap and a white ring: seen on the orange button as well as on the dark ones */
-.action.focus { border-color: var(--brand-white); box-shadow: 0 0 0 4px var(--bg), 0 0 0 9px var(--focus); }
-.action-note { display: inline-block; vertical-align: middle; margin-right: 20px; font-size: 26px; font-weight: 600; color: var(--success); }
-/* 10px of room left and above for the focus ring: posters start at 80,684. One shelf is 442px, and the list ends 20px
-   under a caption, so moving down a shelf puts the next heading on the count's line. */
-#list { position: absolute; left: 70px; top: 612px; width: 1850px; height: 438px; overflow: hidden; }
-.shelf-title { margin: 0 0 18px 10px; font-size: 36px; font-weight: 700; letter-spacing: 0; line-height: 44px; height: 44px; }
-.shelf { white-space: nowrap; overflow: hidden; height: 370px; padding: 10px 0 0 10px; }
-.poster { display: inline-block; vertical-align: top; width: 200px; margin-right: 22px; white-space: normal; }
-.poster .frame { width: 200px; height: 300px; border-radius: 8px; background: var(--poster-empty) center / cover no-repeat; position: relative; overflow: hidden; }
-.poster .fallback { position: absolute; left: 16px; right: 16px; top: 96px; text-align: center; font-size: 26px; line-height: 1.25; color: var(--fg); }
-.poster .cap { margin-top: 16px; height: 30px; line-height: 30px; font-size: 24px; font-weight: 500; color: var(--fg-muted); white-space: nowrap; overflow: hidden; font-variant-numeric: tabular-nums; }
-.poster.focus .frame { box-shadow: 0 0 0 4px var(--bg), 0 0 0 10px var(--focus), var(--shadow-pop); }
-.poster.focus .cap { color: var(--fg); font-weight: 600; }
-/* badge on posters; poster wall mode (denser grid, no hero; OK plays, long OK opens the info dialog) */
-/* a centred pill near the bottom edge; the negative right margin lets it use the whole poster before it wraps */
-.badge { position: absolute; left: 50%; bottom: 10px; margin-right: -50%; transform: translateX(-50%); max-width: 180px; box-sizing: border-box; white-space: pre-line; word-wrap: break-word; text-align: center; padding: 6px 14px; border-radius: 20px; background: var(--brand-teal); box-shadow: inset 0 0 0 2px rgba(255,255,255,0.18); color: var(--brand-white); font-size: 22px; line-height: 1.15; font-weight: 700; letter-spacing: 0.02em; }
+#hero { position: absolute; left: var(--tv-safe-x); top: 146px; width: 1080px; }
+#hero-date { font-size: 28px; line-height: 36px; height: 36px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--fg); font-weight: 500; font-variant-numeric: tabular-nums; }
+#hero-date .rr-badge { margin-right: 16px; vertical-align: 2px; }
+#hero-title { margin-top: 12px; font-size: 72px; line-height: 78px; max-height: 156px; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+#hero-text { margin-top: 12px; font-size: 28px; line-height: 40px; color: var(--fg-muted); width: 980px; max-height: 80px; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.lang { display: inline-block; border: 2px solid currentColor; border-radius: 6px; font-size: 24px; line-height: 28px; font-weight: 700; margin-right: 12px; padding: 0 8px; vertical-align: 2px; }
+#hero-actions { margin-top: 28px; white-space: nowrap; }
+#hero-actions > *, #dlg-actions > * { vertical-align: middle; margin: 0 20px 0 0; }
+#hero-actions .rr-btn--secondary { background: rgba(7,27,30,0.8); }
+#hero-actions .rr-btn--secondary.focus { background: var(--brand-white); }
+/* Seerr state is a real success; a missing trailer is only an absence */
+.action-note { display: inline-block; font-size: 28px; font-weight: 600; color: var(--success); }
+.action-note.muted { color: var(--fg-muted); }
+/* Rows: posters start at the safe edge (96 px); the 24 px to their left holds the focus ring and its scale.
+   A shelf is 426 px (44 heading + 14 + 14 padding + 354), the same as the list, so a step down shows one whole shelf. */
+#list { position: absolute; left: 72px; top: 600px; width: 1848px; height: 426px; overflow: hidden; }
+.shelf-title { margin: 0 0 14px 24px; font-size: 36px; font-weight: 700; line-height: 44px; height: 44px; white-space: nowrap; }
+.shelf-title .note { margin-left: 20px; font-size: 26px; font-weight: 500; color: var(--fg-muted); }
+.shelf { white-space: nowrap; overflow: hidden; height: 354px; padding: 14px 0 0 24px; }
+.frame { background: var(--poster-empty) center / cover no-repeat; box-shadow: inset 0 0 0 2px var(--line); }
+.frame.art { box-shadow: none; }
+.frame .fallback { position: absolute; left: 16px; right: 16px; top: 38%; text-align: center; font-size: 26px; line-height: 32px; font-weight: 700; color: var(--fg); }
+.rr-tvposter__cap { font-variant-numeric: tabular-nums; }
+/* the poster's own pill near the bottom edge; the negative right margin lets it use the whole poster before it wraps */
+.badge { position: absolute; left: 50%; bottom: 10px; margin-right: -50%; transform: translateX(-50%); max-width: 184px; box-sizing: border-box; white-space: pre-line; word-wrap: break-word; text-align: center; padding: 6px 14px; border-radius: 20px; background: var(--brand-teal); box-shadow: inset 0 0 0 2px rgba(255,255,255,0.18); color: var(--brand-white); font-size: 24px; line-height: 28px; font-weight: 700; }
 .badge.streaming { background: var(--accent); box-shadow: none; color: var(--on-accent); }
 .badge.series { background: var(--series); box-shadow: none; }
+/* poster wall: eight posters a row between the safe edges, no hero; OK plays, holding OK opens the info dialog */
 #main.wall #hero, #main.wall #backdrop { display: none; }
 #main.wall #shade { background: var(--bg); }
-#main.wall #count { top: 136px; }
-#main.wall #list { top: 132px; height: 948px; }
+#main.wall #count { top: 132px; }
+#main.wall #list { top: 132px; height: 804px; }
 #main.wall .shelf { white-space: normal; height: auto; overflow: visible; }
-#main.wall .poster { margin: 0 22.8px 24px 0; }
-#main.wall .poster .cap { display: none; }
+#main.wall .rr-tvposter { margin: 0 18px 24px 0; }
+#main.wall .rr-tvposter__cap { display: none; }
 #main.wall #message { top: 200px; }
 #main.wall #retry { top: 270px; }
+/* the wall has no captions: the focused poster's title, date and where sit in a strip under the list */
+#info { display: none; position: absolute; left: var(--tv-safe-x); top: 954px; width: 1728px; height: 72px; white-space: nowrap; }
+#main.wall #info { display: block; }
+#info-title { font-size: 36px; line-height: 44px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; max-width: 1160px; display: inline-block; vertical-align: top; }
+#info-meta { margin-left: 24px; font-size: 28px; line-height: 44px; color: var(--fg-muted); display: inline-block; vertical-align: top; font-variant-numeric: tabular-nums; }
+#info-hint { position: absolute; right: 0; top: 0; font-size: 24px; line-height: 44px; color: var(--fg-muted); }
+.key { display: inline-block; padding: 0 10px; margin: 0 8px 0 0; border-radius: 6px; border: 2px solid var(--line-strong); color: var(--fg); font-weight: 700; line-height: 34px; }
 /* info dialog over the wall (long press OK) */
 #dialog { background: var(--scrim); }
 #dlg { position: absolute; left: 160px; top: 120px; width: 1600px; height: 840px; background: var(--surface); border: 2px solid var(--line); border-radius: 16px; box-shadow: var(--shadow-pop); }
 #dlg-poster { position: absolute; left: 40px; top: 40px; width: 320px; height: 480px; border-radius: 10px; background: var(--poster-empty) center / cover no-repeat; }
 #dlg-body { position: absolute; left: 400px; top: 40px; width: 1160px; height: 760px; }
-#dlg-title { font-size: 54px; line-height: 1.1; max-height: 120px; overflow: hidden; margin-bottom: 14px; }
-#dlg-date { font-size: 30px; font-weight: 500; color: var(--fg); height: 44px; }
-#dlg-text { font-size: 27px; line-height: 1.4; color: var(--fg-muted); max-height: 454px; overflow: hidden; margin-top: 10px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 12; }
-#dlg-text .lang { border: 2px solid currentColor; border-radius: 5px; font-size: 18px; margin-right: 12px; padding: 0 7px; vertical-align: 3px; }
-#dlg-actions { position: absolute; left: 10px; top: 670px; white-space: nowrap; }
-#filter { background: rgba(7, 27, 30, 0.97); }
-#filter h2 { margin: 24px 80px 10px; font-size: 40px; font-weight: 700; letter-spacing: -0.01em; }
-#filter-hint { margin: 0 80px; color: var(--fg-muted); font-size: 28px; }
-.tags { margin: 0 70px; }
-#keywords { height: 430px; overflow: hidden; }
-.tag { display: inline-block; margin: 10px; padding: 12px 26px; font-size: 30px; font-weight: 600; background: var(--surface-raised); border: 4px solid var(--surface-raised); border-radius: 30px; }
-.tag.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
-.tag.focus { border-color: var(--brand-white); }
+#dlg-title { font-size: 52px; line-height: 60px; max-height: 120px; overflow: hidden; margin-bottom: 12px; }
+#dlg-date { font-size: 28px; line-height: 36px; font-weight: 500; color: var(--fg); font-variant-numeric: tabular-nums; }
+#dlg-text { font-size: 28px; line-height: 40px; color: var(--fg-muted); max-height: 400px; overflow: hidden; margin-top: 16px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 10; }
+#dlg-actions { margin-top: 36px; white-space: nowrap; }
+#filter { background: rgba(7, 27, 30, 0.97); box-sizing: border-box; padding: var(--tv-safe-y) var(--tv-safe-x) 0; }
+#filter h2 { margin: 0 0 16px; font-size: 36px; line-height: 44px; font-weight: 700; }
+#filter h2 small { margin-left: 24px; font-size: 24px; font-weight: 500; color: var(--fg-muted); }
+#filter .rr-chips { margin-bottom: 20px; }
+#filter-clear { position: absolute; right: var(--tv-safe-x); top: var(--tv-safe-y); }
+#keywords { height: 322px; overflow: hidden; }
 #player { background: #000; }
 #video { width: 1920px; height: 1080px; }
-#ctl { position: absolute; left: 0; bottom: 0; width: 1920px; height: 170px; background: linear-gradient(0deg, rgba(0,0,0,0.75), rgba(0,0,0,0)); }
-#ctl .pi { position: absolute; left: 80px; bottom: 74px; width: 40px; height: 40px; }
-#ctl .pi.playing { width: 0; height: 0; border-style: solid; border-width: 20px 0 20px 34px; border-color: transparent transparent transparent var(--brand-white); }
-#ctl .pi.paused { border-left: 14px solid var(--brand-white); border-right: 14px solid var(--brand-white); width: 12px; box-sizing: content-box; }
-#ptime { position: absolute; left: 144px; bottom: 74px; font-size: 34px; line-height: 40px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--brand-white); }
-#pbar { position: absolute; left: 80px; bottom: 40px; width: 1760px; height: 10px; border-radius: 4px; overflow: hidden; background: rgba(255,255,255,0.24); }
+#ctl { position: absolute; left: 0; bottom: 0; width: 1920px; height: 260px; background: linear-gradient(0deg, rgba(0,0,0,0.8), rgba(0,0,0,0)); }
+#ptitle { position: absolute; left: var(--tv-safe-x); bottom: 150px; width: 1400px; font-size: 36px; line-height: 44px; font-weight: 700; color: var(--brand-white); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* the icon is what OK does next: a play triangle while paused, pause bars while playing */
+#ctl .pi { position: absolute; left: var(--tv-safe-x); bottom: 92px; width: 40px; height: 40px; }
+#ctl .pi.paused { width: 0; height: 0; border-style: solid; border-width: 20px 0 20px 34px; border-color: transparent transparent transparent var(--brand-white); }
+#ctl .pi.playing { border-left: 14px solid var(--brand-white); border-right: 14px solid var(--brand-white); width: 12px; box-sizing: content-box; }
+#ptime { position: absolute; left: 160px; bottom: 92px; font-size: 30px; line-height: 40px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--brand-white); }
+#phint { position: absolute; right: var(--tv-safe-x); bottom: 92px; font-size: 24px; line-height: 40px; color: rgba(255,255,255,0.82); }
+#pbar { position: absolute; left: var(--tv-safe-x); bottom: 62px; width: 1728px; height: 10px; border-radius: 4px; overflow: hidden; background: rgba(255,255,255,0.24); }
 #pfill { width: 0; height: 10px; background: var(--brand-orange); }
-#status { position: absolute; left: 0; top: 480px; width: 1920px; text-align: center; font-size: 44px; color: var(--fg); }
-#message { position: absolute; left: 80px; top: 680px; font-size: 34px; color: var(--fg-muted); }
-#retry { position: absolute; left: 80px; top: 750px; }
-#notice { position: absolute; left: 660px; top: 968px; width: 600px; box-sizing: border-box; padding: 20px 32px; text-align: center; font-size: 30px; font-weight: 600; background: var(--surface-raised); color: var(--brand-white); border-radius: 40px; box-shadow: inset 0 0 0 2px var(--line-strong), var(--shadow-pop); }
+#status { position: absolute; left: var(--tv-safe-x); top: 480px; width: 1728px; text-align: center; font-size: 40px; line-height: 52px; color: var(--fg); }
+#status small { display: block; margin-top: 16px; font-size: 28px; color: var(--fg-muted); }
+#message { position: absolute; left: var(--tv-safe-x); top: 680px; width: 1728px; font-size: 32px; line-height: 44px; color: var(--fg-muted); }
+#retry { position: absolute; left: var(--tv-safe-x); top: 750px; }
+#notice { position: absolute; left: 610px; top: 930px; width: 700px; box-sizing: border-box; padding: 18px 32px; text-align: center; font-size: 28px; line-height: 36px; font-weight: 600; background: var(--surface-raised); color: var(--brand-white); border-radius: 40px; box-shadow: inset 0 0 0 2px var(--line-strong), var(--shadow-pop); }
+#notice span { font-weight: 500; color: var(--fg-muted); }
 </style>
 </head>
 <body>
@@ -120,26 +128,27 @@ header { position: absolute; left: 80px; top: 36px; width: 1760px; height: 68px;
     <img class="logo" src="design/logo-on-dark.svg" alt="ReelRadar">
     <div id="views"></div>
     <div id="tools">
-      <span class="btn hidden" id="clear-filter">Clear filter</span><span class="btn" id="open-filter">Filter</span><span id="layout"><span class="btn focusable" id="layout-wall"><span class="ico wall"></span></span><span class="btn focusable" id="layout-rows"><span class="ico rows"></span></span></span>
+      <span class="rr-btn rr-btn--secondary hidden" id="clear-filter">Clear filter</span><span class="rr-btn rr-btn--secondary" id="open-filter">Filter</span><span id="layout" class="rr-seg"><span class="rr-seg__opt focusable" id="layout-wall"><span class="ico wall"></span></span><span class="rr-seg__opt focusable" id="layout-rows"><span class="ico rows"></span></span></span>
     </div>
   </header>
   <div id="count"></div>
   <div id="hero">
     <div id="hero-date"></div>
-    <div id="hero-title" class="serif"></div>
+    <div id="hero-title" class="display"></div>
     <div id="hero-text"></div>
     <div id="hero-actions"></div>
   </div>
   <div id="message">Loading titles...</div>
-  <span class="btn hidden" id="retry">Try again</span>
+  <span class="rr-btn rr-btn--primary hidden" id="retry">Try again</span>
   <div id="list"></div>
+  <div id="info"><span id="info-title"></span><span id="info-meta"></span><span id="info-hint"><span class="key">OK</span>Play trailer &nbsp; <span class="key">Hold OK</span>Details</span></div>
   <div id="notice" class="hidden"></div>
 </div>
 <div id="dialog" class="layer hidden">
   <div id="dlg">
     <div id="dlg-poster"></div>
     <div id="dlg-body">
-      <div id="dlg-title" class="serif"></div>
+      <div id="dlg-title" class="display"></div>
       <div id="dlg-date"></div>
       <div id="dlg-text"></div>
       <div id="dlg-actions"></div>
@@ -147,18 +156,18 @@ header { position: absolute; left: 80px; top: 36px; width: 1760px; height: 68px;
   </div>
 </div>
 <div id="filter" class="layer hidden">
+  <span class="rr-btn rr-btn--secondary focusable" id="filter-clear">Clear all</span>
   <h2>Releases</h2>
-  <div class="tags" id="kinds"></div>
+  <div class="rr-chips" id="kinds"></div>
   <h2>Genres</h2>
-  <div class="tags" id="genres"></div>
-  <h2>Keywords</h2>
-  <div id="filter-hint">OK toggles · Back closes · shows titles matching ANY choice</div>
-  <div class="tags" id="keywords"></div>
+  <div class="rr-chips" id="genres"></div>
+  <h2>Keywords <small id="filter-hint">OK picks · Back shows the titles · any choice matches</small></h2>
+  <div class="rr-chips" id="keywords"></div>
 </div>
 <div id="player" class="layer hidden">
   <video id="video"></video>
   <div id="status"></div>
-  <div id="ctl" class="hidden"><span id="pi" class="pi playing"></span><span id="ptime"></span><div id="pbar"><div id="pfill"></div></div></div>
+  <div id="ctl" class="hidden"><div id="ptitle"></div><span id="pi" class="pi playing"></span><span id="ptime"></span><span id="phint">OK pauses · Left and Right skip 10 s · Back closes</span><div id="pbar"><div id="pfill"></div></div></div>
 </div>
 <script>
 // ES5 only. API on rei3 (LAN, behind Caddy).
@@ -338,8 +347,9 @@ function setFocus(target) {
   if (!target) return;
   target.className += ' focus';
   focused[layer] = target;
-  if (target.item) { focused.poster = target; if (!wall && target.item !== heroItem) showHero(target.item); }
+  if (target.item) { focused.poster = target; if (!wall && target.item !== heroItem) showHero(target.item); if (wall) showInfo(target.item); }
   ensureVisible(target);
+  if (target.item) loadArt(target);
   // the wall's heading scrolls away; the count beside it is not part of the list, so it goes with it
   if (target.item) $('count').style.visibility = wall && $('list').scrollTop > 0 ? 'hidden' : '';
 }
@@ -347,13 +357,16 @@ function ensureVisible(target) {
   for (var box = target.parentNode; box && box !== document.body; box = box.parentNode) {
     var t = target.getBoundingClientRect(), b = box.getBoundingClientRect();
     if (box.scrollHeight > box.clientHeight) {
-      // upwards the list leaves room for the heading (72px in both layouts), so it comes back whole with its row
-      if (t.top < b.top) box.scrollTop -= b.top - t.top + (box.id === 'list' ? 72 : 20);
-      else if (t.bottom > b.bottom) box.scrollTop += t.bottom - b.bottom + 20;
+      // Rows: the list moves a whole shelf (its heading is 58px over it), measured on the shelf because the focused
+      // poster is scaled. The wall: upwards leaves room for a week's heading (72px), so it comes back whole with its row.
+      var rows = box.id === 'list' && !wall && target.item;
+      var v = rows ? target.parentNode.getBoundingClientRect() : t;
+      if (v.top < b.top) box.scrollTop -= b.top - v.top + (rows ? 58 : box.id === 'list' ? 72 : 20);
+      else if (v.bottom > b.bottom) box.scrollTop += v.bottom - b.bottom + (rows ? 0 : 20);
     }
-    if (box.scrollWidth > box.clientWidth) {
-      if (t.left < b.left) box.scrollLeft -= b.left - t.left + 20;
-      else if (t.right > b.right) box.scrollLeft += t.right - b.right + 20;
+    if (box.scrollWidth > box.clientWidth) { // 24px: the poster stays inside the safe area, ring and scale included
+      if (t.left < b.left) box.scrollLeft -= b.left - t.left + 24;
+      else if (t.right > b.right) box.scrollLeft += t.right - b.right + 24;
     }
   }
 }
@@ -399,7 +412,36 @@ function nearest(current, items) {
 // ---- main: hero for the focused title, poster rows below ----
 var IMG = 'https://image.tmdb.org/t/p/';
 var heroItem = null;
-var ROW_TITLE = { upcoming: 'Coming soon in Germany', trailers: 'Newest trailers', recent: 'Recently released in Germany', all: 'All titles' };
+var ROW_TITLE = { trailers: 'Newest trailers', all: 'All titles' };
+
+// Monday of the date's week (same rule as the web page's wall).
+function weekStart(iso) {
+  var d = new Date(iso + 'T12:00:00Z');
+  d.setUTCDate(d.getUTCDate() - (d.getUTCDay() + 6) % 7);
+  return d.toISOString().slice(0, 10);
+}
+// Calendar days (in order) -> one shelf per week, so Up/Down steps through weeks instead of a 300-poster row.
+function byWeek(days) {
+  var weeks = [], thisWeek = weekStart(isoDay(0)), nextWeek = weekStart(isoDay(7)), lastWeek = weekStart(isoDay(-7));
+  days.forEach(function (day) {
+    var start = weekStart(day.date);
+    var last = weeks[weeks.length - 1];
+    if (!last || last.start !== start) {
+      var heading = start === thisWeek ? 'This week' : start === nextWeek ? 'Next week' : start === lastWeek ? 'Last week' :
+        'Week of ' + dayMonth(start);
+      last = { start: start, heading: heading, items: [] };
+      weeks.push(last);
+    }
+    last.items = last.items.concat(day.items);
+  });
+  weeks.forEach(function (week) { week.note = week.items.length + (week.items.length === 1 ? ' release' : ' releases'); });
+  return weeks;
+}
+// "7 Dec", with the year only when it is not this year's.
+function dayMonth(iso) {
+  var d = new Date(iso + 'T12:00:00');
+  return d.getDate() + ' ' + MONTHS[d.getMonth()] + (d.getFullYear() === new Date().getFullYear() ? '' : ' ' + d.getFullYear());
+}
 
 // The release an item stands for: its calendar entry, or the title's next (else latest) German date.
 function itemRelease(item) {
@@ -422,6 +464,13 @@ function whereText(title, kind, date) {
   if (kind === 'cinema') return 'Cinema';
   return premiereText(title, kind, date) || (title.providers && title.providers.length ? title.providers.map(function (p) { return p.name; }).join(', ') : 'Streaming');
 }
+// "Thu, 5 Dec 2026 · Cinema" ahead; once out, "In cinemas since 5 Nov 2026" or "On Netflix since 5 Nov 2026".
+function releaseText(title, release) {
+  if (release.date >= isoDay(0)) return longDate(release.date) + ' · ' + whereText(title, release.kind, release.date);
+  if (release.kind === 'cinema') return 'In cinemas since ' + shortDate(release.date);
+  var where = title.providers && title.providers.length ? 'On ' + title.providers.map(function (p) { return p.name; }).join(', ') : 'Streaming';
+  return where + ' since ' + shortDate(release.date);
+}
 
 // place (shelf and data-id of a poster) restores the viewer's position; without it, or when the title is gone, the first poster.
 function renderList(place) {
@@ -437,13 +486,14 @@ function renderList(place) {
   $('count').textContent = loadError ? '' : countText(count, active ? viewCount(allTitles, 'all') : null);
   $('count').style.visibility = '';
   $('message').textContent = loadError || (count ? '' : (allTitles.length ? 'No titles in this view match the filter.' : 'No titles imported yet.'));
-  $('retry').className = loadError ? 'btn focusable' : 'btn hidden';
-  // Calendar views come back per day; on the TV they are one row in date order.
-  var rows = currentView === 'genres' ? sections :
+  $('retry').className = loadError ? RETRY + ' focusable' : RETRY + ' hidden';
+  // Calendar views come back per day; on the TV they are a shelf per week.
+  var rows = currentView === 'genres' ? sections : currentView === 'upcoming' || currentView === 'recent' ? byWeek(sections) :
     [{ heading: ROW_TITLE[currentView], items: [].concat.apply([], sections.map(function (s) { return s.items; })) }];
   rows.forEach(function (row) {
     if (!row.items.length) return;
-    list.appendChild(el('h3', 'shelf-title serif', row.heading));
+    var heading = list.appendChild(el('h3', 'shelf-title', row.heading));
+    if (row.note) heading.appendChild(el('span', 'note', row.note));
     var shelf = el('div', 'shelf');
     row.items.forEach(function (item) {
       var card = posterCard(item);
@@ -456,7 +506,38 @@ function renderList(place) {
   var target = (place && (list.querySelector('[data-shelf="' + place.shelf + '"][data-id="' + place.id + '"]') ||
     list.querySelector('[data-id="' + place.id + '"]'))) || first;
   if (!wall) showHero(target ? target.item : null);
+  if (wall) showInfo(target ? target.item : null);
   setFocus(target || (loadError ? $('retry') : $('open-filter')));
+  loadArt();
+}
+var RETRY = 'rr-btn rr-btn--primary';
+
+// Posters are fetched only near what is on screen: 300 background images at once stall the TV.
+// shortcut: loads the shelves around the focused one (rows) or the next few rows (wall); upgrade to an
+// IntersectionObserver once the TV's engine has one.
+function loadArt(around) {
+  var shelves = Array.prototype.slice.call($('list').querySelectorAll('.shelf'));
+  var at = around ? shelves.indexOf(around.parentNode) : 0;
+  var cards = [];
+  shelves.forEach(function (shelf, i) {
+    if (Math.abs(i - Math.max(at, 0)) > (wall ? 4 : 1)) return; // the wall shows several short week shelves at once
+    var all = Array.prototype.slice.call(shelf.querySelectorAll('.focusable'));
+    var from = around && around.parentNode === shelf ? all.indexOf(around) : 0;
+    cards = cards.concat(all.slice(Math.max(0, from - 8), from + (wall ? 40 : 12)));
+  });
+  cards.forEach(function (card) {
+    if (!card.art) return;
+    card.firstChild.style.backgroundImage = 'url(' + card.art + ')';
+    card.firstChild.className += ' art';
+    card.art = null;
+  });
+}
+
+// Wall: the focused poster's title, date and where, since the wall has no captions.
+function showInfo(item) {
+  $('info-title').textContent = item ? item.title.title : '';
+  var release = item && itemRelease(item);
+  $('info-meta').textContent = !item ? '' : release ? releaseText(item.title, release) : releaseless(item.title);
 }
 
 // What the current view lists: releases in the calendar views, else titles (once, though on several genre shelves).
@@ -475,28 +556,28 @@ function countText(count, total) {
 function renderFilterButtons() {
   var active = activeCount();
   $('open-filter').textContent = active ? 'Filter (' + active + ')' : 'Filter';
-  $('open-filter').className = 'btn focusable' + (active ? ' on' : '') + (/(^| )focus( |$)/.test($('open-filter').className) ? ' focus' : '');
-  $('clear-filter').className = active ? 'btn focusable' : 'btn hidden';
+  $('open-filter').className = 'rr-btn rr-btn--secondary focusable' + (active ? ' is-on' : '') + (/(^| )focus( |$)/.test($('open-filter').className) ? ' focus' : '');
+  $('clear-filter').className = 'rr-btn rr-btn--secondary ' + (active ? 'focusable' : 'hidden');
   $('views').className = active ? 'tight' : '';
 }
 
-function captionDate(iso) { // "Tue 24 Nov"
-  return longDate(iso).replace(',', '').replace(/ \d{4}$/, '');
+function captionDate(iso) { // "Tue 24 Nov", plus the year when it is not this year's
+  return DAYS[new Date(iso + 'T12:00:00').getDay()] + ' ' + dayMonth(iso);
 }
 
 function posterCard(item) {
   var title = item.title;
-  var card = el('div', 'poster focusable');
-  var frame = el('div', 'frame');
-  if (title.poster_path) frame.style.backgroundImage = 'url(' + IMG + 'w342' + title.poster_path + ')';
-  else frame.appendChild(el('div', 'fallback serif', title.title));
+  var card = el('div', 'poster rr-tvposter focusable');
+  var frame = el('div', 'frame rr-poster');
+  if (title.poster_path) card.art = IMG + 'w342' + title.poster_path; // set by loadArt once it is near the screen
+  else frame.appendChild(el('div', 'fallback', title.title));
   card.appendChild(frame);
   var release = itemRelease(item);
   if (isSeries(title)) frame.appendChild(el('div', 'badge series', 'Series'));
   else if (release) frame.appendChild(el('div', 'badge ' + release.kind, release.kind === 'cinema' ? 'Cinema' :
     // "Premieres on" and the service on two lines
     (premiereText(title, release.kind, release.date) || (title.providers && title.providers.length ? title.providers[0].name : 'Streaming')).replace(/^Premieres on /, 'Premieres on\n')));
-  card.appendChild(el('div', 'cap', release ? captionDate(release.date) : (availableText(title, true) || (title.trailer ? '' : 'No trailer'))));
+  card.appendChild(el('div', 'cap rr-tvposter__cap', release ? captionDate(release.date) : (availableText(title, true) || (title.trailer ? '' : 'No trailer'))));
   card.setAttribute('data-id', titleKey(title));
   card.item = item;
   card.onactivate = function () {
@@ -531,21 +612,21 @@ function showHero(item) {
   var title = item.title;
   var release = itemRelease(item);
   $('hero-title').textContent = title.title;
-  $('hero-date').textContent = release ? longDate(release.date) + ' · ' + whereText(title, release.kind, release.date) : releaseless(title);
+  $('hero-date').textContent = release ? releaseText(title, release) : releaseless(title);
   // in front, so a long line never cuts the mark off
-  if (isSeries(title)) $('hero-date').insertBefore(el('span', 'kbadge', 'Series'), $('hero-date').firstChild);
+  if (isSeries(title)) $('hero-date').insertBefore(el('span', 'rr-badge rr-badge--series', 'Series'), $('hero-date').firstChild);
   fillSynopsis($('hero-text'), title);
   $('backdrop').style.backgroundImage = title.backdrop_path ? 'url(' + IMG + 'w1280' + title.backdrop_path + ')' : 'none';
 
   if (title.trailer) {
-    var playButton = el('span', 'action solid focusable', 'Play trailer');
+    var playButton = el('span', 'rr-btn rr-btn--primary focusable', 'Play trailer');
     playButton.onactivate = function () { play(title); };
     actions.appendChild(playButton);
   } else {
-    actions.appendChild(el('span', 'action-note', 'No trailer'));
+    actions.appendChild(el('span', 'action-note muted', 'No trailer'));
   }
   if (title.overview) { // the hero shows two lines; the dialog has the whole synopsis
-    var details = el('span', 'action focusable', 'Details');
+    var details = el('span', 'rr-btn rr-btn--secondary focusable', 'Details');
     details.onactivate = function () { openDialog(item); };
     actions.appendChild(details);
   }
@@ -583,26 +664,26 @@ function renderViews() {
   var nav = $('views');
   nav.textContent = '';
   VIEWS.forEach(function (view) {
-    var button = el('span', 'btn focusable' + (view[0] === currentView ? ' on' : ''), view[1]);
+    var button = el('span', 'rr-btn rr-btn--ghost focusable' + (view[0] === currentView ? ' is-on' : ''), view[1]);
     button.onactivate = function () {
       currentView = view[0];
       renderViews();
       renderList();
-      setFocus($('views').querySelector('.on'));
+      setFocus($('views').querySelector('.is-on'));
     };
     nav.appendChild(button);
   });
 }
 // OK sends the title's request to Seerr through the backend; done runs once the status is known.
 function requestButton(title, done) {
-  var button = el('span', 'action focusable', isSeries(title) ? 'Request season 1 via Seerr' : 'Request via Seerr'); // a series request asks for the first season only
+  var button = el('span', 'rr-btn rr-btn--secondary focusable', isSeries(title) ? 'Request season 1 via Seerr' : 'Request via Seerr'); // a series request asks for the first season only
   button.onactivate = function () {
     if (button.busy) return;
     button.busy = true;
     button.textContent = 'Requesting...';
     sendJson('POST', API + '/api/request/' + mediaType(title) + '/' + title.tmdb_id, function (error, result) {
       button.busy = false;
-      if (error) { button.textContent = 'Failed - OK retries'; return; }
+      if (error) { button.textContent = 'Request failed: OK tries again'; return; }
       seerrStatus[titleKey(title)] = result.status;
       done();
     });
@@ -612,9 +693,9 @@ function requestButton(title, done) {
 
 function renderLayout() {
   $('main').className = 'layer' + (wall ? ' wall' : '') + (layer === 'main' ? '' : ' hidden');
-  removeClass($('layout-wall'), 'on');
-  removeClass($('layout-rows'), 'on');
-  $(wall ? 'layout-wall' : 'layout-rows').className += ' on';
+  removeClass($('layout-wall'), 'is-on');
+  removeClass($('layout-rows'), 'is-on');
+  $(wall ? 'layout-wall' : 'layout-rows').className += ' is-on';
 }
 [['layout-wall', true], ['layout-rows', false]].forEach(function (option) {
   $(option[0]).onactivate = function () {
@@ -659,13 +740,13 @@ function openDialog(item) {
   $('dlg-poster').textContent = '';
   if (isSeries(title)) $('dlg-poster').appendChild(el('div', 'badge series', 'Series'));
   $('dlg-title').textContent = title.title;
-  $('dlg-date').textContent = release ? whereText(title, release.kind, release.date) + ' · ' + shortDate(release.date) : releaseless(title);
+  $('dlg-date').textContent = release ? releaseText(title, release) : releaseless(title);
   fillSynopsis($('dlg-text'), title);
   var actions = $('dlg-actions');
   actions.textContent = '';
   var playButton = null;
   if (title.trailer) {
-    playButton = el('span', 'action solid focusable', '\u25B6  Play trailer');
+    playButton = el('span', 'rr-btn rr-btn--primary focusable', 'Play trailer');
     playButton.onactivate = function () { closeDialog(); play(title); }; // Back from the player then lands on the poster
     actions.appendChild(playButton);
   }
@@ -673,8 +754,8 @@ function openDialog(item) {
     if (!wall && heroItem && heroItem.title === title) refreshHero(); // the dialog may sit over the hero
     if (layer === 'dialog' && dialogItem === item) openDialog(item);
   });
-  if (!title.trailer) actions.appendChild(el('span', 'action-note', 'No trailer  '));
-  var close = el('span', 'action focusable', 'Close');
+  if (!title.trailer) actions.appendChild(el('span', 'action-note muted', 'No trailer'));
+  var close = el('span', 'rr-btn rr-btn--secondary focusable', 'Close');
   close.onactivate = closeDialog;
   actions.appendChild(close);
   $('dialog').className = 'layer';
@@ -690,25 +771,25 @@ function closeDialog() {
 // ---- filter panel ----
 function tagButton(kind, tag) {
   var ids = selection[kind];
-  var button = el('span', 'tag focusable' + (ids.indexOf(tag.id) !== -1 ? ' on' : ''),
+  var button = el('span', 'rr-chip focusable' + (ids.indexOf(tag.id) !== -1 ? ' is-on' : ''),
     tag.name + (kind === 'keywords' ? ' (' + tag.count + ')' : ''));
   button.onactivate = function () {
     var index = ids.indexOf(tag.id);
     if (index === -1) ids.push(tag.id); else ids.splice(index, 1);
-    if (index === -1) button.className = button.className.replace('tag', 'tag on');
-    else removeClass(button, 'on');
+    if (index === -1) button.className += ' is-on';
+    else removeClass(button, 'is-on');
     saveSelection();
   };
   return button;
 }
 // Exactly one release kind is chosen: OK moves the choice, and pressing the chosen one keeps it.
 function kindButton(kind) {
-  var button = el('span', 'tag focusable' + (selection.kind === kind[0] ? ' on' : ''), kind[1]);
+  var button = el('span', 'rr-chip focusable' + (selection.kind === kind[0] ? ' is-on' : ''), kind[1]);
   button.onactivate = function () {
     selection.kind = kind[0];
-    var chosen = $('kinds').querySelector('.on');
-    if (chosen) removeClass(chosen, 'on');
-    button.className = button.className.replace('tag', 'tag on');
+    var chosen = $('kinds').querySelector('.is-on');
+    if (chosen) removeClass(chosen, 'is-on');
+    button.className += ' is-on';
     saveSelection();
   };
   return button;
@@ -727,8 +808,16 @@ function openFilter() {
   keywords.scrollTop = 0;
   filterOpenedWith = JSON.stringify(selection);
   showLayer('filter');
-  setFocus($('kinds').querySelector('.on') || $('kinds').querySelector('.focusable'));
+  setFocus($('kinds').querySelector('.is-on') || $('kinds').querySelector('.focusable'));
 }
+// Clear all, inside the filter screen; Back then shows the whole list.
+$('filter-clear').onactivate = function () {
+  var openedWith = filterOpenedWith; // closing compares with the choices from before Filter opened
+  selection = { v: 1, genres: [], keywords: [], kind: 'all' };
+  saveSelection();
+  openFilter();
+  filterOpenedWith = openedWith;
+};
 var filterOpenedWith = ''; // the choices when Filter opened: unchanged ones leave the list, and its scroll, alone
 function closeFilter() {
   showLayer('main');
@@ -786,10 +875,11 @@ function play(title) {
   showLayer('player');
   hideOverlay();
   seekTarget = null;
-  $('status').textContent = 'Loading trailer: ' + title.title;
+  setStatus('Loading the trailer…', title.title);
+  $('ptitle').textContent = title.title;
   getJson(API + '/api/stream/' + mediaType(title) + '/' + title.tmdb_id, function (error, stream) {
     if (token !== playToken) return;
-    if (error) { $('status').textContent = 'Trailer unavailable (' + error + '). Back returns.'; return; }
+    if (error) { setStatus('This trailer can’t be played: ' + error + '.', 'Back returns to the list'); return; }
     video.src = API + stream.url;
     video.play();
   });
@@ -805,12 +895,17 @@ function closePlayer() {
   showLayer('main');
   setFocus(focused.main);
 }
+// A message with a quieter second line, in the middle of the player.
+function setStatus(message, detail) {
+  $('status').textContent = message;
+  if (detail) $('status').appendChild(el('small', '', detail));
+}
 $('video').addEventListener('playing', function () { $('status').textContent = ''; });
 $('video').addEventListener('ended', closePlayer);
 $('video').addEventListener('timeupdate', syncOverlay);
 $('video').addEventListener('seeked', syncOverlay);
 $('video').addEventListener('error', function () {
-  if ($('video').getAttribute('src')) $('status').textContent = 'Playback failed. Back returns.';
+  if ($('video').getAttribute('src')) setStatus('This trailer stopped playing.', 'Back returns to the list');
 });
 function playerKey(code) {
   var video = $('video');
@@ -895,12 +990,13 @@ function sendJson(method, url, callback) {
   request.timeout = 5 * 60 * 1000; // first play of a title may wait for the download
   request.onload = function () {
     var body;
-    try { body = JSON.parse(request.responseText); } catch (error) { return callback('bad response'); }
-    if (request.status < 200 || request.status >= 300) return callback(body.error || 'HTTP ' + request.status);
+    // The messages are shown on screen, so they say what happened in words, never a status code.
+    try { body = JSON.parse(request.responseText); } catch (error) { return callback('the server sent an unreadable answer'); }
+    if (request.status < 200 || request.status >= 300) return callback(body.error || 'the server had a problem');
     callback(null, body);
   };
-  request.onerror = function () { callback('backend unreachable'); };
-  request.ontimeout = function () { callback('timeout'); };
+  request.onerror = function () { callback('the ReelRadar server cannot be reached'); };
+  request.ontimeout = function () { callback('the server took too long'); };
   request.send();
 }
 
@@ -919,7 +1015,7 @@ function loadTitles() {
 }
 $('retry').onactivate = function () {
   loadError = '';
-  $('retry').className = 'btn hidden';
+  $('retry').className = RETRY + ' hidden';
   $('message').textContent = 'Loading titles...';
   setFocus($('open-filter')); // focus must not stay on the hidden button
   loadTitles();

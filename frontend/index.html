@@ -13,26 +13,31 @@
 <link rel="stylesheet" href="/design/tokens.css">
 <link rel="stylesheet" href="/design/components.css">
 <style>
-/* Design kit: design/README.md. Tokens and Inter come from design/tokens.css and components.css (copied here by build_tokens.py). */
+/* Design kit: design/README.md. Tokens, Inter and the rr-* components come from design/tokens.css and components.css (copied here by build_tokens.py); this block only lays them out. */
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 body { margin: 0; }
 ::selection { background: var(--accent); color: var(--on-accent); }
 html { caret-color: var(--accent-text); scrollbar-color: var(--line-strong) var(--bg); }
-a { color: var(--accent-text); text-underline-offset: 2px; }
+a { color: var(--fg); text-underline-offset: 3px; }
 button, select, input { font: inherit; color: inherit; }
 :focus { outline: none; }
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.rr-btn:focus-visible, .rr-chip:focus-visible, .rr-seg__opt:focus-visible { outline: none; }
+/* the kit rings on :focus; a mouse click on the web should not leave one behind */
+.rr-btn:focus:not(:focus-visible), .rr-chip:focus:not(:focus-visible), .rr-seg__opt:focus:not(:focus-visible) { box-shadow: none; }
+.rr-seg__opt.is-on:focus:not(:focus-visible) { box-shadow: var(--shadow-card); }
 .wrap { margin: 0 auto; max-width: 1180px; padding: 0 var(--space-5); }
 
 header.top { background: var(--brand-teal); color: var(--brand-white); position: sticky; top: 0; z-index: 5; }
 header.top .wrap { align-items: center; display: flex; gap: var(--space-6); min-height: 64px; }
 header.top :focus-visible { outline-color: var(--brand-white); }
 .logo { display: block; flex: none; height: 32px; width: auto; }
-#views { display: flex; gap: var(--space-2); overflow-x: auto; scrollbar-width: none; }
+#views { display: flex; gap: var(--space-2); }
 #views a { border-bottom: 3px solid transparent; border-top: 3px solid transparent; color: rgba(255,255,255,0.72); font-size: 15px; font-weight: 600; line-height: 20px; padding: 19px var(--space-3) 16px; text-decoration: none; transition: color var(--duration-fast) var(--ease-out); white-space: nowrap; }
 #views a:hover { color: var(--brand-white); }
-#views a[aria-current="page"] { border-bottom-color: var(--brand-orange); color: var(--brand-white); }
+/* the current view is white and underlined in white: orange is kept for the one primary action */
+#views a[aria-current="page"] { border-bottom-color: var(--brand-white); color: var(--brand-white); font-weight: 700; }
 #views a:focus-visible { outline-offset: -3px; }
 
 /* list mode: the first title's backdrop on the right, washed into teal by setHeroImage */
@@ -42,76 +47,70 @@ header.top :focus-visible { outline-color: var(--brand-white); }
 .hero p.lead { color: rgba(255,255,255,0.82); font-size: 16px; line-height: 24px; margin: 0; max-width: 34em; }
 
 .bar { align-items: center; display: flex; flex-wrap: wrap; gap: var(--space-2); padding: var(--space-5) 0 var(--space-2); }
-.chip { align-items: center; background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--radius-pill); cursor: pointer; display: inline-flex; font-size: 14px; font-weight: 600; height: 32px; line-height: 20px; padding: 0 var(--space-4); transition: background-color var(--duration-fast) var(--ease-out); }
-.chip:hover { background: var(--surface-raised); }
-.chip[aria-pressed="true"], .chip.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
-#active-tags .chip { margin: 0 var(--space-2) var(--space-2) 0; }
-select.chip { appearance: none; -webkit-appearance: none; padding-right: 32px; background-image: linear-gradient(45deg, transparent 50%, var(--fg) 50%), linear-gradient(135deg, var(--fg) 50%, transparent 50%); background-position: calc(100% - 17px) 55%, calc(100% - 12px) 55%; background-size: 5px 5px; background-repeat: no-repeat; }
+#filter-clear { height: 32px; padding: 0 var(--space-3); font-size: 14px; }
 #count { color: var(--fg-muted); font-size: 13px; font-variant-numeric: tabular-nums; margin-left: auto; }
+#layout .rr-seg__opt { align-items: center; display: inline-flex; padding: 0 var(--space-3); }
+#layout svg { display: block; fill: currentColor; height: 16px; width: 16px; }
+#active-tags .rr-chip { margin: 0 var(--space-2) var(--space-2) 0; }
+.x-icon { display: inline-flex; margin-left: var(--space-2); }
+#detail .x .x-icon { margin: 0; }
+#detail .x svg { height: 14px; width: 14px; }
 
 #filter { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); margin: var(--space-2) 0; padding: var(--space-1) var(--space-5) var(--space-4); }
 #filter h2 { font-size: 17px; font-weight: 700; line-height: 22px; margin: var(--space-5) 0 var(--space-3); }
-#filter .chip { margin: 0 var(--space-2) var(--space-2) 0; }
-#keyword-search { background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--radius-md); font-size: 15px; height: 40px; margin-bottom: var(--space-3); max-width: 100%; padding: 0 var(--space-4); width: 22em; }
-#keyword-search::placeholder { color: var(--fg-muted); }
-#keyword-search:focus-visible { border-color: var(--focus); outline: 0; box-shadow: 0 0 0 1px var(--focus); }
+#filter .rr-chip { margin: 0 var(--space-2) var(--space-2) 0; }
+#filter .rr-field__input { margin-bottom: var(--space-3); max-width: 100%; width: 22em; }
 
-.day { align-items: baseline; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; margin: var(--space-7) 0 var(--space-4); padding-bottom: var(--space-2); scroll-margin-top: 110px; }
+.day { align-items: baseline; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; margin: var(--space-7) 0 var(--space-4); padding-bottom: var(--space-2); scroll-margin-top: 132px; }
 .day h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; line-height: 28px; margin: 0; }
-.day small { color: var(--fg-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.day small { color: var(--fg-muted); font-size: 13px; font-variant-numeric: tabular-nums; }
 .grid { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); }
+/* month jumps stay under the header while the calendar scrolls */
+.months { background: var(--bg); border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: var(--space-2); margin: 0 calc(-1 * var(--space-5)); padding: var(--space-3) var(--space-5); position: sticky; top: 64px; z-index: 4; }
 
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); box-shadow: var(--shadow-card); display: flex; gap: var(--space-4); padding: var(--space-4); }
 .posterwrap { align-self: flex-start; flex: 0 0 104px; position: relative; width: 104px; }
-.poster { aspect-ratio: 2 / 3; background: var(--poster-empty); border-radius: var(--radius-sm); display: block; object-fit: cover; width: 100%; }
+/* the inset line is painted under the picture, so it only shows where there is none: an empty box stays visible on dark */
+.poster { aspect-ratio: 2 / 3; background: var(--poster-empty); border-radius: var(--radius-sm); box-shadow: inset 0 0 0 1px var(--line-strong); display: block; object-fit: cover; width: 100%; }
 .card .body { display: flex; flex: 1; flex-direction: column; min-width: 0; }
 .card h3 { font-size: 17px; font-weight: 700; line-height: 22px; margin: var(--space-1) 0 var(--space-1); }
 .card .open { background: none; border: 0; border-radius: var(--radius-sm); cursor: pointer; display: block; font: inherit; padding: 0; text-align: left; width: 100%; }
-.card h3 .open:hover { color: var(--accent-text); }
-.posterwrap .name { color: var(--fg); font-size: 14px; font-weight: 600; left: var(--space-2); overflow-wrap: break-word; pointer-events: none; position: absolute; right: var(--space-2); text-align: center; top: 40%; }
+.card h3 .open:hover { text-decoration: underline; text-underline-offset: 3px; }
+.posterwrap .rr-badge { left: 50%; position: absolute; top: var(--space-2); transform: translateX(-50%); }
 .credit { font-size: 12px; margin: var(--space-2) 0 0; }
+.credit a { color: var(--fg-muted); }
 .meta { color: var(--fg-muted); font-size: 13px; line-height: 18px; margin: 0 0 var(--space-1); }
 .release { font-size: 13px; font-variant-numeric: tabular-nums; font-weight: 600; line-height: 18px; margin: 0 0 var(--space-1); }
-.release .kind { color: var(--accent-text); }
 .overview { color: var(--fg-muted); display: -webkit-box; font-size: 14px; line-height: 20px; margin: var(--space-1) 0 var(--space-3); overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+.overview .lang { border: 1px solid currentColor; border-radius: 3px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; line-height: 14px; margin-right: 6px; padding: 0 3px; }
 .actions { align-items: center; display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: auto; }
-.btn { align-items: center; background: transparent; border: 1px solid var(--line-strong); border-radius: var(--radius-pill); cursor: pointer; display: inline-flex; font-size: 14px; font-weight: 600; height: 36px; justify-content: center; line-height: 20px; padding: 0 var(--space-4); transition: background-color var(--duration-fast) var(--ease-out); white-space: nowrap; }
-.btn:hover { background: var(--surface-raised); }
-.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
-.btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
-.btn:disabled { cursor: default; opacity: 0.55; }
-.btn:disabled:hover { background: transparent; }
-.status { color: var(--success); font-size: 13px; font-weight: 600; line-height: 36px; }
+.actions .rr-btn { height: 36px; margin-left: 0; padding: 0 var(--space-4); font-size: 14px; }
+/* a request is the second action: a text button, so the card has one filled button */
+.actions .rr-btn--text { background: none; border: 0; color: var(--fg); padding: 0 2px; text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 4px; }
+.actions .rr-btn--text:hover { text-decoration-color: currentColor; }
+.actions .rr-status { line-height: 36px; }
+.note { color: var(--fg-muted); font-size: 13px; font-weight: 600; line-height: 36px; }
 details.check { color: var(--fg-muted); font-size: 12px; margin-top: var(--space-3); }
 details.check summary { cursor: pointer; }
 details.check div { margin: var(--space-1) 0; overflow-wrap: anywhere; }
 .empty { color: var(--fg-muted); padding: var(--space-7) 0; }
 .empty[role="alert"] { color: var(--fg); padding-bottom: var(--space-3); }
+.more { display: flex; margin: var(--space-4) auto 0; }
 
-/* poster wall layout */
-.layout { background: var(--surface-raised); border-radius: var(--radius-pill); display: inline-flex; padding: 3px; }
-.layout button { align-items: center; background: transparent; border: 0; border-radius: var(--radius-pill); color: var(--fg-muted); cursor: pointer; display: inline-flex; height: 30px; justify-content: center; padding: 0 var(--space-3); }
-.layout button svg { display: block; fill: currentColor; height: 16px; width: 16px; }
-.layout button[aria-pressed="true"] { background: var(--surface); box-shadow: var(--shadow-card); color: var(--fg); }
+/* poster wall: the default layout */
 .wall { display: grid; gap: var(--space-5) var(--space-4); grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); }
-.tile { background: none; border: 0; border-radius: var(--radius-sm); cursor: pointer; padding: 0; position: relative; text-align: center; }
-.tile .art { aspect-ratio: 2 / 3; background: var(--poster-empty); border-radius: var(--radius-sm); box-shadow: var(--shadow-card); color: var(--fg); font-size: 14px; font-weight: 600; overflow: hidden; position: relative; transition: transform var(--duration-base) var(--ease-out), box-shadow var(--duration-base) var(--ease-out); }
-.tile .art .name { left: var(--space-2); overflow-wrap: break-word; position: absolute; right: var(--space-2); top: 40%; }
+.tile { background: none; border: 0; border-radius: var(--radius-sm); color: var(--fg); cursor: pointer; padding: 0; position: relative; text-align: left; }
+.tile .art { box-shadow: inset 0 0 0 1px var(--line-strong), var(--shadow-card); transition: transform var(--duration-base) var(--ease-out), box-shadow var(--duration-base) var(--ease-out); }
 .tile:hover .art, .tile:focus-visible .art { box-shadow: 0 0 0 2px var(--bg), 0 0 0 5px var(--focus), var(--shadow-pop); transform: translateY(-2px); }
 .tile:focus-visible { outline: none; }
-.badge { background: var(--brand-teal); border-radius: var(--radius-xs); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18); color: var(--brand-white); font-size: 11px; font-weight: 700; left: 50%; letter-spacing: 0.06em; line-height: 14px; max-width: 88%; overflow: hidden; padding: 2px 6px; position: absolute; text-overflow: ellipsis; text-transform: uppercase; top: var(--space-2); transform: translateX(-50%); white-space: nowrap; }
-.badge.streaming { background: var(--accent); box-shadow: none; color: var(--on-accent); }
-.badge.series { background: var(--series); box-shadow: none; }
-/* on wall posters the badge is a centred pill near the bottom; the negative margin lets it use the whole poster before wrapping */
-.tile .badge { border-radius: var(--radius-pill); bottom: var(--space-2); margin-right: -50%; max-width: 94%; overflow-wrap: break-word; padding: 3px var(--space-2); text-align: center; top: auto; white-space: normal; }
-.tile .art img { display: block; height: 100%; object-fit: cover; width: 100%; }
-.months { display: flex; flex-wrap: wrap; gap: var(--space-2); padding-top: var(--space-2); }
-.more { display: flex; margin: var(--space-4) auto 0; }
-.tile .date { color: var(--fg-muted); display: block; font-size: 12px; font-variant-numeric: tabular-nums; font-weight: 500; line-height: 16px; margin-top: var(--space-2); }
-.tip { background: var(--brand-teal); border-radius: var(--radius-md); box-shadow: var(--shadow-pop); color: var(--brand-white); display: none; font-size: 13px; line-height: 18px; left: 50%; padding: var(--space-2) var(--space-3); position: absolute; text-align: left; top: 72%; transform: translateX(-50%); width: 190px; z-index: 3; }
-.tip strong { display: block; font-weight: 600; margin-bottom: 2px; }
-.tip span { color: rgba(255,255,255,0.78); }
+.tile .rr-badge { bottom: var(--space-2); left: 50%; max-width: 94%; overflow: hidden; position: absolute; text-overflow: ellipsis; transform: translateX(-50%); }
+.tile .ttl { display: -webkit-box; font-size: 14px; font-weight: 600; line-height: 18px; margin-top: var(--space-2); overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.tile .date { color: var(--fg-muted); display: block; font-size: 12px; font-variant-numeric: tabular-nums; font-weight: 500; line-height: 16px; margin-top: 2px; }
+/* where and Seerr state; the title is already under the poster. Hover and keyboard focus both show it. */
+.tip { background: var(--brand-teal); border-radius: var(--radius-md); bottom: calc(100% - 24px); box-shadow: var(--shadow-pop); color: var(--brand-white); display: none; font-size: 13px; left: 50%; line-height: 18px; padding: var(--space-2) var(--space-3); pointer-events: none; position: absolute; transform: translateX(-50%); width: 190px; z-index: 3; }
+.tip span { display: block; }
 @media (hover: hover) { .tile:hover .tip { display: block; } }
+.tile:focus-visible .tip { display: block; }
 body.wall-mode .hero { background: none; color: var(--fg); }
 body.wall-mode .hero .wrap { padding-bottom: 0; padding-top: var(--space-6); }
 body.wall-mode .hero h1 { font-size: 32px; line-height: 38px; margin-bottom: 0; }
@@ -121,16 +120,14 @@ body.wall-mode .hero p.lead { display: none; }
 #detail .card { border-radius: var(--radius-lg); box-shadow: var(--shadow-pop); max-height: 100%; max-width: 600px; overflow-y: auto; padding: var(--space-5); position: relative; width: 100%; }
 #detail .card .posterwrap { flex-basis: 150px; width: 150px; }
 #detail .card h3 { font-size: 22px; letter-spacing: -0.01em; line-height: 28px; padding-right: 44px; }
-.overview .lang { border: 1px solid currentColor; border-radius: 3px; font-size: 10px; font-weight: 700; margin-right: 6px; padding: 0 3px; }
 #detail .overview { -webkit-line-clamp: 8; }
-#detail .x { border-color: transparent; height: 36px; padding: 0; position: absolute; right: var(--space-3); top: var(--space-3); width: 36px; }
+#detail .x { height: 36px; padding: 0; position: absolute; right: var(--space-3); top: var(--space-3); width: 36px; }
 
 #player { align-items: center; background: rgba(4,16,18,0.94); display: flex; inset: 0; justify-content: center; padding: var(--space-5); position: fixed; z-index: 10; }
 #player[hidden] { display: none; }
 #player video { background: #000; border-radius: var(--radius-md); max-height: 85vh; max-width: 100%; width: 1100px; }
 #player .close { border-color: rgba(255,255,255,0.5); color: var(--brand-white); position: absolute; right: var(--space-5); top: var(--space-4); }
 #player .close:hover { background: rgba(255,255,255,0.12); }
-#player :focus-visible { outline-color: var(--brand-white); }
 #player p { color: var(--brand-white); font-size: 17px; text-align: center; }
 #player video[hidden], #player p[hidden] { display: none; }
 
@@ -138,24 +135,24 @@ footer { border-top: 1px solid var(--line); color: var(--fg-muted); font-size: 1
 
 @media (max-width: 720px) {
   .wrap { padding: 0 var(--space-4); }
+  /* the header scrolls away on a phone; the month jumps take its place at the top */
+  header.top { position: static; }
   header.top .wrap { flex-direction: column; align-items: flex-start; gap: 0; padding-top: var(--space-3); }
   .logo { height: 28px; }
-  #views { margin-left: calc(-1 * var(--space-3)); max-width: calc(100% + var(--space-3)); }
-  #views a { padding: var(--space-3) var(--space-3) 9px; }
+  /* every view stays visible: the tabs wrap onto a second line instead of running off the edge */
+  #views { flex-wrap: wrap; gap: 0 var(--space-1); margin-left: calc(-1 * var(--space-2)); }
+  #views a { padding: var(--space-3) var(--space-2) 9px; }
   /* list mode puts artwork behind the heading: this near-solid wash keeps its text at 4.5:1 even over white */
   .hero .wrap { background: rgba(13,52,56,0.92); padding: var(--space-5) var(--space-4); }
   body.wall-mode .hero .wrap { background: none; padding-top: var(--space-4); }
   body.wall-mode .hero h1 { font-size: 26px; line-height: 32px; }
-  .chip, .btn, .layout button { min-height: 44px; min-width: 44px; }
-  .layout button { height: 44px; }
-  .status { line-height: 44px; }
+  .rr-chip, .rr-btn, .rr-seg__opt, #filter-clear { min-height: 44px; min-width: 44px; }
+  .actions .rr-btn { height: 44px; }
+  .actions .rr-status, .note { line-height: 44px; }
   .bar { padding: var(--space-3) 0 0; }
-  /* services live behind the one Filter button */
-  #service { display: none; order: 1; width: 100%; }
-  .bar.filtering #service { display: flex; }
-  .months { flex-wrap: nowrap; overflow-x: auto; padding: 6px 5px 5px; scrollbar-width: none; }
-  .months .chip { flex: none; }
-  .day { margin: var(--space-2) 0 var(--space-3); }
+  .months { flex-wrap: nowrap; margin: 0 calc(-1 * var(--space-4)); overflow-x: auto; padding: var(--space-2) var(--space-4); scrollbar-width: none; top: 0; }
+  .months .rr-chip { flex: none; }
+  .day { margin: var(--space-2) 0 var(--space-3); scroll-margin-top: 72px; }
   .day h2 { font-size: 20px; }
   .grid { grid-template-columns: 1fr; }
   .card { padding: var(--space-3); gap: var(--space-3); }
@@ -182,19 +179,21 @@ footer { border-top: 1px solid var(--line); color: var(--fg-muted); font-size: 1
 
 <main class="wrap">
   <div class="bar" id="bar">
-    <span id="kinds"></span>
-    <select class="chip" id="service" aria-label="Streaming service"></select>
-    <button type="button" class="chip" id="filter-toggle" aria-expanded="false" aria-controls="filter">Genres &amp; keywords</button>
-    <button type="button" class="chip" id="filter-clear" hidden>Clear filter</button>
-    <span class="layout" id="layout" role="group" aria-label="Layout"></span>
+    <button type="button" class="rr-chip" id="filter-toggle" aria-expanded="false" aria-controls="filter">Filter</button>
+    <button type="button" class="rr-btn rr-btn--ghost" id="filter-clear" hidden>Clear filter</button>
     <span id="count"></span>
+    <span class="rr-seg" id="layout" role="group" aria-label="Layout"></span>
   </div>
-  <div id="active-tags" role="group" aria-label="Active genre and keyword filters"></div>
+  <div id="active-tags" role="group" aria-label="Active filters"></div>
   <section id="filter" hidden>
+    <h2>Releases</h2>
+    <div id="kinds"></div>
+    <h2>Streaming service</h2>
+    <select class="rr-field__input" id="service" aria-label="Streaming service"></select>
     <h2>Genres</h2>
     <div id="genres"></div>
     <h2>Keywords</h2>
-    <input type="search" id="keyword-search" placeholder="Search keywords" aria-label="Search keywords">
+    <input type="search" class="rr-field__input" id="keyword-search" placeholder="Search keywords" aria-label="Search keywords">
     <div id="keywords"></div>
   </section>
   <div id="titles"><p class="empty">Loading titles...</p></div>
@@ -206,7 +205,7 @@ footer { border-top: 1px solid var(--line); color: var(--fg-muted); font-size: 1
 <div id="detail" hidden role="dialog" aria-modal="true" aria-label="Title details"></div>
 
 <div id="player" hidden role="dialog" aria-modal="true" aria-label="Trailer">
-  <button type="button" class="btn close" id="player-close">Close</button>
+  <button type="button" class="rr-btn rr-btn--secondary close" id="player-close">Close</button>
   <video id="video" controls playsinline></video>
   <p id="player-error" role="alert" hidden></p>
 </div>
@@ -264,7 +263,7 @@ function playTrailer(title, trigger) {
   getJson('/api/stream/' + mediaType(title) + '/' + title.tmdb_id, function (error, stream) {
     trigger.disabled = false;
     trigger.textContent = 'Play trailer';
-    if (error) { trigger.textContent = 'Trailer unavailable'; return; }
+    if (error) { trigger.textContent = 'Trailer unavailable, try again'; return; }
     showPlayerError('');
     video.src = stream.url;
     if (player.hidden) {
@@ -440,9 +439,10 @@ function shortDate(iso) {
 
 var currentView = 'upcoming';
 var LAYOUT_KEY = 'reelradar.layout';
-var layout = 'list';
-var phone = window.matchMedia ? window.matchMedia('(max-width: 720px)') : { matches: false };
-try { layout = window.localStorage.getItem(LAYOUT_KEY) === 'wall' ? 'wall' : 'list'; } catch (error) {}
+var layout = 'wall'; // the poster wall is the default; the list is a choice that is remembered
+try { layout = window.localStorage.getItem(LAYOUT_KEY) === 'list' ? 'list' : 'wall'; } catch (error) {}
+// The decision log behind each trailer is for whoever runs ReelRadar: index.html?debug shows it in the details dialog.
+var DEBUG = /[?&]debug\b/.test(window.location.search || '');
 
 function renderLayout() {
   var root = document.getElementById('layout');
@@ -450,7 +450,7 @@ function renderLayout() {
   document.body.className = layout === 'wall' ? 'wall-mode' : '';
   [['wall', '<rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/>', 'Poster wall'],
    ['list', '<rect x="1" y="2" width="14" height="2.5" rx="1.25"/><rect x="1" y="6.75" width="14" height="2.5" rx="1.25"/><rect x="1" y="11.5" width="14" height="2.5" rx="1.25"/>', 'List']].forEach(function (option) {
-    var b = button('', '', function () {
+    var b = button('', layout === option[0] ? 'rr-seg__opt is-on' : 'rr-seg__opt', function () {
       layout = option[0];
       try { window.localStorage.setItem(LAYOUT_KEY, layout); } catch (error) {}
       renderLayout();
@@ -484,59 +484,70 @@ function byName(a, b) { return a.name < b.name ? -1 : a.name > b.name ? 1 : 0; }
 
 function toggleButton(kind, tag) {
   var ids = selection[kind];
-  var b = button(tag.name + (kind === 'keywords' ? ' (' + tag.count + ')' : ''), 'chip');
+  var b = button(tag.name, chipClass(ids.indexOf(tag.id) !== -1));
+  if (kind === 'keywords') b.appendChild(text('span', String(tag.count), 'rr-chip__count'));
   b.setAttribute('aria-pressed', ids.indexOf(tag.id) !== -1 ? 'true' : 'false');
   b.onclick = function () {
     var index = ids.indexOf(tag.id);
     if (index === -1) ids.push(tag.id); else ids.splice(index, 1);
     b.setAttribute('aria-pressed', index === -1 ? 'true' : 'false');
+    b.className = chipClass(index === -1);
     saveSelection();
     renderTitles();
   };
   return b;
 }
 
-// What is filtering the list, visible with the panel closed: the number on its button, a removable chip per genre or
-// keyword, and Clear filter only when there is something to clear.
+function chipClass(on) { return on ? 'rr-chip is-on' : 'rr-chip'; }
+
+// What is filtering the list, visible with the panel closed: the number on the Filter button, a removable chip for the
+// release kind, the service and each genre or keyword, and Clear filter only when there is something to clear.
 function renderActive() {
-  var count = selection.genres.length + selection.keywords.length;
+  var count = selection.genres.length + selection.keywords.length + (selection.service ? 1 : 0) + (selection.kind !== 'all' ? 1 : 0);
   var toggle = document.getElementById('filter-toggle');
-  var service = phone.matches ? selection.service : 0; // on a phone the services select is behind this button too
-  if (service) count += 1;
-  toggle.textContent = (phone.matches ? 'Filter' : 'Genres & keywords') + (count ? ' (' + count + ')' : '');
-  toggle.className = count ? 'chip on' : 'chip';
-  document.getElementById('filter-clear').hidden = !(count || selection.kind !== 'all' || selection.service);
+  toggle.textContent = 'Filter' + (count ? ' (' + count + ')' : '');
+  toggle.className = chipClass(count);
+  document.getElementById('filter-clear').hidden = !count;
   var root = document.getElementById('active-tags');
   root.textContent = '';
-  if (service) {
-    var tag = serviceTags(currentView).filter(function (known) { return known.id === service; })[0];
-    var serviceName = tag ? tag.name : 'Unknown service';
-    var serviceChip = button(serviceName + ' \u2715', 'chip on', function () {
-      selection.service = 0;
+  function removable(name, remove) {
+    var chip = button(name, 'rr-chip is-on', function () {
+      remove();
       saveSelection();
+      renderKinds();
+      renderGenres();
+      renderKeywords();
       renderTitles();
-      toggle.focus();
+      toggle.focus(); // the chip is gone
     });
-    serviceChip.setAttribute('aria-label', 'Remove filter ' + serviceName);
-    root.appendChild(serviceChip);
+    chip.appendChild(closeIcon());
+    chip.setAttribute('aria-label', 'Remove filter ' + name);
+    root.appendChild(chip);
+  }
+  if (selection.kind !== 'all') {
+    removable(KINDS.filter(function (kind) { return kind[0] === selection.kind; })[0][1], function () { selection.kind = 'all'; });
+  }
+  if (selection.service) {
+    var tag = serviceTags(currentView).filter(function (known) { return known.id === selection.service; })[0];
+    removable(tag ? tag.name : 'Unknown service', function () { selection.service = 0; });
   }
   ['genres', 'keywords'].forEach(function (kind) {
     var names = {};
     collectTags(kind).forEach(function (tag) { names[tag.id] = tag.name; });
     selection[kind].forEach(function (id) {
       var name = names[id] || (kind === 'genres' ? 'Unknown genre' : 'Unknown keyword'); // saved, but gone from the catalogue
-      var chip = button(name + ' \u2715', 'chip on', function () {
-        selection[kind].splice(selection[kind].indexOf(id), 1);
-        saveSelection();
-        renderGenres();
-        renderKeywords();
-        renderTitles();
-        toggle.focus(); // the chip is gone
-      });
-      chip.setAttribute('aria-label', 'Remove filter ' + name);
-      root.appendChild(chip);
+      removable(name, function () { selection[kind].splice(selection[kind].indexOf(id), 1); });
     });
   });
+}
+
+// A drawn cross for Remove and Close.
+function closeIcon() {
+  var icon = document.createElement('span');
+  icon.setAttribute('aria-hidden', 'true');
+  icon.className = 'x-icon';
+  icon.innerHTML = '<svg viewBox="0 0 16 16" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3l10 10M13 3L3 13"/></svg>';
+  return icon;
 }
 
 function renderGenres() {
@@ -561,9 +572,8 @@ function renderKinds() {
   var root = document.getElementById('kinds');
   root.textContent = '';
   KINDS.forEach(function (kind) {
-    var b = button(kind[1], 'chip', function () { selection.kind = kind[0]; saveSelection(); renderKinds(); renderTitles(); });
+    var b = button(kind[1], chipClass(selection.kind === kind[0]), function () { selection.kind = kind[0]; saveSelection(); renderKinds(); renderTitles(); });
     b.setAttribute('aria-pressed', selection.kind === kind[0] ? 'true' : 'false');
-    b.style.marginRight = '8px';
     root.appendChild(b);
   });
 }
@@ -610,7 +620,6 @@ function renderServices() {
   });
   select.value = String(selection.service);
   if (allTitles.length && select.value !== String(selection.service)) { selection.service = 0; select.value = '0'; }
-  select.setAttribute('aria-pressed', selection.service ? 'true' : 'false');
   select.onchange = function () {
     selection.service = Number(select.value);
     saveSelection();
@@ -671,7 +680,6 @@ document.getElementById('filter-toggle').onclick = function () {
   var panel = document.getElementById('filter');
   panel.hidden = !panel.hidden;
   this.setAttribute('aria-expanded', panel.hidden ? 'false' : 'true');
-  document.getElementById('bar').className = panel.hidden ? 'bar' : 'bar filtering';
 };
 document.getElementById('filter-clear').onclick = function () {
   selection = { v: 1, genres: [], keywords: [], kind: 'all', service: 0 };
@@ -683,7 +691,6 @@ document.getElementById('filter-clear').onclick = function () {
   document.getElementById('filter-toggle').focus(); // Clear filter has just hidden itself
 };
 document.getElementById('keyword-search').oninput = renderKeywords;
-phone.onchange = renderActive; // the Filter button's label and count differ on a phone
 
 // ---- list ----
 // Entries a calendar lists, titles otherwise; genre shelves repeat a title, so count it once.
@@ -783,7 +790,7 @@ function fill(root, grid, group, make) {
   function add(item) { return grid.appendChild(make(item)); }
   (capped ? group.items.slice(0, GENRE_CAP) : group.items).forEach(add);
   if (!capped) return;
-  var more = button('Show all ' + group.items.length, 'btn more', function () {
+  var more = button('Show all ' + group.items.length, 'rr-btn rr-btn--secondary more', function () {
     expandedGenres[group.heading] = true; // kept when the list is redrawn
     var first = group.items.slice(GENRE_CAP).map(add)[0];
     root.removeChild(more);
@@ -818,7 +825,7 @@ function monthNav(months) {
   nav.className = 'months';
   nav.setAttribute('aria-label', 'Jump to month');
   months.forEach(function (entry) {
-    nav.appendChild(button(MONTHS[Number(entry.month.slice(5)) - 1] + ' ' + entry.month.slice(0, 4), 'chip', function () {
+    nav.appendChild(button(MONTHS[Number(entry.month.slice(5)) - 1] + ' ' + entry.month.slice(0, 4), 'rr-chip', function () {
       var heading = entry.head.firstChild;
       heading.setAttribute('tabindex', '-1');
       heading.focus({ preventScroll: true });
@@ -840,35 +847,34 @@ function badgeText(title, kind, date) {
   return premiereText(title, kind, date) || (title.providers && title.providers.length ? title.providers[0].name : 'Streaming');
 }
 
+function badge(label, kind) { return text('span', label, 'badge rr-badge rr-badge--' + kind + ' ' + kind); }
+
 function tile(item) {
   var title = item.title;
   var release = itemRelease(item);
   var b = button('', 'tile', function () { openDetail(item, this); });
   b.setAttribute('aria-label', (isSeries(title) ? 'Series, ' : '') + title.title + (release ? ', ' + badgeText(title, release.kind, release.date) + ', ' + shortDate(release.date) : ''));
   var art = document.createElement('span');
-  art.className = 'art';
-  art.style.display = 'block';
+  art.className = 'art rr-poster'; // without a picture the empty, outlined box stays; the title is under it anyway
   if (title.poster_path) {
     var image = document.createElement('img');
     image.alt = '';
     image.loading = 'lazy'; // before src, so that off-screen posters are not fetched
     image.src = IMG + 'w342' + title.poster_path;
     art.appendChild(image);
-  } else art.appendChild(text('span', title.title, 'name'));
-  if (isSeries(title)) art.appendChild(text('span', 'Series', 'badge series'));
-  else if (release) art.appendChild(text('span', badgeText(title, release.kind, release.date), 'badge ' + release.kind));
+  }
+  if (isSeries(title)) art.appendChild(badge('Series', 'series'));
+  else if (release) art.appendChild(badge(badgeText(title, release.kind, release.date), release.kind));
   b.appendChild(art);
+  b.appendChild(text('span', title.title, 'ttl'));
   b.appendChild(text('span', release ? shortDate(release.date) : availableText(title, true) || (isSeries(title) ? '' : 'No German date'), 'date'));
   var tip = document.createElement('span');
   tip.className = 'tip';
-  tip.appendChild(text('strong', title.title));
-  if (release) tip.appendChild(text('span', shortDate(release.date) + ' · ' + whereText(title, release.kind, release.date)));
+  if (release) tip.appendChild(text('span', releaseText(title, release)));
   else if (availableText(title)) tip.appendChild(text('span', availableText(title)));
-  if (seerrStatus && SEERR_LABELS[seerrStatus[titleKey(title)]]) {
-    tip.appendChild(document.createElement('br'));
-    tip.appendChild(text('span', SEERR_LABELS[seerrStatus[titleKey(title)]]));
-  }
-  b.appendChild(tip);
+  if (seerrStatus && SEERR_LABELS[seerrStatus[titleKey(title)]]) tip.appendChild(text('span', SEERR_LABELS[seerrStatus[titleKey(title)]]));
+  if (!title.trailer) tip.appendChild(text('span', 'No trailer'));
+  if (tip.children.length) b.appendChild(tip);
   return b;
 }
 
@@ -879,12 +885,14 @@ function openDetail(item, opener) {
   detailReturn = keepPlace(opener);
   detail.textContent = '';
   var c = card(item, true);
-  c.appendChild(button('\u2715', 'btn x', closeDetail)).setAttribute('aria-label', 'Close');
+  var close = c.appendChild(button('', 'rr-btn rr-btn--ghost x', closeDetail));
+  close.setAttribute('aria-label', 'Close');
+  close.appendChild(closeIcon());
   detail.appendChild(c);
   detail.hidden = false;
   setModal();
   pushOverlay();
-  c.querySelector('.btn').focus();
+  c.querySelector('.rr-btn').focus();
 }
 function hideDetail() {
   detail.hidden = true;
@@ -907,16 +915,19 @@ function whereText(title, kind, date) {
   return premiereText(title, kind, date) || (title.providers && title.providers.length ? title.providers.map(function (p) { return p.name; }).join(', ') : 'Streaming');
 }
 
-// "Cinema · 6 Mar 2026" or "Netflix · 6 Mar 2026"; for a plain list, the next (or latest) German date.
+// "Cinema · 6 Mar 2026" ahead; "In cinemas since 6 Mar 2026" or "On Netflix since …" once it is out.
+function releaseText(title, release) {
+  if (release.date >= isoDay(0)) return whereText(title, release.kind, release.date) + ' · ' + shortDate(release.date);
+  var where = release.kind === 'cinema' ? 'In cinemas' : title.providers && title.providers.length ? 'On ' + whereText(title, release.kind, release.date) : 'Streaming';
+  return where + ' since ' + shortDate(release.date);
+}
+
+// The release line on a card; for a plain list, the next (or latest) German date.
 function releaseLine(item) {
   var release = itemRelease(item);
-  var line = document.createElement('p');
-  line.className = 'release';
-  if (!release && availableText(item.title)) { line.appendChild(text('span', availableText(item.title), 'kind')); return line; }
+  if (!release && availableText(item.title)) return text('p', availableText(item.title), 'release');
   if (!release) return null;
-  line.appendChild(text('span', whereText(item.title, release.kind, release.date), 'kind'));
-  line.appendChild(document.createTextNode(' · ' + shortDate(release.date)));
-  return line;
+  return text('p', releaseText(item.title, release), 'release');
 }
 
 // In the list, poster and title open the details dialog; the dialog's own card (inDetail) adds the trailer decisions.
@@ -924,11 +935,13 @@ function card(item, inDetail) {
   var title = item.title;
   var article = document.createElement('article');
   article.className = 'card';
-  var poster = document.createElement('img');
+  var poster = document.createElement(title.poster_path ? 'img' : 'span'); // no picture: the outlined empty box
   poster.className = 'poster';
-  poster.alt = '';
-  poster.loading = 'lazy';
-  if (title.poster_path) poster.src = IMG + 'w342' + title.poster_path;
+  if (title.poster_path) {
+    poster.alt = '';
+    poster.loading = 'lazy';
+    poster.src = IMG + 'w342' + title.poster_path;
+  }
   var posterWrap = document.createElement('div');
   posterWrap.className = 'posterwrap';
   if (inDetail) posterWrap.appendChild(poster);
@@ -938,8 +951,7 @@ function card(item, inDetail) {
     open.appendChild(poster);
     posterWrap.appendChild(open);
   }
-  if (!title.poster_path) posterWrap.appendChild(text('span', title.title, 'name'));
-  if (isSeries(title)) posterWrap.appendChild(text('span', 'Series', 'badge series'));
+  if (isSeries(title)) posterWrap.appendChild(badge('Series', 'series'));
   article.appendChild(posterWrap);
 
   var body = document.createElement('div');
@@ -960,8 +972,8 @@ function card(item, inDetail) {
   var actions = document.createElement('div');
   actions.className = 'actions';
   if (title.trailer) {
-    actions.appendChild(button('Play trailer', 'btn primary', function () { playTrailer(title, this); }));
-  }
+    actions.appendChild(button('Play trailer', 'rr-btn rr-btn--primary', function () { playTrailer(title, this); }));
+  } else actions.appendChild(text('span', 'No trailer', 'note')); // the same words as on the TV
   actions.appendChild(seerrControl(title));
   body.appendChild(actions);
 
@@ -970,7 +982,7 @@ function card(item, inDetail) {
     link.href = title.trailer.kinocheck_url;
     body.appendChild(text('p', '', 'credit')).appendChild(link);
   }
-  if (inDetail) {
+  if (inDetail && DEBUG) {
     var check = document.createElement('details');
     check.className = 'check';
     check.appendChild(text('summary', title.trailer ? 'Trailer check' : 'No trailer · why'));
@@ -986,12 +998,12 @@ function card(item, inDetail) {
 
 function seerrControl(title) {
   var status = seerrStatus[titleKey(title)];
-  if (SEERR_LABELS[status]) return text('span', SEERR_LABELS[status], 'status');
-  var b = button(isSeries(title) ? 'Request season 1 via Seerr' : 'Request via Seerr', 'btn', function () { // a series request asks for the first season only
+  if (SEERR_LABELS[status]) return text('span', SEERR_LABELS[status], 'rr-status');
+  var b = button(isSeries(title) ? 'Request season 1 via Seerr' : 'Request via Seerr', 'rr-btn rr-btn--text', function () { // a series request asks for the first season only
     b.disabled = true;
     b.textContent = 'Requesting...';
     getJson('/api/request/' + mediaType(title) + '/' + title.tmdb_id, function (error, result) {
-      if (error) { b.disabled = false; b.textContent = 'Request failed - try again'; return; }
+      if (error) { b.disabled = false; b.textContent = 'Request failed, try again'; return; }
       seerrStatus[titleKey(title)] = result.status;
       b.parentNode.replaceChild(seerrControl(title), b);
     }, 'POST');
@@ -1011,7 +1023,7 @@ function showLoadError() {
   var root = document.getElementById('titles');
   var message = text('p', loadError, 'empty');
   message.setAttribute('role', 'alert');
-  var retry = button('Try again', 'btn primary', function () {
+  var retry = button('Try again', 'rr-btn rr-btn--primary', function () {
     loadError = '';
     root.textContent = '';
     root.appendChild(text('p', 'Loading titles...', 'empty'));
@@ -1027,7 +1039,7 @@ function showLoadError() {
 function loadTitles(retried) {
   getJson('/api/titles', function (error, titles) {
     if (error) {
-      loadError = error.message === 'network' ? 'Backend unreachable.' : 'Could not load titles.';
+      loadError = error.message === 'network' ? 'The ReelRadar server cannot be reached. Check that it is running, then try again.' : 'Could not load titles.';
       var retry = showLoadError();
       if (retried) retry.focus(); // the pressed button was replaced, which drops focus
       return;

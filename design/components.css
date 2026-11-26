@@ -53,9 +53,10 @@
   color: var(--fg); font: 600 14px/20px var(--font-sans); cursor: pointer;
   transition: background-color var(--duration-fast) var(--ease-out); }
 .rr-chip:hover { background: var(--surface-raised); }
-.rr-chip.is-on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+/* selected is a solid ink fill, not orange: orange is kept for the one primary action on screen */
+.rr-chip.is-on { background: var(--fg); border-color: var(--fg); color: var(--bg); }
 .rr-chip__count { margin-left: var(--space-2); color: var(--fg-muted); font-weight: 500; font-variant-numeric: tabular-nums; }
-.rr-chip.is-on .rr-chip__count { color: var(--on-accent); opacity: .75; }
+.rr-chip.is-on .rr-chip__count { color: var(--bg); opacity: .75; }
 
 /* ---------- Segmented control (Calendar / Wall) ---------- */
 .rr-seg { display: inline-flex; padding: 3px; border-radius: var(--radius-pill); background: var(--surface-raised); }
@@ -164,7 +165,7 @@
 .rr-tv .rr-chip.focus { box-shadow: 0 0 0 4px var(--bg), 0 0 0 8px var(--focus); }
 .rr-tv .rr-seg { padding: 4px; }
 .rr-tv .rr-seg__opt { height: 56px; padding: 0 var(--space-5); font: 600 26px/30px var(--font-sans); }
-.rr-tv .rr-badge { padding: 4px 10px; border-radius: 6px; font: 700 20px/24px var(--font-sans); }
+.rr-tv .rr-badge { padding: 4px 12px; border-radius: 6px; font: 700 24px/28px var(--font-sans); letter-spacing: .04em; }
 .rr-tv .rr-kicker { font: 700 24px/28px var(--font-sans); letter-spacing: .06em; }
 
 .rr-shelf { padding: 0 var(--tv-safe-x); }

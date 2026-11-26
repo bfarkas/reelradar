@@ -213,7 +213,7 @@ test('tv: a series poster has the Series badge, its own data-id and "On X" capti
 test('tv: the hero shows the series badge and where it streams; a series without a service leaves the line empty', function () {
   var ctx = load('tv-app/index.html');
   ctx.showHero({ title: series(), kind: null, date: null });
-  assert.deepEqual(badges(ctx.byId['hero-date'], 'kbadge').map(function (b) { return b.textContent; }), ['Series']);
+  assert.deepEqual(badges(ctx.byId['hero-date'], 'rr-badge').map(function (b) { return b.textContent; }), ['Series']);
   assert.equal(ctx.byId['hero-date'].textContent, 'Available on Netflix in Germany');
   assert.match(allText(ctx.byId['hero-actions']), /Request season 1 via Seerr/);
   ctx.showHero({ title: series({ providers: [] }), kind: null, date: null });
@@ -285,7 +285,7 @@ test('tv: hero, wall dialog and poster badge say "Premieres on X"; a series is u
   ctx.showHero(item);
   assert.match(ctx.byId['hero-date'].textContent, /^\w{3}, \d+ \w{3} \d{4} · Premieres on Netflix$/);
   ctx.openDialog(item);
-  assert.match(ctx.byId['dlg-date'].textContent, /^Premieres on Netflix · /);
+  assert.match(ctx.byId['dlg-date'].textContent, / · Premieres on Netflix$/);
   assert.deepEqual(badges(ctx.posterCard(item), 'badge').map(function (b) { return b.textContent; }), ['Premieres on\nNetflix']); // two lines
   assert.match(badges(ctx.posterCard(item), 'cap')[0].textContent, /^\w{3} \d+ \w{3}$/); // the date only
   var cinema = { title: item.title, kind: 'cinema', date: date };

@@ -81,19 +81,21 @@ function screen(titles, options) {
 }
 
 // ---- phone width (OS-T-XE0MB) ----
-test('web phone: one Filter button also counts the service and shows it as a removable chip', function () {
-  var saved = { v: 1, genres: [DRAMA.id], keywords: [], kind: 'all', service: 8 };
+test('web: one Filter button counts kind, service, genres and keywords, each a removable chip', function () {
+  var saved = { v: 1, genres: [DRAMA.id], keywords: [], kind: 'streaming', service: 8 };
   var titles = [movie(1, { providers: [{ id: 8, name: 'Netflix' }], de_digital: '2099-01-01' })];
-  var ctx = screen(titles, { phone: true, storage: { 'reelradar.filter': JSON.stringify(saved) } });
-  var chips = ctx.byId['active-tags'].children;
-  assert.equal(ctx.byId['filter-toggle'].textContent, 'Filter (2)');
-  assert.deepEqual(Array.from(chips, function (c) { return c.textContent; }), ['Netflix ✕', 'Drama ✕']);
-  chips[0].onclick();
+  var ctx = screen(titles, { storage: { 'reelradar.filter': JSON.stringify(saved) } });
+  function chips() { return Array.from(ctx.byId['active-tags'].children); }
+  assert.equal(ctx.byId['filter-toggle'].textContent, 'Filter (3)');
+  assert.deepEqual(chips().map(function (c) { return c.textContent; }), ['Streaming', 'Netflix', 'Drama']);
+  assert.equal(chips()[1].attrs['aria-label'], 'Remove filter Netflix');
+  assert.equal(ctx.byId.service.attrs['aria-pressed'], undefined); // a select is not a toggle
+  chips()[1].onclick();
   assert.equal(ctx.selection.service, 0);
+  assert.equal(ctx.byId['filter-toggle'].textContent, 'Filter (2)');
+  chips()[0].onclick();
+  assert.equal(ctx.selection.kind, 'all');
   assert.equal(ctx.byId['filter-toggle'].textContent, 'Filter (1)');
-
-  var desktop = screen(titles, { storage: { 'reelradar.filter': JSON.stringify(saved) } });
-  assert.equal(desktop.byId['filter-toggle'].textContent, 'Genres & keywords (1)');
 });
 
 // ---- an active filter is visible with the panel closed (OS-T-GXNDA) ----
@@ -101,14 +103,14 @@ test('web filter: a saved filter shows as a number and removable chips; Clear on
   var saved = { v: 1, genres: [ACTION.id], keywords: [99], kind: 'all', service: 0 };
   var ctx = screen([movie(1, { genres: [ACTION], de_theatrical: '2099-01-01' }), movie(2)], { storage: { 'reelradar.filter': JSON.stringify(saved) } });
   var chips = ctx.byId['active-tags'].children;
-  assert.equal(ctx.byId['filter-toggle'].textContent, 'Genres & keywords (2)');
-  assert.equal(ctx.byId['filter-toggle'].className, 'chip on');
-  assert.deepEqual(chips.map(function (c) { return c.textContent; }), ['Action ✕', 'Unknown keyword ✕']);
+  assert.equal(ctx.byId['filter-toggle'].textContent, 'Filter (2)');
+  assert.equal(ctx.byId['filter-toggle'].className, 'rr-chip is-on');
+  assert.deepEqual(chips.map(function (c) { return c.textContent; }), ['Action', 'Unknown keyword']);
   assert.equal(ctx.byId['filter-clear'].hidden, false);
 
   chips[1].onclick();
   ctx.byId['active-tags'].children[0].onclick();
-  assert.equal(ctx.byId['filter-toggle'].textContent, 'Genres & keywords');
+  assert.equal(ctx.byId['filter-toggle'].textContent, 'Filter');
   assert.equal(ctx.byId['active-tags'].children.length, 0);
   assert.equal(ctx.byId['filter-clear'].hidden, true);
   assert.deepEqual(JSON.parse(ctx.storage['reelradar.filter']), { v: 1, genres: [], keywords: [], kind: 'all', service: 0 });
@@ -156,7 +158,7 @@ test('web history: Back closes the player, then the details, then goes to the pr
   var opener = ctx.byId.titles.querySelector('button'), focused = [];
   opener.focus = function () { focused.push('opener'); };
   ctx.openDetail({ title: movie(1), kind: null, date: null }, opener);
-  var play = ctx.byId.detail.querySelector('.primary');
+  var play = ctx.byId.detail.querySelector('.rr-btn--primary');
   play.focus = function () { focused.push('play'); };
   ctx.playTrailer(movie(1), play);
   reply(ctx, '/api/stream/movie/1', { url: '/media/x.mp4' });
@@ -192,7 +194,7 @@ test('web history: closing by button, backdrop or Escape leaves no entry behind'
 });
 
 // ---- list cards open details; decision logs stay in the dialog (OS-T-JQ760) ----
-test('web cards: poster and title open details; logs only there; KinoCheck stays; no poster shows the title', function () {
+test('web cards: poster and title open details; logs only there with ?debug; KinoCheck stays; no poster is an empty box', function () {
   var title = movie(1, { poster_path: null, trailer: { key: 'k', published_at: '2026-11-01', kinocheck_url: 'https://kinocheck.com/x' },
     decisions: [{ key: 'abc', source: 'tmdb', playable: true, reason: 'original language' }] });
   var ctx = screen([title]);
@@ -201,7 +203,11 @@ test('web cards: poster and title open details; logs only there; KinoCheck stays
   function kinocheck(root) { return root.querySelectorAll('a').filter(function (a) { return a.href === 'https://kinocheck.com/x'; }).length; }
   assert.doesNotMatch(everything(card), /Trailer check|original language/);
   assert.equal(kinocheck(card), 1);
-  assert.equal(card.querySelector('.posterwrap').querySelector('.name').textContent, 'Movie 1');
+  assert.equal(card.querySelector('.posterwrap').querySelector('.poster').tag, 'span'); // the title is not written twice
+  card.querySelector('.open').onclick.call(card.querySelector('.open'));
+  assert.doesNotMatch(everything(ctx.byId.detail), /Trailer check/);
+  ctx.closeDetail();
+  ctx.DEBUG = true;
   var openers = card.querySelectorAll('.open');
   assert.equal(openers.length, 2);
   openers.forEach(function (opener) {
@@ -265,7 +271,8 @@ test('web wall: no backdrop strip, lazy poster images, and the title where there
   assert.match(image.src, /w342\/a\.jpg$/);
   assert.equal(tiles[0].querySelector('.art').style.backgroundImage, undefined);
   assert.equal(tiles[1].querySelector('img'), null);
-  assert.equal(tiles[1].querySelector('.name').textContent, 'Movie 2');
+  assert.equal(tiles[1].querySelector('.name'), null);
+  assert.deepEqual(tiles.map(function (t) { return t.querySelector('.ttl').textContent; }), ['Movie 1', 'Movie 2']); // a visible title on every poster
   ctx.layout = 'list';
   ctx.renderTitles();
   assert.match(ctx.byId.hero.style.backgroundImage, /w1280\/b\.jpg/);
@@ -308,7 +315,7 @@ test('web: a failed load offers Try again, which survives a view change and load
   reply(ctx, '/api/titles', { error: 'down' }, 500);
   retry().onclick();
   reply(ctx, '/api/titles', [movie(1)]);
-  assert.equal(ctx.byId.titles.querySelectorAll('.card').length, 1);
+  assert.equal(ctx.byId.titles.querySelectorAll('.tile').length, 1); // the poster wall is the default layout
   reply(ctx, '/api/seerr', {});
 });
 
