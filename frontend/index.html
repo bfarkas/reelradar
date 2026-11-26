@@ -107,10 +107,6 @@ details.check div { margin: var(--space-1) 0; overflow-wrap: anywhere; }
 .tile .ttl { display: -webkit-box; font-size: 14px; font-weight: 600; line-height: 18px; margin-top: var(--space-2); overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .tile .date { color: var(--fg-muted); display: block; font-size: 12px; font-variant-numeric: tabular-nums; font-weight: 500; line-height: 16px; margin-top: 2px; }
 /* where and Seerr state; the title is already under the poster. Hover and keyboard focus both show it. */
-.tip { background: var(--brand-teal); border-radius: var(--radius-md); bottom: calc(100% - 24px); box-shadow: var(--shadow-pop); color: var(--brand-white); display: none; font-size: 13px; left: 50%; line-height: 18px; padding: var(--space-2) var(--space-3); pointer-events: none; position: absolute; transform: translateX(-50%); width: 190px; z-index: 3; }
-.tip span { display: block; }
-@media (hover: hover) { .tile:hover .tip { display: block; } }
-.tile:focus-visible .tip { display: block; }
 body.wall-mode .hero { background: none; color: var(--fg); }
 body.wall-mode .hero .wrap { padding-bottom: 0; padding-top: var(--space-6); }
 body.wall-mode .hero h1 { font-size: 32px; line-height: 38px; margin-bottom: 0; }
@@ -868,13 +864,6 @@ function tile(item) {
   b.appendChild(art);
   b.appendChild(text('span', title.title, 'ttl'));
   b.appendChild(text('span', release ? shortDate(release.date) : availableText(title, true) || (isSeries(title) ? '' : 'No German date'), 'date'));
-  var tip = document.createElement('span');
-  tip.className = 'tip';
-  if (release) tip.appendChild(text('span', releaseText(title, release)));
-  else if (availableText(title)) tip.appendChild(text('span', availableText(title)));
-  if (seerrStatus && SEERR_LABELS[seerrStatus[titleKey(title)]]) tip.appendChild(text('span', SEERR_LABELS[seerrStatus[titleKey(title)]]));
-  if (!title.trailer) tip.appendChild(text('span', 'No trailer'));
-  if (tip.children.length) b.appendChild(tip);
   return b;
 }
 
