@@ -40,14 +40,26 @@ header.top :focus-visible { outline-color: var(--brand-white); }
 #views a[aria-current="page"] { border-bottom-color: var(--brand-white); color: var(--brand-white); font-weight: 700; }
 #views a:focus-visible { outline-offset: -3px; }
 
-/* list mode: the first title's backdrop on the right, washed into teal by setHeroImage */
-.hero { background: var(--brand-teal) right center / cover no-repeat; color: var(--brand-white); }
+/* list mode: the first title's backdrop on the right, washed into teal by renderHero */
+.hero { background: var(--brand-teal) right center / cover no-repeat; color: var(--brand-white); overflow: hidden; }
+/* the text carries its own near-solid wash, soft at the edges: 4.5:1 over any backdrop at any width */
+.panel { background: rgba(13,52,56,0.88); box-shadow: 0 0 80px 40px rgba(13,52,56,0.88); max-width: 40em; }
+.hero.next { --bg: var(--brand-teal); --focus: var(--brand-white); }
+#hero-actions { align-items: center; display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-5); }
+#hero-actions:empty { display: none; }
+#hero-actions .rr-btn { height: 44px; margin-left: 0; }
+#hero-actions .rr-btn--secondary { border-color: rgba(255,255,255,0.5); color: var(--brand-white); }
+#hero-actions .rr-btn--secondary:hover { background: rgba(255,255,255,0.12); }
+#hero-actions .note { color: rgba(255,255,255,0.82); }
+body:not(.wall-mode) #hero-count, body.wall-mode #count { display: none; }
 .hero .wrap { padding-bottom: var(--space-7); padding-top: var(--space-7); }
 .hero h1 { font-size: clamp(32px, 5vw, 48px); font-weight: 800; letter-spacing: -0.02em; line-height: 1.08; margin: 0 0 var(--space-3); max-width: 14em; text-wrap: balance; }
 .hero p.lead { color: rgba(255,255,255,0.82); font-size: 16px; line-height: 24px; margin: 0; max-width: 34em; }
 
 .bar { align-items: center; display: flex; flex-wrap: wrap; gap: var(--space-2); padding: var(--space-5) 0 var(--space-2); }
-#filter-clear { height: 32px; padding: 0 var(--space-3); font-size: 14px; }
+.bar .rr-chip, #active-tags .rr-chip, #filter .rr-chip, #filter .rr-field__input, #filter-clear, .rr-seg__opt { height: 44px; }
+.rr-seg__opt { justify-content: center; min-width: 44px; }
+#filter-clear { padding: 0 var(--space-3); font-size: 14px; }
 #count { color: var(--fg-muted); font-size: 13px; font-variant-numeric: tabular-nums; margin-left: auto; }
 #layout .rr-seg__opt { align-items: center; display: inline-flex; padding: 0 var(--space-3); }
 #layout svg { display: block; fill: currentColor; height: 16px; width: 16px; }
@@ -61,12 +73,15 @@ header.top :focus-visible { outline-color: var(--brand-white); }
 #filter .rr-chip { margin: 0 var(--space-2) var(--space-2) 0; }
 #filter .rr-field__input { margin-bottom: var(--space-3); max-width: 100%; width: 22em; }
 
-.day { align-items: baseline; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; margin: var(--space-7) 0 var(--space-4); padding-bottom: var(--space-2); scroll-margin-top: 132px; }
+.day { align-items: baseline; border-bottom: 1px solid var(--line); display: flex; gap: var(--space-3); justify-content: space-between; margin: var(--space-7) 0 var(--space-4); padding-bottom: var(--space-2); scroll-margin-top: 132px; }
 .day h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; line-height: 28px; margin: 0; }
 .day small { color: var(--fg-muted); font-size: 13px; font-variant-numeric: tabular-nums; }
-.grid { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); }
-/* month jumps stay under the header while the calendar scrolls */
-.months { background: var(--bg); border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: var(--space-2); margin: 0 calc(-1 * var(--space-5)); padding: var(--space-3) var(--space-5); position: sticky; top: 64px; z-index: 4; }
+.grid { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fill, minmax(440px, 1fr)); }
+/* month jumps stay under the header while the calendar scrolls; the month in view is bold and underlined in ink */
+.months { background: var(--bg); border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: var(--space-2); margin: 0 calc(-1 * var(--space-5)); padding: var(--space-2) var(--space-5); position: sticky; top: 64px; z-index: 4; }
+.month { background: none; border: 0; border-bottom: 3px solid transparent; cursor: pointer; font-size: 14px; font-variant-numeric: tabular-nums; font-weight: 500; height: 44px; min-width: 44px; padding: 0 var(--space-3); white-space: nowrap; }
+.month:hover { background: var(--surface-raised); }
+.month[aria-current] { border-bottom-color: var(--fg); font-weight: 800; }
 
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); box-shadow: var(--shadow-card); display: flex; gap: var(--space-4); padding: var(--space-4); }
 .posterwrap { align-self: flex-start; flex: 0 0 104px; position: relative; width: 104px; }
@@ -76,6 +91,19 @@ header.top :focus-visible { outline-color: var(--brand-white); }
 .card h3 { font-size: 17px; font-weight: 700; line-height: 22px; margin: var(--space-1) 0 var(--space-1); }
 .card .open { background: none; border: 0; border-radius: var(--radius-sm); cursor: pointer; display: block; font: inherit; padding: 0; text-align: left; width: 100%; }
 .card h3 .open:hover { text-decoration: underline; text-underline-offset: 3px; }
+/* list cards: the poster is flush with the card edge and fills its height */
+.grid .card { gap: 0; padding: 0; }
+.grid .posterwrap { align-self: stretch; flex-basis: 132px; min-height: 198px; width: 132px; }
+.grid .posterwrap .open, .grid .poster { height: 100%; }
+.grid .posterwrap .open { position: absolute; top: 0; left: 0; }
+.grid .poster { aspect-ratio: auto; border-radius: var(--radius-md) 0 0 var(--radius-md); width: 100%; }
+.grid > .card > .posterwrap > .poster { position: absolute; }
+.grid .card .body { padding: var(--space-3) var(--space-4); }
+.grid .card .release { font-weight: 500; }
+.grid .card .release.premiere { font-weight: 800; }
+.grid .actions .rr-btn { height: 44px; }
+.grid .actions .rr-status, .grid .note { line-height: 44px; }
+.grid .credit { margin-top: var(--space-1); }
 .posterwrap .rr-badge { left: 50%; position: absolute; top: var(--space-2); transform: translateX(-50%); }
 .credit { font-size: 12px; margin: var(--space-2) 0 0; }
 .credit a { color: var(--fg-muted); }
@@ -98,7 +126,7 @@ details.check div { margin: var(--space-1) 0; overflow-wrap: anywhere; }
 .more { display: flex; margin: var(--space-4) auto 0; }
 
 /* poster wall: the default layout */
-.wall { display: grid; gap: var(--space-5) var(--space-4); grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); }
+.wall { align-items: start; display: grid; gap: var(--space-5) var(--space-4); grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); }
 .tile { background: none; border: 0; border-radius: var(--radius-sm); color: var(--fg); cursor: pointer; padding: 0; position: relative; text-align: left; }
 .tile .art { box-shadow: inset 0 0 0 1px var(--line-strong), var(--shadow-card); transition: transform var(--duration-base) var(--ease-out), box-shadow var(--duration-base) var(--ease-out); }
 .tile:hover .art, .tile:focus-visible .art { box-shadow: 0 0 0 2px var(--bg), 0 0 0 5px var(--focus), var(--shadow-pop); transform: translateY(-2px); }
@@ -111,6 +139,9 @@ body.wall-mode .hero { background: none; color: var(--fg); }
 body.wall-mode .hero .wrap { padding-bottom: 0; padding-top: var(--space-6); }
 body.wall-mode .hero h1 { font-size: 32px; line-height: 38px; margin-bottom: 0; }
 body.wall-mode .hero p.lead { display: none; }
+body.wall-mode .panel { align-items: baseline; background: none; box-shadow: none; display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); justify-content: space-between; max-width: none; }
+#hero-count { color: var(--fg-muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+body.wall-mode #layout { margin-left: auto; }
 #detail { align-items: center; background: var(--scrim); display: flex; inset: 0; justify-content: center; padding: var(--space-4); position: fixed; z-index: 9; }
 #detail[hidden] { display: none; }
 #detail .card { border-radius: var(--radius-lg); box-shadow: var(--shadow-pop); max-height: 100%; max-width: 600px; overflow-y: auto; padding: var(--space-5); position: relative; width: 100%; }
@@ -147,12 +178,14 @@ footer { border-top: 1px solid var(--line); color: var(--fg-muted); font-size: 1
   .actions .rr-status, .note { line-height: 44px; }
   .bar { padding: var(--space-3) 0 0; }
   .months { flex-wrap: nowrap; margin: 0 calc(-1 * var(--space-4)); overflow-x: auto; padding: var(--space-2) var(--space-4); scrollbar-width: none; top: 0; }
-  .months .rr-chip { flex: none; }
+  .months .month { flex: none; }
   .day { margin: var(--space-2) 0 var(--space-3); scroll-margin-top: 72px; }
   .day h2 { font-size: 20px; }
   .grid { grid-template-columns: 1fr; }
   .card { padding: var(--space-3); gap: var(--space-3); }
   .posterwrap { flex-basis: 88px; width: 88px; }
+  .grid .posterwrap { flex-basis: 112px; min-height: 168px; width: 112px; }
+  .panel { background: none; box-shadow: none; }
   .wall { gap: var(--space-4) var(--space-2); grid-template-columns: repeat(3, 1fr); }
   #detail .card .posterwrap { flex-basis: 96px; width: 96px; }
 }
@@ -169,8 +202,12 @@ footer { border-top: 1px solid var(--line); color: var(--fg-muted); font-size: 1
 </div></header>
 
 <section class="hero" id="hero"><div class="wrap">
-  <h1 id="hero-title">What's coming next</h1>
-  <p class="lead" id="hero-lead">Cinema and streaming releases in Germany for the next six months.</p>
+  <div class="panel">
+    <h1 id="hero-title">What's coming next</h1>
+    <span id="hero-count"></span>
+    <p class="lead" id="hero-lead">Cinema and streaming releases in Germany for the next six months.</p>
+    <div id="hero-actions"></div>
+  </div>
 </div></section>
 
 <main class="wrap">
@@ -496,10 +533,14 @@ function toggleButton(kind, tag) {
 
 function chipClass(on) { return on ? 'rr-chip is-on' : 'rr-chip'; }
 
+function activeCount() {
+  return selection.genres.length + selection.keywords.length + (selection.service ? 1 : 0) + (selection.kind !== 'all' ? 1 : 0);
+}
+
 // What is filtering the list, visible with the panel closed: the number on the Filter button, a removable chip for the
 // release kind, the service and each genre or keyword, and Clear filter only when there is something to clear.
 function renderActive() {
-  var count = selection.genres.length + selection.keywords.length + (selection.service ? 1 : 0) + (selection.kind !== 'all' ? 1 : 0);
+  var count = activeCount();
   var toggle = document.getElementById('filter-toggle');
   toggle.textContent = 'Filter' + (count ? ' (' + count + ')' : '');
   toggle.className = chipClass(count);
@@ -567,8 +608,14 @@ function renderKeywords() {
 function renderKinds() {
   var root = document.getElementById('kinds');
   root.textContent = '';
-  KINDS.forEach(function (kind) {
-    var b = button(kind[1], chipClass(selection.kind === kind[0]), function () { selection.kind = kind[0]; saveSelection(); renderKinds(); renderTitles(); });
+  KINDS.forEach(function (kind, i) {
+    var b = button(kind[1], chipClass(selection.kind === kind[0]), function () {
+      selection.kind = kind[0];
+      saveSelection();
+      renderKinds();
+      renderTitles();
+      root.children[i].focus(); // the pressed chip was redrawn, which drops focus
+    });
     b.setAttribute('aria-pressed', selection.kind === kind[0] ? 'true' : 'false');
     root.appendChild(b);
   });
@@ -646,7 +693,10 @@ function setModal() {
 }
 // -> a function that puts focus back on the opener; if the list was redrawn meanwhile, on the control in its place.
 function keepPlace(opener) {
-  function controls() { return document.getElementById('titles').querySelectorAll('button, a'); }
+  function controls() {
+    function list(id, selector) { return Array.prototype.slice.call(document.getElementById(id).querySelectorAll(selector)); }
+    return list('hero-actions', 'button').concat(list('titles', 'button, a'));
+  }
   var at = opener ? Array.prototype.indexOf.call(controls(), opener) : -1;
   return function () {
     var target = opener && opener.isConnected !== false ? opener : controls()[at];
@@ -725,20 +775,40 @@ function renderTitles() {
   var shown = allTitles.filter(function (title) { return matchesFilter(title, scoped(currentView, selection)); });
   var sections = viewSections(currentView, shown, selection.kind);
   var count = viewCount(currentView, sections);
-  var noun = currentView === 'upcoming' || currentView === 'recent' ? ' release' : ' title';
-  document.getElementById('count').textContent = count + noun + (count === 1 ? '' : 's');
+  var total = activeCount() ? viewCount(currentView, viewSections(currentView, allTitles, 'all')) : null;
+  document.getElementById('count').textContent = document.getElementById('hero-count').textContent = countText(count, total);
   renderActive();
-  setHeroImage(sections);
+  renderHero(sections);
   render(sections);
 }
 
-// Backdrop of the first title in view behind the hero, washed into Cinema Teal.
-function setHeroImage(sections) {
-  var first = sections.length && sections[0].items.length ? sections[0].items[0].title : null;
+// "310 releases", or "44 of 310 releases" with a filter (total is then the unfiltered number). Same words as on the TV.
+function countText(count, total) {
+  var last = total === null ? count : total;
+  var noun = currentView === 'upcoming' || currentView === 'recent' ? ' release' : ' title';
+  return (total === null ? '' : count + ' of ') + last + noun + (last === 1 ? '' : 's');
+}
+
+// The heading over the titles. In the release calendar's list it is the next release the filter leaves, with its
+// trailer and details; everywhere else the view's name. The list has the first title's backdrop behind it.
+function renderHero(sections) {
+  var first = sections.length && sections[0].items.length ? sections[0].items[0] : null;
+  var next = layout === 'list' && currentView === 'upcoming' ? first : null;
   var hero = document.getElementById('hero');
+  hero.className = next ? 'hero next' : 'hero';
+  if (next) hero.setAttribute('aria-label', 'Next release'); else hero.removeAttribute('aria-label');
+  document.getElementById('hero-title').textContent = next ? next.title.title : HERO[currentView][0];
+  document.getElementById('hero-lead').textContent = next ? dayHeading(next.date) + ' · ' + whereText(next.title, next.kind, next.date) : HERO[currentView][1];
+  var actions = document.getElementById('hero-actions');
+  actions.textContent = '';
+  if (next) {
+    actions.appendChild(next.title.trailer ? button('Play trailer', 'rr-btn rr-btn--primary', function () { playTrailer(next.title, this); }) :
+      text('span', 'No trailer', 'note'));
+    actions.appendChild(button('Details', 'rr-btn rr-btn--secondary', function () { openDetail(next, this); }));
+  }
   if (layout === 'wall') { hero.style.backgroundImage = ''; return; } // the wall has no backdrop strip, only the heading
   hero.style.backgroundImage = 'linear-gradient(90deg, #0D3438 32%, rgba(13,52,56,0.86) 55%, rgba(13,52,56,0.3))' +
-    (first && first.backdrop_path ? ', url(' + IMG + 'w1280' + first.backdrop_path + ')' : '');
+    (first && first.title.backdrop_path ? ', url(' + IMG + 'w1280' + first.title.backdrop_path + ')' : '');
 }
 
 var GENRE_CAP = 12; // titles a genre starts with: all of them made a phone page of 1,378 posters
@@ -747,6 +817,7 @@ var expandedGenres = {};
 function render(sections) {
   var root = document.getElementById('titles');
   root.textContent = '';
+  monthMarks = [];
   if (!sections.length || (sections.length === 1 && !sections[0].items.length)) {
     root.appendChild(text('p', emptyMessage(currentView, selection), 'empty'));
     return;
@@ -762,7 +833,7 @@ function render(sections) {
     if (group.heading) {
       head = document.createElement('div');
       head.className = 'day';
-      head.appendChild(text('h2', group.heading));
+      head.appendChild(text('h2', calendar && !wall ? dayHeading(group.date) : group.heading));
       if (group.note) head.appendChild(text('small', group.note));
       root.appendChild(head);
     } else {
@@ -778,6 +849,7 @@ function render(sections) {
     fill(root, grid, group, wall ? tile : card);
   });
   if (months.length > 1) root.insertBefore(monthNav(months), root.firstChild);
+  markMonth();
 }
 
 // The group's posters or cards; a genre shows the first few until "Show all", which appends the rest in place.
@@ -808,11 +880,34 @@ function byWeek(days) {
   days.forEach(function (day) {
     var start = weekStart(day.date);
     var last = weeks[weeks.length - 1];
-    if (!last || last.start !== start) { last = { start: start, heading: 'Week of ' + shortDate(start), items: [] }; weeks.push(last); }
+    if (!last || last.start !== start) { last = { start: start, heading: weekHeading(start), items: [] }; weeks.push(last); }
     last.items = last.items.concat(day.items);
   });
   weeks.forEach(function (week) { week.note = week.items.length + (week.items.length === 1 ? ' release' : ' releases'); });
   return weeks;
+}
+// "This week · until 29 Nov", "Next week · 30 Nov – 6 Dec", other weeks the dates alone. Recently released looks back.
+function weekHeading(start) {
+  var end = new Date(start + 'T12:00:00Z');
+  end.setUTCDate(end.getUTCDate() + 6);
+  end = end.toISOString().slice(0, 10);
+  if (start === weekStart(isoDay(0))) return 'This week · ' + (currentView === 'recent' ? 'since ' + dayMonth(start) : 'until ' + dayMonth(end));
+  var range = (start.slice(0, 7) === end.slice(0, 7) ? Number(start.slice(8)) : dayMonth(start)) + ' – ' + dayMonth(end);
+  if (start === weekStart(isoDay(7))) return 'Next week · ' + range;
+  return start === weekStart(isoDay(-7)) ? 'Last week · ' + range : range;
+}
+// Dates for headings and captions name the year only when it is not this year's.
+function yearSuffix(d) { return d.getFullYear() === new Date().getFullYear() ? '' : ' ' + d.getFullYear(); }
+function dayMonth(iso) { // "7 Dec"
+  var d = new Date(iso + 'T12:00:00');
+  return d.getDate() + ' ' + MONTHS[d.getMonth()] + yearSuffix(d);
+}
+function captionDate(iso) { return DAYS[new Date(iso + 'T12:00:00').getDay()] + ' ' + dayMonth(iso); } // "Tue 24 Nov", as on the TV
+var WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+var MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+function dayHeading(iso) { // "Tuesday, 24 November"
+  var d = new Date(iso + 'T12:00:00');
+  return WEEKDAYS[d.getDay()] + ', ' + d.getDate() + ' ' + MONTH_NAMES[d.getMonth()] + yearSuffix(d);
 }
 
 // Jumps to the first heading with a release of that month. Buttons, not anchors: the hash holds the view.
@@ -821,15 +916,38 @@ function monthNav(months) {
   nav.className = 'months';
   nav.setAttribute('aria-label', 'Jump to month');
   months.forEach(function (entry) {
-    nav.appendChild(button(MONTHS[Number(entry.month.slice(5)) - 1] + ' ' + entry.month.slice(0, 4), 'rr-chip', function () {
+    var jump = button(MONTHS[Number(entry.month.slice(5)) - 1] + ' ' + entry.month.slice(0, 4), 'month', function () {
       var heading = entry.head.firstChild;
       heading.setAttribute('tabindex', '-1');
       heading.focus({ preventScroll: true });
       entry.head.scrollIntoView();
-    }));
+      setMonth(mark);
+    });
+    var mark = { button: jump, head: entry.head };
+    monthMarks.push(mark);
+    nav.appendChild(jump);
   });
   return nav;
 }
+
+// The month in view: the last one whose heading has reached the month bar.
+var monthMarks = [], currentMonth = null;
+function setMonth(mark) {
+  monthMarks.forEach(function (other) {
+    if (other === mark) other.button.setAttribute('aria-current', 'true'); else other.button.removeAttribute('aria-current');
+  });
+  currentMonth = mark;
+}
+function markMonth() {
+  if (!monthMarks.length) return;
+  var line = monthMarks[0].button.parentNode.getBoundingClientRect().bottom + 24;
+  var reached = monthMarks.filter(function (mark) { return mark.head.getBoundingClientRect().top <= line; });
+  var head = (reached[reached.length - 1] || monthMarks[0]).head;
+  // two months can start under one heading: the one already marked (just chosen) stays, else the first
+  setMonth(currentMonth && currentMonth.head === head && monthMarks.indexOf(currentMonth) !== -1 ? currentMonth :
+    monthMarks.filter(function (mark) { return mark.head === head; })[0]);
+}
+window.onscroll = markMonth;
 
 // "Premieres on Netflix": a streaming release whose service is only expected (TMDB's release note), not yet listed as streaming.
 function premiereText(title, kind, date) {
@@ -863,7 +981,7 @@ function tile(item) {
   else if (release) art.appendChild(badge(badgeText(title, release.kind, release.date), release.kind));
   b.appendChild(art);
   b.appendChild(text('span', title.title, 'ttl'));
-  b.appendChild(text('span', release ? shortDate(release.date) : availableText(title, true) || (isSeries(title) ? '' : 'No German date'), 'date'));
+  b.appendChild(text('span', release ? captionDate(release.date) : availableText(title, true) || (isSeries(title) ? '' : 'No German date'), 'date'));
   return b;
 }
 
@@ -916,8 +1034,9 @@ function releaseLine(item) {
   var release = itemRelease(item);
   if (!release && availableText(item.title)) return text('p', availableText(item.title), 'release');
   if (!release) return null;
-  return text('p', releaseText(item.title, release), 'release');
+  return text('p', releaseText(item.title, release), releaseClass(item.title, release));
 }
+function releaseClass(title, release) { return premiereText(title, release.kind, release.date) ? 'release premiere' : 'release'; }
 
 // In the list, poster and title open the details dialog; the dialog's own card (inDetail) adds the trailer decisions.
 function card(item, inDetail) {
@@ -948,11 +1067,12 @@ function card(item, inDetail) {
   if (inDetail) body.appendChild(text('h3', title.title));
   else body.appendChild(document.createElement('h3')).appendChild(button(title.title, 'open', function () { openDetail(item, this); }));
   var meta = (title.genres || []).slice(0, 2).map(function (g) { return g.name; }).join(' · ');
-  if (title.original_title !== title.title) meta = title.original_title + (meta ? ' — ' + meta : '');
+  if (inDetail && title.original_title !== title.title) meta = title.original_title + (meta ? ' — ' + meta : '');
   if (meta) body.appendChild(text('p', meta, 'meta'));
-  var line = releaseLine(item);
+  // under a day heading the date is already said: where it shows is enough
+  var line = !inDetail && item.kind ? text('p', whereText(title, item.kind, item.date), releaseClass(title, item)) : releaseLine(item);
   if (line) body.appendChild(line);
-  if (title.overview) {
+  if (inDetail && title.overview) {
     var synopsis = text('p', title.overview, 'overview');
     if (title.overview_lang === 'de') synopsis.insertBefore(text('span', 'DE', 'lang'), synopsis.firstChild);
     body.appendChild(synopsis);

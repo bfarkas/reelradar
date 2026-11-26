@@ -239,7 +239,7 @@ test('web wall: the calendar is grouped by week in date order, with month jumps 
   var dates = [ctx.isoDay(1), ctx.isoDay(45), ctx.isoDay(46), ctx.isoDay(100)];
   calendar(ctx, 'wall', 'upcoming', dates);
   var starts = dates.map(ctx.weekStart).filter(function (v, i, all) { return all.indexOf(v) === i; });
-  assert.deepEqual(headings(ctx), starts.map(function (start) { return 'Week of ' + ctx.shortDate(start); }));
+  assert.deepEqual(headings(ctx), starts.map(ctx.weekHeading));
   assert.equal(find(ctx, '.tile').length, 4);
   ['wall', 'list'].forEach(function (layout) {
     calendar(ctx, layout, 'upcoming', dates);
@@ -299,6 +299,124 @@ test('web wall: no backdrop strip, lazy poster images, and the title where there
     ctx.renderTitles(); // Seerr state arriving redraws the list
     assert.equal(find(ctx, item).length, 16);
   });
+});
+
+// ---- release calendar from the mockups (OS-T-8XQ6D) ----
+test('web calendar: week, day and poster dates name the year only when it is not this one', function () {
+  var ctx = screen([]);
+  var today = '2026-11-26';
+  ctx.isoDay = function (offset) { return new Date(Date.parse(today + 'T12:00:00Z') + offset * 86400000).toISOString().slice(0, 10); };
+  ctx.Date = class extends Date { constructor(value) { super(value === undefined ? today + 'T12:00:00' : value); } };
+  ctx.currentView = 'upcoming';
+  assert.deepEqual(['2026-11-23', '2026-11-30', '2026-12-07', '2026-12-28', '2027-01-04'].map(ctx.weekHeading),
+    ['This week · until 29 Nov', 'Next week · 30 Nov – 6 Dec', '7 – 13 Dec', '28 Dec – 3 Jan 2027', '4 – 10 Jan 2027']);
+  ctx.currentView = 'recent';
+  assert.deepEqual(['2026-11-23', '2026-11-16'].map(ctx.weekHeading), ['This week · since 23 Nov', 'Last week · 16 – 22 Nov']);
+  assert.equal(ctx.dayHeading('2026-11-24'), 'Tuesday, 24 November');
+  assert.equal(ctx.dayHeading('2027-01-05'), 'Tuesday, 5 January 2027');
+  assert.equal(ctx.captionDate('2026-11-24'), 'Tue 24 Nov');
+  assert.equal(ctx.captionDate('2027-01-05'), 'Tue 5 Jan 2027');
+});
+
+test('web calendar: the count says how many of all the filter leaves', function () {
+  var ctx = screen([]);
+  ctx.allTitles = [movie(1, { de_theatrical: ctx.isoDay(3), genres: [ACTION] }), movie(2, { de_theatrical: ctx.isoDay(4), de_digital: ctx.isoDay(30) })];
+  ctx.renderTitles();
+  assert.equal(ctx.byId.count.textContent, '3 releases');
+  ctx.selection.genres = [ACTION.id];
+  ctx.renderTitles();
+  assert.equal(ctx.byId.count.textContent, '1 of 3 releases');
+  assert.equal(ctx.byId['hero-count'].textContent, '1 of 3 releases');
+  ctx.selection.genres = [];
+  ctx.selection.kind = 'streaming';
+  ctx.renderTitles();
+  assert.equal(ctx.byId.count.textContent, '1 of 3 releases');
+});
+
+test('web list: the next release panel follows the filter; no result and no backdrop keep a plain heading', function () {
+  var ctx = screen([]);
+  ctx.allTitles = [movie(1, { de_theatrical: ctx.isoDay(3), backdrop_path: '/one.jpg', trailer: null }),
+    movie(2, { de_digital: ctx.isoDay(9), genres: [ACTION], providers_expected: [{ id: 8, name: 'Netflix' }] })];
+  function actions() { return ctx.byId['hero-actions'].children.map(function (c) { return c.textContent; }); }
+  ctx.layout = 'list';
+  ctx.renderTitles();
+  assert.equal(ctx.byId['hero-title'].textContent, 'Movie 1');
+  assert.equal(ctx.byId['hero-lead'].textContent, ctx.dayHeading(ctx.isoDay(3)) + ' · Cinema');
+  assert.deepEqual(actions(), ['No trailer', 'Details']);
+  assert.equal(ctx.byId.hero.attrs['aria-label'], 'Next release');
+  assert.match(ctx.byId.hero.style.backgroundImage, /one\.jpg/);
+  ctx.byId['hero-actions'].children[1].onclick.call(ctx.byId['hero-actions'].children[1]);
+  assert.equal(ctx.byId.detail.hidden, false);
+  ctx.closeDetail();
+
+  ctx.selection.genres = [ACTION.id];
+  ctx.renderTitles();
+  assert.equal(ctx.byId['hero-title'].textContent, 'Movie 2');
+  assert.match(ctx.byId['hero-lead'].textContent, / · Premieres on Netflix$/);
+  assert.deepEqual(actions(), ['Play trailer', 'Details']);
+  assert.doesNotMatch(ctx.byId.hero.style.backgroundImage, /url/);
+
+  ctx.selection.kind = 'cinema'; // nothing is left
+  ctx.renderTitles();
+  assert.equal(ctx.byId['hero-title'].textContent, "What's coming next");
+  assert.deepEqual(actions(), []);
+  assert.equal(ctx.byId.hero.attrs['aria-label'], undefined);
+
+  ctx.selection = { v: 1, genres: [], keywords: [], kind: 'all', service: 0 };
+  ['wall', 'list'].forEach(function (layout) {
+    ctx.layout = layout;
+    ctx.currentView = layout === 'wall' ? 'upcoming' : 'all';
+    ctx.renderTitles();
+    assert.deepEqual(actions(), [], 'only the release calendar list has the panel');
+  });
+});
+
+test('web list: compact cards say where it shows, without synopsis or date; the dialog keeps them', function () {
+  var ctx = screen([]);
+  var title = movie(1, { original_title: 'Original', overview: 'A story.', de_digital: ctx.isoDay(5), providers_expected: [{ id: 8, name: 'Netflix' }] });
+  var item = { title: title, kind: 'streaming', date: ctx.isoDay(5) };
+  var card = ctx.card(item);
+  assert.equal(card.querySelector('.overview'), null);
+  assert.equal(card.querySelector('.release').textContent, 'Premieres on Netflix');
+  assert.equal(card.querySelector('.release').className, 'release premiere');
+  assert.equal(card.querySelector('.meta').textContent, 'Drama');
+  var full = ctx.card(item, true);
+  assert.equal(full.querySelector('.overview').textContent, 'A story.');
+  assert.match(full.querySelector('.meta').textContent, /^Original/);
+  assert.match(ctx.card({ title: title, kind: null, date: null }).querySelector('.release').textContent, /^Premieres on Netflix · \d/);
+});
+
+test('web months: the month in view is marked; two months under one heading keep the chosen one', function () {
+  var ctx = screen([]);
+  var tops = {};
+  ctx.layout = 'list';
+  ctx.allTitles = [1, 40, 80].map(function (days, i) { return movie(i + 1, { de_theatrical: ctx.isoDay(days) }); });
+  ctx.renderTitles();
+  var nav = ctx.byId.titles.children[0], heads = ctx.byId.titles.querySelectorAll('.day');
+  function marked() { return nav.children.map(function (b) { return b.attrs['aria-current'] || ''; }); }
+  function scrollTo(values) { heads.forEach(function (head, i) { head.rect = { left: 0, top: values[i], width: 0, height: 0 }; }); ctx.window.onscroll(); }
+  nav.rect = { left: 0, top: 64, width: 0, height: 61 };
+  scrollTo([400, 900, 1400]);
+  assert.deepEqual(marked(), ['true', '', ''], 'above the first heading');
+  scrollTo([-500, 132, 700]);
+  assert.deepEqual(marked(), ['', 'true', '']);
+  scrollTo([-900, -400, 100]);
+  assert.deepEqual(marked(), ['', '', 'true']);
+  ctx.monthMarks[1].head = heads[0]; // as when a week holds the end of one month and the start of the next
+  scrollTo([100, 900, 900]);
+  assert.deepEqual(marked(), ['true', '', '']);
+  ctx.setMonth(ctx.monthMarks[1]);
+  ctx.window.onscroll();
+  assert.deepEqual(marked(), ['', 'true', '']);
+});
+
+test('web filter: choosing a release kind keeps focus on its redrawn chip', function () {
+  var ctx = screen([movie(1)]);
+  var kinds = ctx.byId.kinds, focused = null, append = kinds.appendChild;
+  kinds.appendChild = function (chip) { chip.focus = function () { focused = chip; }; return append(chip); };
+  kinds.children[1].onclick();
+  assert.equal(focused, kinds.children[1]);
+  assert.equal(focused.attrs['aria-pressed'], 'true');
 });
 
 // ---- error recovery (OS-T-1N4NM) ----
