@@ -8,8 +8,11 @@ Full reference with live previews and guidelines: https://claude.ai/artifact/61D
 |---|---|
 | `tokens.json` | The source: colours (light web / dark web + TV), type scales, spacing, radii, shadows, motion |
 | `tokens.css` | CSS custom properties and type classes, generated: `python3 design/build_tokens.py` |
-| `components.css` | Component classes (`rr-btn`, `rr-chip`, `rr-card`, `rr-tvposter` …). Load after `tokens.css` |
+| `components.css` | Component classes (`rr-btn`, `rr-chip`, `rr-card`, `rr-tvposter` …) and the Inter `@font-face` rules. Load after `tokens.css` |
+| `fonts/` | Inter 4.0 woff2, Latin subset, weights 400–800 (SIL OFL, `fonts/OFL.txt`). Self-hosted: no outside font request |
 
 Use: load `tokens.css` then `components.css`, put `class="rr"` on `<body>`. On the TV add `rr-tv` and `data-theme="dark"` on `<html>`; the CSS avoids flex `gap`, `inset`, `:focus-visible` and `:focus-within` so it runs on Tizen 4 (Chromium 56). Change a value in `tokens.json`, rebuild, and update the published kit to match.
+
+`build_tokens.py` also copies tokens, components, fonts and the cropped on-dark lockup (`logo-on-dark.svg`) into `frontend/design/` and `tv-app/design/`, because each app ships on its own. Don't edit those copies; package the TV app with its `design/` folder.
 
 Key rules: text on orange is always teal (never white); focus is a ring, never orange; nothing on the TV below 24px or outside the 96 × 54 px safe area.

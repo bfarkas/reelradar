@@ -1,0 +1,205 @@
+/* ReelRadar components. Needs tokens.css first.
+   One stylesheet for web and TV: no flex gap, no inset, no :focus-visible or :focus-within,
+   so it runs on Tizen 4 (Chromium 56). Add class rr-tv on <body> for 10-foot sizes. */
+/* Inter 4.0 (SIL OFL 1.1, fonts/OFL.txt), Latin subset, self-hosted so the TV and the LAN page need no outside request. */
+@font-face { font-family: Inter; font-style: normal; font-weight: 400; font-display: swap; src: url("fonts/inter-400.woff2") format("woff2"); }
+@font-face { font-family: Inter; font-style: normal; font-weight: 500; font-display: swap; src: url("fonts/inter-500.woff2") format("woff2"); }
+@font-face { font-family: Inter; font-style: normal; font-weight: 600; font-display: swap; src: url("fonts/inter-600.woff2") format("woff2"); }
+@font-face { font-family: Inter; font-style: normal; font-weight: 700; font-display: swap; src: url("fonts/inter-700.woff2") format("woff2"); }
+@font-face { font-family: Inter; font-style: normal; font-weight: 800; font-display: swap; src: url("fonts/inter-800.woff2") format("woff2"); }
+
+.rr { font-family: var(--font-sans); color: var(--fg); background: var(--bg);
+  -webkit-font-smoothing: antialiased; font-feature-settings: "cv11" 1, "ss01" 1; }
+.rr-num { font-variant-numeric: tabular-nums; }
+
+/* ---------- Header ---------- */
+.rr-header { display: flex; align-items: center; height: 64px; padding: 0 var(--space-6);
+  background: var(--brand-teal); color: var(--brand-white); }
+.rr-header__logo { display: block; height: 28px; width: auto; margin-right: var(--space-6); }
+.rr-nav { display: flex; height: 100%; }
+.rr-nav__item { display: flex; align-items: center; height: 100%; padding: 0 var(--space-3);
+  font: 600 15px/20px var(--font-sans); color: rgba(255,255,255,0.72); text-decoration: none;
+  border-bottom: 3px solid transparent; border-top: 3px solid transparent; cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-out); }
+.rr-nav__item:hover { color: var(--brand-white); }
+.rr-nav__item.is-on { color: var(--brand-white); border-bottom-color: var(--brand-orange); }
+.rr-header__end { margin-left: auto; display: flex; align-items: center; }
+
+/* ---------- Buttons ---------- */
+.rr-btn { display: inline-flex; align-items: center; justify-content: center; height: 40px;
+  padding: 0 var(--space-5); border-radius: var(--radius-pill); border: 1px solid transparent;
+  font: 600 15px/20px var(--font-sans); cursor: pointer; white-space: nowrap; text-decoration: none;
+  transition: background-color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out); }
+.rr-btn + .rr-btn { margin-left: var(--space-2); }
+.rr-btn__icon { width: 1em; height: 1em; margin-right: var(--space-2); fill: currentColor; }
+.rr-btn--primary { background: var(--accent); color: var(--on-accent); }
+.rr-btn--primary:hover { background: var(--accent-hover); }
+.rr-btn--secondary { background: transparent; color: var(--fg); border-color: var(--line-strong); }
+.rr-btn--secondary:hover { background: var(--surface-raised); }
+.rr-btn--ghost { background: transparent; color: var(--fg); }
+.rr-btn--ghost:hover { background: var(--surface-raised); }
+.rr-btn[disabled] { opacity: .45; cursor: default; }
+
+/* Focus: a ring outside a gap of the page colour. Web uses :focus, TV the .focus class. */
+.rr-btn:focus, .rr-chip:focus, .rr-seg__opt:focus, .rr-field__input:focus, .rr-tile:focus { outline: none; }
+.rr-btn:focus, .rr-btn.focus, .rr-chip:focus, .rr-chip.focus, .rr-seg__opt:focus, .rr-seg__opt.focus {
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 5px var(--focus); }
+
+/* ---------- Chips (genre and kind filters) ---------- */
+.rr-chips { display: flex; flex-wrap: wrap; margin: 0 0 calc(-1 * var(--space-2)) 0; }
+.rr-chips .rr-chip { margin: 0 var(--space-2) var(--space-2) 0; }
+.rr-chip { display: inline-flex; align-items: center; height: 32px; padding: 0 var(--space-4);
+  border-radius: var(--radius-pill); border: 1px solid var(--line-strong); background: var(--surface);
+  color: var(--fg); font: 600 14px/20px var(--font-sans); cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-out); }
+.rr-chip:hover { background: var(--surface-raised); }
+.rr-chip.is-on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.rr-chip__count { margin-left: var(--space-2); color: var(--fg-muted); font-weight: 500; font-variant-numeric: tabular-nums; }
+.rr-chip.is-on .rr-chip__count { color: var(--on-accent); opacity: .75; }
+
+/* ---------- Segmented control (Calendar / Wall) ---------- */
+.rr-seg { display: inline-flex; padding: 3px; border-radius: var(--radius-pill); background: var(--surface-raised); }
+.rr-seg__opt { height: 32px; padding: 0 var(--space-4); border: 0; border-radius: var(--radius-pill);
+  background: transparent; color: var(--fg-muted); font: 600 14px/20px var(--font-sans); cursor: pointer; }
+.rr-seg__opt.is-on { background: var(--surface); color: var(--fg); box-shadow: var(--shadow-card); }
+
+/* ---------- Badges ---------- */
+.rr-badge { display: inline-block; padding: 2px 6px; border-radius: var(--radius-xs);
+  font: 700 11px/14px var(--font-sans); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+.rr-badge--streaming { background: var(--accent); color: var(--on-accent); }
+.rr-badge--series { background: var(--series); color: var(--brand-white); }
+.rr-badge--cinema { background: var(--brand-teal); color: var(--brand-white); box-shadow: inset 0 0 0 1px rgba(255,255,255,.18); }
+.rr-badge--new { background: var(--surface); color: var(--fg); box-shadow: inset 0 0 0 1px var(--line-strong); }
+
+/* ---------- Kicker and status text ---------- */
+.rr-kicker { font: 700 12px/16px var(--font-sans); letter-spacing: .08em; text-transform: uppercase; color: var(--accent-text); }
+.rr-status { font: 600 13px/18px var(--font-sans); color: var(--success); }
+.rr-status--error { color: var(--danger); }
+
+/* ---------- Field (search, filter inputs) ---------- */
+.rr-field { display: block; }
+.rr-field__label { display: block; margin-bottom: var(--space-1); font: 600 13px/18px var(--font-sans); color: var(--fg-muted); }
+.rr-field__input { width: 100%; height: 40px; padding: 0 var(--space-4); border-radius: var(--radius-md);
+  border: 1px solid var(--line-strong); background: var(--surface); color: var(--fg); font: 400 15px/20px var(--font-sans); }
+.rr-field__input::placeholder { color: var(--fg-muted); }
+.rr-field__input:focus { border-color: var(--focus); box-shadow: 0 0 0 1px var(--focus); }
+
+/* ---------- Poster (shared by card, tile, TV shelf) ---------- */
+.rr-poster { position: relative; display: block; width: 100%; padding-top: 150%; border-radius: var(--radius-sm);
+  overflow: hidden; background: var(--poster-empty); }
+.rr-poster > img, .rr-poster > .rr-poster__art { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
+.rr-poster__badge { position: absolute; top: var(--space-2); left: var(--space-2); }
+
+/* ---------- Movie card (web calendar) ---------- */
+.rr-card { display: flex; padding: var(--space-4); border-radius: var(--radius-md); background: var(--surface);
+  border: 1px solid var(--line); box-shadow: var(--shadow-card); }
+.rr-card__poster { flex: 0 0 104px; margin-right: var(--space-4); }
+.rr-card__body { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.rr-card__title { margin: var(--space-1) 0 0; font: 700 17px/22px var(--font-sans); color: var(--fg); }
+.rr-card__meta { margin-top: var(--space-1); font: 400 13px/18px var(--font-sans); color: var(--fg-muted); font-variant-numeric: tabular-nums; }
+.rr-card__overview { margin: var(--space-2) 0 0; font: 400 14px/20px var(--font-sans); color: var(--fg-muted);
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.rr-card__actions { margin-top: auto; padding-top: var(--space-3); display: flex; align-items: center; }
+.rr-card__actions .rr-status { margin-left: auto; }
+
+/* ---------- Wall tile ---------- */
+.rr-tile { position: relative; display: block; border-radius: var(--radius-sm); cursor: pointer;
+  transition: transform var(--duration-base) var(--ease-out), box-shadow var(--duration-base) var(--ease-out); }
+.rr-tile:hover, .rr-tile:focus, .rr-tile.focus { transform: translateY(-2px); box-shadow: 0 0 0 2px var(--bg), 0 0 0 5px var(--focus), var(--shadow-pop); }
+.rr-tile__tip { position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%); width: 220px;
+  padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); background: var(--brand-teal); color: var(--brand-white);
+  font: 600 13px/18px var(--font-sans); box-shadow: var(--shadow-pop); pointer-events: none; z-index: 2; }
+.rr-tile__tip small { display: block; font-weight: 400; color: rgba(255,255,255,.75); }
+
+/* ---------- Hero ---------- */
+.rr-hero { position: relative; overflow: hidden; background: var(--brand-teal); color: var(--brand-white); }
+.rr-hero__backdrop { position: absolute; top: 0; right: 0; bottom: 0; width: 62%; background: var(--poster-empty); }
+.rr-hero__backdrop:after { content: ""; position: absolute; top: 0; right: 0; bottom: 0; left: 0;
+  background: linear-gradient(90deg, var(--brand-teal) 0%, rgba(13,52,56,.55) 45%, rgba(13,52,56,0) 100%); }
+.rr-hero__body { position: relative; max-width: 560px; padding: var(--space-8) var(--space-6); }
+.rr-hero .rr-kicker { color: var(--brand-orange); }
+.rr-hero__title { margin: var(--space-2) 0 var(--space-3); font: 800 48px/52px var(--font-sans); letter-spacing: -.02em; }
+.rr-hero__text { margin: 0 0 var(--space-5); font: 400 16px/24px var(--font-sans); color: rgba(255,255,255,.82); }
+.rr-hero .rr-btn--secondary { color: var(--brand-white); border-color: rgba(255,255,255,.5); }
+.rr-hero .rr-btn--secondary:hover { background: rgba(255,255,255,.12); }
+
+/* ---------- Dialog (detail) ---------- */
+.rr-scrim { background: var(--scrim); }
+.rr-dialog { position: relative; display: flex; max-width: 880px; padding: var(--space-6); border-radius: var(--radius-lg);
+  background: var(--surface); color: var(--fg); box-shadow: var(--shadow-pop); }
+.rr-dialog__poster { flex: 0 0 220px; margin-right: var(--space-6); }
+.rr-dialog__body { flex: 1 1 auto; min-width: 0; }
+.rr-dialog__title { margin: var(--space-1) 0 var(--space-2); font: 800 32px/38px var(--font-sans); letter-spacing: -.02em; }
+.rr-dialog__meta { font: 400 14px/20px var(--font-sans); color: var(--fg-muted); font-variant-numeric: tabular-nums; }
+.rr-dialog__text { margin: var(--space-4) 0 var(--space-5); font: 400 16px/24px var(--font-sans); }
+.rr-dialog__close { position: absolute; top: var(--space-3); right: var(--space-3); }
+
+/* ---------- Player controls ---------- */
+.rr-player { position: relative; background: #000; }
+.rr-player__bar { display: flex; align-items: center; padding: var(--space-3) var(--space-4); border-radius: var(--radius-lg);
+  background: var(--scrim); color: var(--brand-white); }
+.rr-player__bar .rr-btn--ghost { color: var(--brand-white); }
+.rr-player__time { font: 600 13px/18px var(--font-sans); font-variant-numeric: tabular-nums; color: rgba(255,255,255,.82); }
+.rr-progress { position: relative; flex: 1 1 auto; height: 6px; margin: 0 var(--space-4); border-radius: var(--radius-xs); background: rgba(255,255,255,.24); }
+.rr-progress__fill { position: absolute; top: 0; left: 0; bottom: 0; border-radius: var(--radius-xs); background: var(--brand-orange); }
+.rr-progress__knob { position: absolute; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: var(--brand-white); }
+
+/* ---------- Toast ---------- */
+.rr-toast { display: inline-flex; align-items: center; padding: var(--space-3) var(--space-5); border-radius: var(--radius-lg);
+  background: var(--brand-teal); color: var(--brand-white); font: 600 14px/20px var(--font-sans); box-shadow: var(--shadow-pop); }
+.rr-toast__dot { width: 8px; height: 8px; margin-right: var(--space-3); border-radius: 50%; background: var(--brand-orange); }
+.rr-toast--error .rr-toast__dot { background: var(--danger); }
+
+/* =================== TV: 1920 x 1080, remote focus via .focus =================== */
+.rr-tv { font-size: 28px; }
+.rr-tv .rr-header { height: 120px; padding: 0 var(--tv-safe-x); background: transparent; }
+.rr-tv .rr-header__logo { height: 48px; margin-right: var(--space-7); }
+.rr-tv .rr-btn { height: 64px; padding: 0 var(--space-6); font: 600 28px/32px var(--font-sans); border-width: 2px; }
+.rr-tv .rr-btn + .rr-btn { margin-left: var(--space-4); }
+.rr-tv .rr-btn--secondary { color: var(--fg); border-color: var(--line-strong); }
+.rr-tv .rr-btn.focus { box-shadow: 0 0 0 4px var(--bg), 0 0 0 8px var(--focus); transform: scale(1.04); }
+.rr-tv .rr-btn--secondary.focus, .rr-tv .rr-btn--ghost.focus { background: var(--brand-white); color: var(--brand-teal); border-color: var(--brand-white); }
+.rr-tv .rr-chip { height: 56px; padding: 0 var(--space-5); font: 600 26px/30px var(--font-sans); border-width: 2px; }
+.rr-tv .rr-chips .rr-chip { margin: 0 var(--space-4) var(--space-4) 0; }
+.rr-tv .rr-chip.focus { box-shadow: 0 0 0 4px var(--bg), 0 0 0 8px var(--focus); }
+.rr-tv .rr-seg { padding: 4px; }
+.rr-tv .rr-seg__opt { height: 56px; padding: 0 var(--space-5); font: 600 26px/30px var(--font-sans); }
+.rr-tv .rr-badge { padding: 4px 10px; border-radius: 6px; font: 700 20px/24px var(--font-sans); }
+.rr-tv .rr-kicker { font: 700 24px/28px var(--font-sans); letter-spacing: .06em; }
+
+.rr-shelf { padding: 0 var(--tv-safe-x); }
+.rr-shelf__title { margin: 0 0 var(--space-5); font: 700 36px/44px var(--font-sans); color: var(--fg); }
+.rr-shelf__row { white-space: nowrap; font-size: 0; }
+.rr-tvposter { display: inline-block; vertical-align: top; width: 200px; margin-right: var(--space-5); white-space: normal;
+  transition: transform var(--duration-base) var(--ease-out); }
+.rr-tvposter .rr-poster { border-radius: 8px; }
+.rr-tvposter__cap { margin-top: var(--space-3); font: 500 24px/30px var(--font-sans); color: var(--fg-muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rr-tvposter.focus { transform: scale(var(--tv-focus-scale)); }
+.rr-tvposter.focus .rr-poster { box-shadow: 0 0 0 4px var(--bg), 0 0 0 8px var(--focus), var(--shadow-pop); }
+.rr-tvposter.focus .rr-tvposter__cap { color: var(--fg); font-weight: 600; }
+
+.rr-tv .rr-hero { background: var(--bg); }
+.rr-tv .rr-hero__backdrop:after { background: linear-gradient(90deg, var(--bg) 0%, rgba(7,27,30,.6) 45%, rgba(7,27,30,0) 100%), linear-gradient(0deg, var(--bg) 0%, rgba(7,27,30,0) 40%); }
+.rr-tv .rr-hero__body { max-width: 980px; padding: var(--space-7) var(--tv-safe-x); }
+.rr-tv .rr-hero__title { margin: var(--space-3) 0 var(--space-4); font: 800 72px/78px var(--font-sans); }
+.rr-tv .rr-hero__text { margin-bottom: var(--space-6); font: 400 28px/40px var(--font-sans); }
+.rr-tv .rr-hero .rr-btn--secondary { color: var(--brand-white); border-color: rgba(255,255,255,.5); }
+.rr-tv .rr-hero .rr-btn--secondary.focus { color: var(--brand-teal); background: var(--brand-white); }
+
+.rr-tv .rr-dialog { max-width: 1600px; padding: var(--space-8); }
+.rr-tv .rr-dialog__poster { flex-basis: 400px; margin-right: var(--space-8); }
+.rr-tv .rr-dialog__title { font: 800 52px/60px var(--font-sans); }
+.rr-tv .rr-dialog__meta { font: 500 26px/34px var(--font-sans); }
+.rr-tv .rr-dialog__text { font: 400 28px/40px var(--font-sans); margin: var(--space-5) 0 var(--space-6); }
+
+.rr-tv .rr-player__bar { padding: var(--space-5) var(--space-6); }
+.rr-tv .rr-player__time { font: 600 26px/30px var(--font-sans); }
+.rr-tv .rr-progress { height: 10px; margin: 0 var(--space-5); }
+.rr-tv .rr-progress__knob { width: 24px; height: 24px; margin: -12px 0 0 -12px; }
+.rr-tv .rr-toast { padding: var(--space-4) var(--space-6); font: 600 28px/34px var(--font-sans); }
+.rr-tv .rr-toast__dot { width: 14px; height: 14px; margin-right: var(--space-4); }
+
+@media (prefers-reduced-motion: reduce) {
+  .rr * { transition: none !important; }
+}

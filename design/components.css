@@ -1,7 +1,12 @@
 /* ReelRadar components. Needs tokens.css first.
    One stylesheet for web and TV: no flex gap, no inset, no :focus-visible or :focus-within,
    so it runs on Tizen 4 (Chromium 56). Add class rr-tv on <body> for 10-foot sizes. */
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+/* Inter 4.0 (SIL OFL 1.1, fonts/OFL.txt), Latin subset, self-hosted so the TV and the LAN page need no outside request. */
+@font-face { font-family: Inter; font-style: normal; font-weight: 400; font-display: swap; src: url("fonts/inter-400.woff2") format("woff2"); }
+@font-face { font-family: Inter; font-style: normal; font-weight: 500; font-display: swap; src: url("fonts/inter-500.woff2") format("woff2"); }
+@font-face { font-family: Inter; font-style: normal; font-weight: 600; font-display: swap; src: url("fonts/inter-600.woff2") format("woff2"); }
+@font-face { font-family: Inter; font-style: normal; font-weight: 700; font-display: swap; src: url("fonts/inter-700.woff2") format("woff2"); }
+@font-face { font-family: Inter; font-style: normal; font-weight: 800; font-display: swap; src: url("fonts/inter-800.woff2") format("woff2"); }
 
 .rr { font-family: var(--font-sans); color: var(--fg); background: var(--bg);
   -webkit-font-smoothing: antialiased; font-feature-settings: "cv11" 1, "ss01" 1; }

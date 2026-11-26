@@ -145,3 +145,10 @@ Next:
 2. Restyle `frontend/index.html` and `tv-app/index.html` onto the kit, replacing the warm paper/red and screening-room CSS and the text `.logo`.
 3. Bundle Inter woff2 in `tv-app/`.
 4. Deploy and reinstall the TV app; both need the owner's yes.
+
+## 2026-11-26: restyle web and TV onto the design kit (OS-T-EPK7J)
+- Goal: owner ran /impeccable "polish the new reelradar design as described in design/, current implementation as base". Same layouts and markup; new look (Teal & Orange, Inter) from `design/`.
+- Done and committed: `design/fonts/` Inter 4.0 woff2 (Latin subset, 400-800, OFL.txt, pyftsubset from TeX Live); components.css uses local @font-face (no Google request). `build_tokens.py` copies tokens.css, components.css, fonts and a cropped on-dark lockup into `frontend/design/` and `tv-app/design/`; frontend/Dockerfile copies `design`. Web: teal header with the lockup, teal hero band with backdrop (wall: no band), kit chips/buttons/segmented layout control with SVG icons, focus rings, light and dark (system setting). TV: dark theme, Inter, lockup, orange "on" states with teal text, white focus (white pill on header buttons, ring on posters and actions), teal dialog, filter and notice, orange progress bar.
+- Decision: the web hero kicker is gone (the Impeccable craft floor bans eyebrows); HERO entries are now [title, lead]. Easy to restore if the owner wants it back.
+- Verified: 129 tests green; web at 1280 light and dark, wall, dialog with keyboard focus, 375; TV at 1920x1080 rows, header focus, filter, dialog, wall, against the live backend read-only (POST refused). Not checked on the real TV (Inter woff2 on Chromium 56 is expected to work but unverified).
+- Next: deploy web and install the TV app (owner's yes needed). TV package must include `design/` now: `tizen package ... -- tv-app/` with config.xml, icon.png, index.html and design/. docs/screenshots still show the old look.
