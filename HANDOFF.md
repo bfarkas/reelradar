@@ -94,6 +94,24 @@ Next:
 - Next: set a task to ready/start only when the owner asks; TV first.
 - Constraints for implementers: TV is ES5 on Tizen 4.0 / Chromium M56 (no flex gap, no inset, 1920x1080); deploy to rei3 and TV install need the owner's yes.
 
+## 2026-11-26: logo replaced with "Play Sweep" (OS-T-G3P92)
+- The owner chose Play Sweep, a rounded play triangle cut by two radar arcs, in Teal & Orange (`#FF6A3D` on `#0D3438`; `#E8521F` on light). It replaces Next frame (C0) below. The old `logo/` folder was never committed; it was moved to the macOS Trash as `reelradar-logo-next-frame-202611260118`.
+- `logo/`: `masters/` (SVG), `exports/`, `build.py` (regenerates the masters; needs fonttools and Inter-ExtraBold.ttf, which is OFL), `GUIDELINES.md`, `board.html` + `slides/`, `colour/`, `concepts/`.
+- Swapped in (not committed yet): `frontend/` favicon.ico, favicon.svg, apple-touch-icon.png, icon-192/512, maskable-512, site.webmanifest (plus the Dockerfile COPY line and the index.html links), `tv-app/icon.png` (117 px, opaque), `docs/wordmark*.png`.
+- Next: the header text logos (web and TV `.logo`) still read "Reel<span>Radar</span>". Deploy and TV install need the owner's yes. A trademark check is still open.
+
+## 2026-11-25: logo design brief (OS-T-G3P92, superseded by Play Sweep above)
+- Goal: answer `ReelRadar-logo-brief.pdf` (owner: "you are a professional logo designer, do your best work"). Brief's process: three distinct concepts, black first then colour, each at 16 px, in the web header and on the TV screen; owner picks one; refinement; handover package. Judged on small-size recognition, reel + radar, fit, distinctiveness, one-colour quality.
+- Decision: show three concepts, and carry the recommended one (A) through to the full deliverables table as a candidate. Nothing live (frontend/favicon.ico, apple-touch-icon.png, tv-app/icon.png, docs/wordmark*.png, header text) is replaced until the owner picks. Nothing committed.
+- Concepts: A "lit quadrant" (four-hole reel; one quadrant opens into a radar sector, its hole becomes the red blip; wordmark Alegreya Bold "Reel" + Bold Italic "Radar", last r redrawn with a round blip terminal). B "coming round" (five holes growing clockwise to a ringed red blip; Alegreya Black + Medium). C "first letter", leaves the reel behind (drawn serif R, round counter as lens with blip; Source Serif Black; the R of Reel has an empty counter, the R of Radar has the blip).
+- Why A: both ideas in one shape, figure/ground swap works in one colour, quadrant edges fall on whole pixels at 16 px. Roman/italic keeps two words in one colour. Horizontal lockup fits today's widths (134 px web, 293 px TV) at 25.5 and 55.7 px type.
+- Rejected: play-like wedges, Pac-Man (open quadrant), eye/iris shapes (surveillance), notification-badge dots, spinners, RSS/Wi-Fi arcs.
+- Fonts: Alegreya and Source Serif, both SIL OFL 1.1, from the local TeX Live (/usr/local/texlive/2025); nothing downloaded. No image generator used; all geometry is code written by Claude (declare as AI-generated).
+- Visual check so far: web/image search for film-reel-plus-radar marks, WatchRadar (ring + play triangle) and ReelTracker (3D red) App Store icons; no close match.
+- Files: `logo/` (svg, png, pdf, icons, github), `logo/source/` (art.py geometry, build.py exporter with brief checks, Swift glyph/raster tools, gl/ outlines). Rebuild: `swiftc -O` raster.swift and glyphs.swift next to art.py, then `GL=logo/source/gl python3 logo/source/build.py <out>`. Working copy in the session scratchpad.
+- Done: `logo/concepts.pdf` (10 pages) and `logo/usage-guide.pdf` (4 A4 pages), every page looked at. Deck sources are logo/source/deck.py, guide.py, proofs.py (run from a folder holding out/ and the screenshots).
+- Next: owner picks A, B or C. If A: up to two refinement rounds, then swap in frontend/favicon.ico (+ svg), apple-touch-icon.png, tv-app/icon.png, docs/wordmark*.png and the header text logos, as its own task. Deploy and TV install need the owner's yes.
+
 ## 2026-11-25: TV redesign, rows and wall (OS-T-79361, done)
 - Goal: owner said "Yes, start TV". Make tv-app/index.html match mockups Main.dc.html (rows) and TvWall.dc.html (wall). Full Scope/Acceptance in the task. Dialog, filter and error screen are the next task (OS-T-99KST).
 - State: done, committed and pushed. `node --test backend/test` 129 pass; 1920x1080 browser check against the live backend (read-only) clean. Owner said "Yes, install": c8066cc installed on the TV (192.168.42.54). Owner checked on the TV: "Looks good".

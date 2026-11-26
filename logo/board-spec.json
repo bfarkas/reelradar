@@ -1,0 +1,34 @@
+{
+  "brand": "ReelRadar",
+  "tagline": "Trailers first. Then what to watch.",
+  "brief": "A self-hosted movie and TV discovery service in the spirit of Apple Trailers: quickly play trailers, filter by genre, see what is coming soon and what just came out.",
+  "adjectives": ["cinematic", "curious", "quick", "independent"],
+  "criteria": "Success: reads as 'trailers' at a glance, adds a discovery idea, distinct from Plex/Jellyfin/Overseerr, works at 16 px and in one colour.",
+  "industry": "software",
+  "mockups": ["app-icon", "website", "favicon-tab", "readme", "terminal", "social"],
+  "nav": ["Coming soon", "New releases", "Genres"],
+  "brand_color": "#FF6A3D",
+  "tile_color": "#0D3438",
+  "greyscale": false,
+  "final": true,
+  "concepts": [
+    {
+      "name": "Play Sweep",
+      "symbol": "masters/reelradar-symbol.svg",
+      "lockup": "masters/reelradar-horizontal-accent.svg",
+      "symbol_on_tile": "masters/reelradar-symbol-coral.svg",
+      "symbol_on_dark": "masters/reelradar-symbol-coral.svg",
+      "lockup_on_dark": "masters/reelradar-horizontal-on-dark.svg",
+      "stacked_on_dark": "masters/reelradar-stacked-on-dark.svg",
+      "idea": "A play button sliced by radar arcs: trailers, scanned as they come.",
+      "rationale": [
+        "The play triangle says 'trailers' before anything else",
+        "Two arcs sweep outward: discovery, what's coming next",
+        "Teal & orange, the Hollywood colour grade: cinematic, not another purple media server",
+        "Small-size cut with one arc keeps it crisp as a favicon"
+      ]
+    }
+  ],
+  "recommendation": "Play Sweep in teal & orange.",
+  "next_steps": ["Drop the web icon set into the app", "Use the README lockup on GitHub", "Run a trademark search before wider use"]
+}

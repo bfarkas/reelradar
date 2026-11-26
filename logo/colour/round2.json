@@ -1,0 +1,8 @@
+[
+ {"name":"9 · Screen Teal","accent":["#19C3B1"],"ground":"#0B1719","light":"#FFFFFF","light_symbol":["#0E8A7E"],"word_on_light":"#0B1719","note":"Calm, confident; reads 'media' without the usual purples"},
+ {"name":"10 · Turquoise","accent":["#3EE8DA"],"ground":"#081A1E","light":"#FFFFFF","light_symbol":["#0C9488"],"word_on_light":"#081A1E","note":"Brighter, more electric; strong glow on dark"},
+ {"name":"11 · Phosphor Green","accent":["#3DFF8A"],"ground":"#06110B","light":"#FFFFFF","light_symbol":["#0E9F4E"],"word_on_light":"#06110B","note":"Radar CRT phosphor; the most 'radar' of all"},
+ {"name":"12 · Phosphor Afterglow","accent":["#3DFF8A","#2CCB72","#1F9A5A"],"ground":"#06110B","light":"#FFFFFF","light_symbol":["#0E9F4E","#0C8442","#0A6A36"],"word_on_light":"#06110B","note":"Phosphor decay: the sweep fades as it travels"},
+ {"name":"13 · Teal & Orange","accent":["#FF6A3D"],"ground":"#0D3438","light":"#FFFFFF","light_symbol":["#E8521F"],"word_on_light":"#0D3438","note":"The Hollywood colour grade: coral mark on deep teal"},
+ {"name":"14 · Mint Phosphor","accent":["#8AF5C8"],"ground":"#0E1513","light":"#F2F7F4","light_symbol":["#178A63"],"word_on_light":"#0E1513","note":"Softer, quieter phosphor; more Apple-like"}
+]
