@@ -255,7 +255,7 @@ test('web wall: the calendar is grouped by week in date order, with month jumps 
   ctx.layout = 'list';
   ctx.currentView = 'all';
   ctx.renderTitles();
-  assert.equal(find(ctx, '.months').length, 0);
+  assert.deepEqual(find(ctx, '.months').map(function (n) { return n.className; }), ['months letters']); // letters, no months
 });
 
 test('web wall: no backdrop strip, lazy poster images, and the title where there is no poster', function () {
@@ -290,9 +290,13 @@ test('web wall: no backdrop strip, lazy poster images, and the title where there
     var item = layout === 'wall' ? '.tile' : '.card';
     assert.equal(find(ctx, item).length, 13);
     assert.equal(ctx.byId.count.textContent, '16 titles');
-    assert.deepEqual(find(ctx, 'small').map(function (n) { return n.textContent; }), ['1 titles', '15 titles']);
+    var list = find(ctx, '.genre-list')[0];
+    assert.deepEqual(list.children.map(function (b) { return b.textContent + ' ' + b.children[0].textContent; }), ['Action 1', 'Drama 15']);
+    assert.equal(find(ctx, 'small').length, 0);
     var more = find(ctx, '.more');
     assert.deepEqual(more.map(function (b) { return b.textContent; }), ['Show all 15']);
+    assert.equal(more[0].parentNode.className, 'day'); // beside the shelf's heading
+    assert.equal(more[0].parentNode.children[0].textContent, 'Drama');
     more[0].onclick();
     assert.equal(find(ctx, item).length, 16);
     assert.equal(find(ctx, '.more').length, 0);
@@ -402,10 +406,10 @@ test('web months: the month in view is marked; two months under one heading keep
   assert.deepEqual(marked(), ['', 'true', '']);
   scrollTo([-900, -400, 100]);
   assert.deepEqual(marked(), ['', '', 'true']);
-  ctx.monthMarks[1].head = heads[0]; // as when a week holds the end of one month and the start of the next
+  ctx.jumpMarks[1].head = heads[0]; // as when a week holds the end of one month and the start of the next
   scrollTo([100, 900, 900]);
   assert.deepEqual(marked(), ['true', '', '']);
-  ctx.setMonth(ctx.monthMarks[1]);
+  ctx.setMark(ctx.jumpMarks[1]);
   ctx.window.onscroll();
   assert.deepEqual(marked(), ['', 'true', '']);
 });
@@ -461,4 +465,48 @@ test('web player: a broken file shows a message; closing and the next trailer sh
   ctx.closePlayer();
   video.listeners.error(); // the browser may report the removed source
   assert.equal(message.hidden, true);
+});
+
+// ---- details dialog, Genres and All titles from the mockups (OS-T-KK353) ----
+test('web genres: choosing a genre goes to its shelf and marks it', function () {
+  var ctx = screen([]);
+  ctx.allTitles = [movie(1, { genres: [ACTION] }), movie(2)];
+  ctx.currentView = 'genres';
+  ctx.renderTitles();
+  var buttons = find(ctx, '.genre-list')[0].children, heads = find(ctx, '.day'), scrolled = [];
+  heads.forEach(function (head) { head.scrollIntoView = function () { scrolled.push(head); }; });
+  buttons[1].onclick();
+  assert.deepEqual(scrolled, [heads[1]]);
+  assert.deepEqual(buttons.map(function (b) { return b.getAttribute('aria-current'); }), [null, 'true']);
+});
+
+test('web all titles: a section per letter as the title sort orders them; empty letters are not links', function () {
+  var ctx = screen([]);
+  var names = ['Zulu', '2m²', '(500) Days', 'Élan', 'Echo', 'The Fence', 'ocean', 'Øya', '14th'];
+  assert.deepEqual(names.map(ctx.letterOf), ['Z', '0–9', '0–9', 'E', 'E', 'T', 'O', 'O', '0–9']);
+  ctx.allTitles = names.map(function (name, i) { return movie(i + 1, { title: name }); });
+  ctx.currentView = 'all';
+  ['wall', 'list'].forEach(function (layout) {
+    ctx.layout = layout;
+    ctx.renderTitles();
+    assert.deepEqual(headings(ctx), ['0–9', 'E', 'O', 'T', 'Z'], layout); // one section each, in sort order
+    var bar = find(ctx, '.letters')[0];
+    assert.equal(bar.children.length, 27);
+    assert.deepEqual(bar.children.filter(function (n) { return n.tag === 'button'; }).map(function (n) { return n.textContent; }), headings(ctx));
+    assert.equal(ctx.byId['hero-count'].textContent, '9 titles, A to Z');
+  });
+  assert.equal(ctx.byId['hero-lead'].textContent, '9 titles, A to Z');
+});
+
+test('web dialog: release line before the genres, every genre and the whole synopsis', function () {
+  var title = movie(1, { genres: [DRAMA, ACTION, { id: 35, name: 'Comedy' }], de_theatrical: '2099-01-01', overview: 'Long text.' });
+  var ctx = screen([title]);
+  function classes(card) { return card.querySelector('.body').children.map(function (n) { return n.className || n.tag; }); }
+  ctx.openDetail({ title: title, kind: null, date: null }, null);
+  var dialog = ctx.byId.detail.children[0];
+  assert.deepEqual(classes(dialog), ['h3', 'release', 'meta', 'overview', 'actions']);
+  assert.equal(dialog.querySelector('.meta').textContent, 'Drama · Action · Comedy');
+  var card = ctx.card({ title: title, kind: null, date: null });
+  assert.deepEqual(classes(card), ['h3', 'meta', 'release', 'actions']);
+  assert.equal(card.querySelector('.meta').textContent, 'Drama · Action');
 });

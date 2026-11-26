@@ -82,6 +82,27 @@ body:not(.wall-mode) #hero-count, body.wall-mode #count { display: none; }
 .month { background: none; border: 0; border-bottom: 3px solid transparent; cursor: pointer; font-size: 14px; font-variant-numeric: tabular-nums; font-weight: 500; height: 44px; min-width: 44px; padding: 0 var(--space-3); white-space: nowrap; }
 .month:hover { background: var(--surface-raised); }
 .month[aria-current] { border-bottom-color: var(--fg); font-weight: 800; }
+/* All titles: the same bar with 0-9 and A-Z; a letter without titles is plain text */
+.letters { gap: 0; }
+.letters .month { padding: 0; text-align: center; width: 44px; }
+.letters .month:first-child { width: 52px; }
+.letters .off { color: var(--fg-muted); cursor: default; font-weight: 400; line-height: 41px; opacity: 0.6; }
+.letters .off:hover { background: none; }
+/* 27 targets of 44px need 1196px: one row where the window has it, two below */
+@media (min-width: 1220px) { .letters { margin: 0 -32px; padding-left: 0; padding-right: 0; } }
+
+/* Genres: the list of shelves beside them; the chosen one is marked in ink */
+.genres-layout { align-items: flex-start; display: flex; gap: var(--space-6); margin-top: var(--space-4); }
+.genre-list { display: flex; flex: 0 0 200px; flex-direction: column; max-height: calc(100vh - 96px); overflow-y: auto; padding: 3px; position: sticky; top: 80px; }
+.genre-list .month { align-items: center; border: 0; border-bottom: 1px solid var(--line); border-left: 3px solid transparent; display: flex; flex: none; gap: var(--space-3); justify-content: space-between; text-align: left; white-space: normal; }
+.genre-list .month[aria-current] { background: var(--surface-raised); border-left-color: var(--fg); }
+.genre-list .n { color: var(--fg-muted); font-size: 13px; font-weight: 500; }
+.shelves { flex: 1; min-width: 0; }
+.shelves .day { justify-content: flex-start; margin-top: var(--space-6); }
+.shelves .day:first-child { margin-top: 0; }
+.shelves .grid { grid-template-columns: repeat(auto-fill, minmax(min(440px, 100%), 1fr)); }
+.day .more { background: none; border: 0; color: var(--fg); font-size: 14px; height: 44px; margin: -12px 0 -9px; padding: 0 var(--space-2); text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 4px; }
+.day .more:hover { text-decoration-color: currentColor; }
 
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); box-shadow: var(--shadow-card); display: flex; gap: var(--space-4); padding: var(--space-4); }
 .posterwrap { align-self: flex-start; flex: 0 0 104px; position: relative; width: 104px; }
@@ -123,7 +144,6 @@ details.check summary { cursor: pointer; }
 details.check div { margin: var(--space-1) 0; overflow-wrap: anywhere; }
 .empty { color: var(--fg-muted); padding: var(--space-7) 0; }
 .empty[role="alert"] { color: var(--fg); padding-bottom: var(--space-3); }
-.more { display: flex; margin: var(--space-4) auto 0; }
 
 /* poster wall: the default layout */
 .wall { align-items: start; display: grid; gap: var(--space-5) var(--space-4); grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); }
@@ -132,7 +152,7 @@ details.check div { margin: var(--space-1) 0; overflow-wrap: anywhere; }
 .tile:hover .art, .tile:focus-visible .art { box-shadow: 0 0 0 2px var(--bg), 0 0 0 5px var(--focus), var(--shadow-pop); transform: translateY(-2px); }
 .tile:focus-visible { outline: none; }
 .tile .rr-badge { bottom: var(--space-2); left: 50%; max-width: 94%; overflow: hidden; position: absolute; text-overflow: ellipsis; transform: translateX(-50%); }
-.tile .ttl { display: -webkit-box; font-size: 14px; font-weight: 600; line-height: 18px; margin-top: var(--space-2); overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.tile .ttl { overflow-wrap: anywhere; display: -webkit-box; font-size: 14px; font-weight: 600; line-height: 18px; margin-top: var(--space-2); overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .tile .date { color: var(--fg-muted); display: block; font-size: 12px; font-variant-numeric: tabular-nums; font-weight: 500; line-height: 16px; margin-top: 2px; }
 /* where and Seerr state; the title is already under the poster. Hover and keyboard focus both show it. */
 body.wall-mode .hero { background: none; color: var(--fg); }
@@ -144,11 +164,16 @@ body.wall-mode .panel { align-items: baseline; background: none; box-shadow: non
 body.wall-mode #layout { margin-left: auto; }
 #detail { align-items: center; background: var(--scrim); display: flex; inset: 0; justify-content: center; padding: var(--space-4); position: fixed; z-index: 9; }
 #detail[hidden] { display: none; }
-#detail .card { border-radius: var(--radius-lg); box-shadow: var(--shadow-pop); max-height: 100%; max-width: 600px; overflow-y: auto; padding: var(--space-5); position: relative; width: 100%; }
-#detail .card .posterwrap { flex-basis: 150px; width: 150px; }
-#detail .card h3 { font-size: 22px; letter-spacing: -0.01em; line-height: 28px; padding-right: 44px; }
-#detail .overview { -webkit-line-clamp: 8; }
-#detail .x { height: 36px; padding: 0; position: absolute; right: var(--space-3); top: var(--space-3); width: 36px; }
+/* the details dialog, as the kit's rr-dialog: a large poster, and the whole synopsis; the card scrolls when needed */
+#detail .card { border-radius: var(--radius-lg); box-shadow: var(--shadow-pop); gap: var(--space-6); max-height: 100%; max-width: 880px; overflow-y: auto; padding: var(--space-6); position: relative; width: 100%; }
+#detail .card .posterwrap { flex-basis: 240px; width: 240px; }
+#detail .card h3 { font-size: 32px; font-weight: 800; letter-spacing: -0.02em; line-height: 38px; margin: var(--space-1) 0 var(--space-2); padding-right: 44px; }
+#detail .meta, #detail .release { font-size: 14px; line-height: 20px; }
+#detail .overview { color: var(--fg); display: block; font-size: 16px; line-height: 24px; margin: var(--space-4) 0 var(--space-5); overflow: visible; -webkit-line-clamp: none; }
+#detail .actions { margin-top: var(--space-2); }
+#detail .actions .rr-btn { height: 44px; }
+#detail .actions .rr-status, #detail .note { line-height: 44px; }
+#detail .x { height: 44px; min-width: 44px; padding: 0; position: absolute; right: var(--space-3); top: var(--space-3); width: 44px; }
 
 #player { align-items: center; background: rgba(4,16,18,0.94); display: flex; inset: 0; justify-content: center; padding: var(--space-5); position: fixed; z-index: 10; }
 #player[hidden] { display: none; }
@@ -179,6 +204,11 @@ footer { border-top: 1px solid var(--line); color: var(--fg-muted); font-size: 1
   .bar { padding: var(--space-3) 0 0; }
   .months { flex-wrap: nowrap; margin: 0 calc(-1 * var(--space-4)); overflow-x: auto; padding: var(--space-2) var(--space-4); scrollbar-width: none; top: 0; }
   .months .month { flex: none; }
+  .letters { margin: 0 calc(-1 * var(--space-4)); padding-left: var(--space-4); padding-right: var(--space-4); }
+  .genres-layout { display: block; }
+  .genre-list { flex-direction: row; flex-wrap: wrap; gap: 0 var(--space-2); max-height: none; overflow: visible; position: static; }
+  .genre-list .month { flex: 1 1 130px; min-width: 0; }
+  .shelves { margin-top: var(--space-5); }
   .day { margin: var(--space-2) 0 var(--space-3); scroll-margin-top: 72px; }
   .day h2 { font-size: 20px; }
   .grid { grid-template-columns: 1fr; }
@@ -186,8 +216,10 @@ footer { border-top: 1px solid var(--line); color: var(--fg-muted); font-size: 1
   .posterwrap { flex-basis: 88px; width: 88px; }
   .grid .posterwrap { flex-basis: 112px; min-height: 168px; width: 112px; }
   .panel { background: none; box-shadow: none; }
-  .wall { gap: var(--space-4) var(--space-2); grid-template-columns: repeat(3, 1fr); }
+  .wall { gap: var(--space-4) var(--space-2); grid-template-columns: repeat(3, minmax(0, 1fr)); } /* a long word cannot widen a column */
+  #detail .card { gap: var(--space-3); padding: var(--space-4); }
   #detail .card .posterwrap { flex-basis: 96px; width: 96px; }
+  #detail .card h3 { font-size: 22px; line-height: 28px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; }
@@ -378,7 +410,7 @@ var HERO = {
   upcoming: ["What's coming next", 'Cinema and streaming releases in Germany for the next six months. Series have no German date: find them under the other views.'],
   trailers: ['New trailers', 'The latest trailers, in the original language where one exists.'],
   recent: ['Recently released', 'What reached German cinemas and streaming in the last three months. Series are under the other views.'],
-  genres: ['By genre', 'Every title, shelved by genre.'],
+  genres: ['Browse by genre', 'Every title, shelved by genre.'],
   all: ['All titles', 'Every title ReelRadar knows about.']
 };
 var KINDS = [['all', 'All releases'], ['cinema', 'Cinema'], ['streaming', 'Streaming']];
@@ -776,9 +808,11 @@ function renderTitles() {
   var sections = viewSections(currentView, shown, selection.kind);
   var count = viewCount(currentView, sections);
   var total = activeCount() ? viewCount(currentView, viewSections(currentView, allTitles, 'all')) : null;
-  document.getElementById('count').textContent = document.getElementById('hero-count').textContent = countText(count, total);
+  document.getElementById('count').textContent = countText(count, total);
+  document.getElementById('hero-count').textContent = countText(count, total) + (currentView === 'all' ? ', A to Z' : '');
   renderActive();
   renderHero(sections);
+  if (currentView === 'all' && layout === 'list') document.getElementById('hero-lead').textContent = document.getElementById('hero-count').textContent;
   render(sections);
 }
 
@@ -817,7 +851,8 @@ var expandedGenres = {};
 function render(sections) {
   var root = document.getElementById('titles');
   root.textContent = '';
-  monthMarks = [];
+  jumpMarks = [];
+  currentMark = null;
   if (!sections.length || (sections.length === 1 && !sections[0].items.length)) {
     root.appendChild(text('p', emptyMessage(currentView, selection), 'empty'));
     return;
@@ -825,17 +860,30 @@ function render(sections) {
   var wall = layout === 'wall';
   var calendar = currentView === 'upcoming' || currentView === 'recent';
   // The wall groups calendar views by week, a day per heading would leave rows of one or two posters.
-  var groups = !wall || currentView === 'genres' ? sections : calendar ? byWeek(sections) :
+  var genres = currentView === 'genres';
+  var groups = currentView === 'all' ? byLetter(sections[0].items) : !wall || genres ? sections : calendar ? byWeek(sections) :
     [{ heading: '', items: [].concat.apply([], sections.map(function (s) { return s.items; })) }];
-  var months = [], seen = {};
+  var months = [], seen = {}, heads = [];
+  var shelves = root, genreList = null;
+  if (genres) {
+    var columns = root.appendChild(document.createElement('div'));
+    columns.className = 'genres-layout';
+    genreList = columns.appendChild(document.createElement('nav'));
+    genreList.className = 'genre-list';
+    genreList.setAttribute('aria-label', 'Genres');
+    shelves = columns.appendChild(document.createElement('div'));
+    shelves.className = 'shelves';
+  }
   groups.forEach(function (group) {
     var head = null;
     if (group.heading) {
       head = document.createElement('div');
       head.className = 'day';
       head.appendChild(text('h2', calendar && !wall ? dayHeading(group.date) : group.heading));
-      if (group.note) head.appendChild(text('small', group.note));
-      root.appendChild(head);
+      if (group.note && !genres) head.appendChild(text('small', group.note)); // a genre's count is in the list
+      shelves.appendChild(head);
+      heads.push(head);
+      if (genres) genreList.appendChild(jumpButton(group.heading, head)).appendChild(text('span', String(group.items.length), 'n'));
     } else {
       root.appendChild(document.createElement('div')).style.height = '12px';
     }
@@ -845,27 +893,28 @@ function render(sections) {
     });
     var grid = document.createElement('div');
     grid.className = wall ? 'wall' : 'grid';
-    root.appendChild(grid);
-    fill(root, grid, group, wall ? tile : card);
+    shelves.appendChild(grid);
+    fill(head, grid, group, wall ? tile : card);
   });
   if (months.length > 1) root.insertBefore(monthNav(months), root.firstChild);
-  markMonth();
+  if (currentView === 'all') root.insertBefore(letterNav(groups, heads), root.firstChild);
+  markJump();
 }
 
 // The group's posters or cards; a genre shows the first few until "Show all", which appends the rest in place.
-function fill(root, grid, group, make) {
+function fill(head, grid, group, make) {
   var capped = currentView === 'genres' && !expandedGenres[group.heading] && group.items.length > GENRE_CAP;
   function add(item) { return grid.appendChild(make(item)); }
   (capped ? group.items.slice(0, GENRE_CAP) : group.items).forEach(add);
   if (!capped) return;
-  var more = button('Show all ' + group.items.length, 'rr-btn rr-btn--secondary more', function () {
+  var more = button('Show all ' + group.items.length, 'rr-btn rr-btn--text more', function () { // beside the shelf's heading
     expandedGenres[group.heading] = true; // kept when the list is redrawn
     var first = group.items.slice(GENRE_CAP).map(add)[0];
-    root.removeChild(more);
+    head.removeChild(more);
     (make === tile ? first : first.querySelector('.open')).focus();
   });
   more.setAttribute('aria-label', 'Show all ' + group.items.length + ' titles in ' + group.heading);
-  root.appendChild(more);
+  head.appendChild(more);
 }
 
 // Monday of the date's week.
@@ -910,44 +959,100 @@ function dayHeading(iso) { // "Tuesday, 24 November"
   return WEEKDAYS[d.getDay()] + ', ' + d.getDate() + ' ' + MONTH_NAMES[d.getMonth()] + yearSuffix(d);
 }
 
-// Jumps to the first heading with a release of that month. Buttons, not anchors: the hash holds the view.
-function monthNav(months) {
+// Jump buttons: months over a calendar, letters over All titles, the genre list. Buttons, not anchors: the hash holds
+// the view. The one for the heading in view is marked.
+var jumpMarks = [], currentMark = null;
+function jumpButton(label, head) {
+  var jump = button(label, 'month', function () {
+    var bar = jump.parentNode;
+    var heading = head.firstChild;
+    heading.setAttribute('tabindex', '-1');
+    heading.focus({ preventScroll: true });
+    // a bar above the titles sticks, and may wrap onto two rows: the heading stops below it
+    if (window.getComputedStyle && bar.className !== 'genre-list') {
+      head.style.scrollMarginTop = (parseFloat(window.getComputedStyle(bar).top) || 0) + bar.getBoundingClientRect().height + 8 + 'px';
+    }
+    head.scrollIntoView();
+    setMark(mark);
+  });
+  var mark = { button: jump, head: head };
+  jumpMarks.push(mark);
+  return jump;
+}
+function jumpNav(className, label) {
   var nav = document.createElement('nav');
-  nav.className = 'months';
-  nav.setAttribute('aria-label', 'Jump to month');
+  nav.className = className;
+  nav.setAttribute('aria-label', label);
+  return nav;
+}
+// Each month goes to the first heading with a release of that month.
+function monthNav(months) {
+  var nav = jumpNav('months', 'Jump to month');
   months.forEach(function (entry) {
-    var jump = button(MONTHS[Number(entry.month.slice(5)) - 1] + ' ' + entry.month.slice(0, 4), 'month', function () {
-      var heading = entry.head.firstChild;
-      heading.setAttribute('tabindex', '-1');
-      heading.focus({ preventScroll: true });
-      entry.head.scrollIntoView();
-      setMonth(mark);
-    });
-    var mark = { button: jump, head: entry.head };
-    monthMarks.push(mark);
-    nav.appendChild(jump);
+    nav.appendChild(jumpButton(MONTHS[Number(entry.month.slice(5)) - 1] + ' ' + entry.month.slice(0, 4), entry.head));
   });
   return nav;
 }
 
-// The month in view: the last one whose heading has reached the month bar.
-var monthMarks = [], currentMonth = null;
-function setMonth(mark) {
-  monthMarks.forEach(function (other) {
+var LETTERS = ['0–9'].concat('ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''));
+// The letter a title sorts under, asked of the same comparison as byTitle: accents count as their letter, articles
+// stay, and what sorts before "a" (digits, punctuation) is 0–9.
+// shortcut: scripts that sort after Z are listed under Z; give them their own section if the catalogue gets some.
+function letterOf(name) {
+  for (var i = LETTERS.length - 1; i > 0; i -= 1) {
+    if (name.charAt(0).localeCompare(LETTERS[i], 'en', { sensitivity: 'base' }) >= 0) return LETTERS[i];
+  }
+  return LETTERS[0];
+}
+// Titles in byTitle order -> one group per letter.
+function byLetter(items) {
+  var groups = [];
+  items.forEach(function (item) {
+    var letter = letterOf(item.title.title);
+    if (!groups.length || groups[groups.length - 1].heading !== letter) groups.push({ heading: letter, items: [] });
+    groups[groups.length - 1].items.push(item);
+  });
+  return groups;
+}
+// Every letter is there; one without titles is not a link.
+function letterNav(groups, heads) {
+  var nav = jumpNav('months letters', 'Jump to letter');
+  var names = groups.map(function (group) { return group.heading; });
+  LETTERS.forEach(function (letter) {
+    var at = names.indexOf(letter);
+    if (at !== -1) { nav.appendChild(jumpButton(letter, heads[at])); return; }
+    nav.appendChild(text('span', letter, 'month off')).setAttribute('aria-hidden', 'true');
+  });
+  return nav;
+}
+
+function setMark(mark) {
+  jumpMarks.forEach(function (other) {
     if (other === mark) other.button.setAttribute('aria-current', 'true'); else other.button.removeAttribute('aria-current');
   });
-  currentMonth = mark;
+  currentMark = mark;
+  // a bar or list that scrolls keeps the marked button in sight
+  var bar = mark.button.parentNode;
+  if (bar.scrollWidth > bar.clientWidth) bar.scrollLeft = mark.button.offsetLeft - (bar.clientWidth - mark.button.offsetWidth) / 2;
+  if (bar.scrollHeight > bar.clientHeight) bar.scrollTop = mark.button.offsetTop - (bar.clientHeight - mark.button.offsetHeight) / 2;
 }
-function markMonth() {
-  if (!monthMarks.length) return;
-  var line = monthMarks[0].button.parentNode.getBoundingClientRect().bottom + 24;
-  var reached = monthMarks.filter(function (mark) { return mark.head.getBoundingClientRect().top <= line; });
-  var head = (reached[reached.length - 1] || monthMarks[0]).head;
+// The heading in view: the last one that has reached the bar (beside the genre list, the top of the window).
+function markJump() {
+  if (!jumpMarks.length) return;
+  var bar = jumpMarks[0].button.parentNode;
+  var line = (bar.className === 'genre-list' ? 132 : bar.getBoundingClientRect().bottom) + 24;
+  var chosen = currentMark && jumpMarks.indexOf(currentMark) !== -1 ? currentMark : null;
+  // at the end of the page the last headings cannot reach the line: the one just chosen stays
+  var page = document.documentElement;
+  if (chosen && page && window.innerHeight + window.pageYOffset >= page.scrollHeight - 2 && chosen.head.getBoundingClientRect().top > line) return;
+  var reached = jumpMarks.filter(function (mark) { return mark.head.getBoundingClientRect().top <= line; });
+  var head = (reached[reached.length - 1] || jumpMarks[0]).head;
   // two months can start under one heading: the one already marked (just chosen) stays, else the first
-  setMonth(currentMonth && currentMonth.head === head && monthMarks.indexOf(currentMonth) !== -1 ? currentMonth :
-    monthMarks.filter(function (mark) { return mark.head === head; })[0]);
+  var next = chosen && chosen.head === head ? chosen : jumpMarks.filter(function (mark) { return mark.head === head; })[0];
+  if (next !== currentMark) setMark(next);
+  else next.button.setAttribute('aria-current', 'true');
 }
-window.onscroll = markMonth;
+window.onscroll = markJump;
 
 // "Premieres on Netflix": a streaming release whose service is only expected (TMDB's release note), not yet listed as streaming.
 function premiereText(title, kind, date) {
@@ -999,7 +1104,8 @@ function openDetail(item, opener) {
   detail.hidden = false;
   setModal();
   pushOverlay();
-  c.querySelector('.rr-btn').focus();
+  // a long dialog opens at its top: focus the first action, or Close when the actions are below the fold
+  (c.scrollHeight > c.clientHeight ? close : c.querySelector('.rr-btn')).focus();
 }
 function hideDetail() {
   detail.hidden = true;
@@ -1066,12 +1172,13 @@ function card(item, inDetail) {
   body.className = 'body';
   if (inDetail) body.appendChild(text('h3', title.title));
   else body.appendChild(document.createElement('h3')).appendChild(button(title.title, 'open', function () { openDetail(item, this); }));
-  var meta = (title.genres || []).slice(0, 2).map(function (g) { return g.name; }).join(' · ');
+  var meta = (title.genres || []).slice(0, inDetail ? undefined : 2).map(function (g) { return g.name; }).join(' · ');
   if (inDetail && title.original_title !== title.title) meta = title.original_title + (meta ? ' — ' + meta : '');
-  if (meta) body.appendChild(text('p', meta, 'meta'));
   // under a day heading the date is already said: where it shows is enough
   var line = !inDetail && item.kind ? text('p', whereText(title, item.kind, item.date), releaseClass(title, item)) : releaseLine(item);
-  if (line) body.appendChild(line);
+  var about = meta ? text('p', meta, 'meta') : null;
+  // the dialog says when and where right under the title; a list card, the genres
+  (inDetail ? [line, about] : [about, line]).forEach(function (part) { if (part) body.appendChild(part); });
   if (inDetail && title.overview) {
     var synopsis = text('p', title.overview, 'overview');
     if (title.overview_lang === 'de') synopsis.insertBefore(text('span', 'DE', 'lang'), synopsis.firstChild);
