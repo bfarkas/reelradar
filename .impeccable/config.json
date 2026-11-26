@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-11-26T19:59:34.624Z",
+        "reason": "Owner's design kit (OS-T-NAHF3, design/README.md) pins Inter; the logo wordmark is Inter ExtraBold"
+      }
+    ]
+  }
+}
