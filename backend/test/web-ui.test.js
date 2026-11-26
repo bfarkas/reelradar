@@ -510,3 +510,58 @@ test('web dialog: release line before the genres, every genre and the whole syno
   assert.deepEqual(classes(card), ['h3', 'meta', 'release', 'actions']);
   assert.equal(card.querySelector('.meta').textContent, 'Drama · Action');
 });
+
+// ---- phone: layout switch in the header, the filter as a full-screen dialog (OS-T-HXR91) ----
+test('web phone: the filter is a dialog that Close, Show, Escape and Back leave, with focus back on Filter', function () {
+  var ctx = screen([movie(1, { de_theatrical: '2099-01-01' }), movie(2, { de_theatrical: '2099-01-02', genres: [ACTION] })], { phone: true });
+  var panel = ctx.byId.filter, focused = [];
+  assert.ok(ctx.byId['header-end'].children.indexOf(ctx.byId.layout) !== -1, 'layout switch in the header');
+  ['filter-toggle', 'filter-close'].forEach(function (id) { ctx.byId[id].focus = function () { focused.push(id); }; });
+  var leave = {
+    close: function () { ctx.byId['filter-close'].onclick(); },
+    show: function () { ctx.byId['filter-show'].onclick(); },
+    escape: function () { ctx.handlers.keydown({ key: 'Escape' }); },
+    back: function () { ctx.window.history.back(); }
+  };
+  Object.keys(leave).forEach(function (how) {
+    ctx.byId['filter-toggle'].onclick();
+    assert.equal(panel.hidden, false);
+    assert.equal(panel.attrs.role, 'dialog');
+    assert.equal(ctx.byId.page.inert, true, 'nothing behind it can be reached');
+    assert.ok(ctx.document.body.children.indexOf(panel) !== -1, 'outside the inert page');
+    assert.deepEqual(Array.from(ctx.window.history.state.overlays), ['filter']);
+    assert.equal(focused.pop(), 'filter-close');
+    leave[how]();
+    assert.equal(panel.hidden, true, how);
+    assert.equal(panel.attrs.role, undefined, how);
+    assert.equal(ctx.byId.page.inert, false, how);
+    assert.equal(ctx.window.history.state, null, how + ' leaves no history entry');
+    assert.equal(focused.pop(), 'filter-toggle', how);
+  });
+});
+
+test('web phone: Show names the number the choices leave; Clear filter in the dialog resets and keeps it open', function () {
+  var ctx = screen([movie(1), movie(2)], { phone: true });
+  ctx.allTitles = [movie(1, { de_theatrical: ctx.isoDay(3) }), movie(2, { de_theatrical: ctx.isoDay(4), genres: [ACTION] })];
+  ctx.renderGenres();
+  ctx.renderTitles();
+  ctx.byId['filter-toggle'].onclick();
+  assert.equal(ctx.byId['filter-show'].textContent, 'Show 2 releases');
+  ctx.byId.genres.children[0].onclick(); // Action
+  assert.equal(ctx.byId['filter-show'].textContent, 'Show 1 release');
+  assert.equal(ctx.byId.count.textContent, '1 of 2 releases');
+  ctx.byId['filter-reset'].onclick();
+  assert.equal(ctx.byId['filter-show'].textContent, 'Show 2 releases');
+  assert.equal(ctx.byId.filter.hidden, false);
+});
+
+test('web desktop: the filter opens in the page without a history entry, and the layout switch stays in the bar', function () {
+  var ctx = screen([movie(1)]);
+  assert.ok(ctx.byId.bar.children.indexOf(ctx.byId.layout) !== -1);
+  ctx.byId['filter-toggle'].onclick();
+  assert.equal(ctx.byId.filter.hidden, false);
+  assert.equal(ctx.byId.filter.attrs.role, undefined);
+  assert.equal(ctx.window.history.state, null);
+  ctx.byId['filter-toggle'].onclick();
+  assert.equal(ctx.byId.filter.hidden, true);
+});

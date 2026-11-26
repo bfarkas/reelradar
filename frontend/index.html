@@ -33,6 +33,7 @@ header.top { background: var(--brand-teal); color: var(--brand-white); position:
 header.top .wrap { align-items: center; display: flex; gap: var(--space-6); min-height: 64px; }
 header.top :focus-visible { outline-color: var(--brand-white); }
 .logo { display: block; flex: none; height: 32px; width: auto; }
+#header-end { display: none; }
 #views { display: flex; gap: var(--space-2); }
 #views a { border-bottom: 3px solid transparent; border-top: 3px solid transparent; color: rgba(255,255,255,0.72); font-size: 15px; font-weight: 600; line-height: 20px; padding: 19px var(--space-3) 16px; text-decoration: none; transition: color var(--duration-fast) var(--ease-out); white-space: nowrap; }
 #views a:hover { color: var(--brand-white); }
@@ -72,6 +73,19 @@ body:not(.wall-mode) #hero-count, body.wall-mode #count { display: none; }
 #filter h2 { font-size: 17px; font-weight: 700; line-height: 22px; margin: var(--space-5) 0 var(--space-3); }
 #filter .rr-chip { margin: 0 var(--space-2) var(--space-2) 0; }
 #filter .rr-field__input { margin-bottom: var(--space-3); max-width: 100%; width: 22em; }
+/* On a phone the same panel is a full-screen dialog (.sheet); its own heading and bottom bar only show there. */
+.sheet-head, .sheet-foot { display: none; }
+#filter.sheet { background: var(--bg); border: 0; border-radius: 0; box-shadow: none; inset: 0; margin: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 var(--space-4); position: fixed; scroll-padding: 76px 0 84px; z-index: 8; }
+#filter.sheet .sheet-head, #filter.sheet .sheet-foot { align-items: center; background: var(--bg); display: flex; gap: var(--space-3); margin: 0 calc(-1 * var(--space-4)); position: sticky; z-index: 1; }
+#filter.sheet .sheet-head { border-bottom: 1px solid var(--line); justify-content: space-between; padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4); top: 0; }
+#filter.sheet .sheet-head h2 { font-size: 26px; line-height: 32px; margin: 0; }
+#filter.sheet .sheet-head .x { height: 44px; padding: 0; width: 44px; }
+#filter.sheet .sheet-head .x-icon { margin: 0; }
+#filter.sheet .sheet-head .x-icon svg { height: 16px; width: 16px; }
+#filter.sheet .sheet-foot { border-top: 1px solid var(--line); bottom: 0; margin-top: var(--space-5); padding: var(--space-3) var(--space-4); }
+.sheet-foot .rr-btn { height: 48px; margin: 0; }
+/* ink, as a chosen chip: orange is kept for Play trailer */
+#filter-show { background: var(--fg); color: var(--bg); flex: 1; }
 
 .day { align-items: baseline; border-bottom: 1px solid var(--line); display: flex; gap: var(--space-3); justify-content: space-between; margin: var(--space-7) 0 var(--space-4); padding-bottom: var(--space-2); scroll-margin-top: 132px; }
 .day h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; line-height: 28px; margin: 0; }
@@ -189,10 +203,13 @@ footer { border-top: 1px solid var(--line); color: var(--fg-muted); font-size: 1
   .wrap { padding: 0 var(--space-4); }
   /* the header scrolls away on a phone; the month jumps take its place at the top */
   header.top { position: static; }
-  header.top .wrap { flex-direction: column; align-items: flex-start; gap: 0; padding-top: var(--space-3); }
+  header.top .wrap { flex-wrap: wrap; gap: 0; padding-top: var(--space-1); }
   .logo { height: 28px; }
+  /* the layout switch, top right; its focus ring has to show on teal */
+  #header-end { --bg: var(--brand-teal); --focus: var(--brand-white); display: block; margin-left: auto; }
+  #header-end .rr-seg { display: flex; padding: 0; }
   /* every view stays visible: the tabs wrap onto a second line instead of running off the edge */
-  #views { flex-wrap: wrap; gap: 0 var(--space-1); margin-left: calc(-1 * var(--space-2)); }
+  #views { flex-basis: 100%; flex-wrap: wrap; gap: 0 var(--space-1); margin-left: calc(-1 * var(--space-2)); }
   #views a { padding: var(--space-3) var(--space-2) 9px; }
   /* list mode puts artwork behind the heading: this near-solid wash keeps its text at 4.5:1 even over white */
   .hero .wrap { background: rgba(13,52,56,0.92); padding: var(--space-5) var(--space-4); }
@@ -201,7 +218,21 @@ footer { border-top: 1px solid var(--line); color: var(--fg-muted); font-size: 1
   .rr-chip, .rr-btn, .rr-seg__opt, #filter-clear { min-height: 44px; min-width: 44px; }
   .actions .rr-btn { height: 44px; }
   .actions .rr-status, .note { line-height: 44px; }
-  .bar { padding: var(--space-3) 0 0; }
+  /* one row: the count, then Filter */
+  .bar { gap: var(--space-1); padding: var(--space-2) 0; }
+  #count { font-size: 14px; margin: 0 auto 0 0; order: -1; }
+  .bar #filter-toggle { padding: 0 var(--space-3); }
+  #filter-clear { padding: 0 var(--space-1); }
+  body.wall-mode #hero-count { display: none; }
+  body.wall-mode #count { display: block; }
+  /* list: "Next release · when · where" over the title and its two buttons */
+  .hero.next .panel { display: flex; flex-direction: column; }
+  .hero.next p.lead { color: var(--brand-white); font-size: 14px; font-weight: 600; line-height: 20px; margin-bottom: var(--space-2); order: -1; }
+  .hero.next p.lead::before { content: 'Next release · '; }
+  .hero.next h1 { font-size: 24px; line-height: 28px; margin: 0; }
+  .hero.next #hero-actions { margin-top: var(--space-3); }
+  /* iOS zooms the page into a field under 16px */
+  #filter .rr-field__input { font-size: 16px; width: 100%; }
   .months { flex-wrap: nowrap; margin: 0 calc(-1 * var(--space-4)); overflow-x: auto; padding: var(--space-2) var(--space-4); scrollbar-width: none; top: 0; }
   .months .month { flex: none; }
   .letters { margin: 0 calc(-1 * var(--space-4)); padding-left: var(--space-4); padding-right: var(--space-4); }
@@ -214,7 +245,16 @@ footer { border-top: 1px solid var(--line); color: var(--fg-muted); font-size: 1
   .grid { grid-template-columns: 1fr; }
   .card { padding: var(--space-3); gap: var(--space-3); }
   .posterwrap { flex-basis: 88px; width: 88px; }
-  .grid .posterwrap { flex-basis: 112px; min-height: 168px; width: 112px; }
+  /* compact cards: a 112x168 poster, and under it the trailer credit, a 44px target that costs no extra height */
+  .grid .card { position: relative; }
+  .grid .posterwrap { align-self: flex-start; flex-basis: 112px; height: 168px; margin-bottom: 44px; min-height: 0; width: 112px; }
+  .grid .poster { border-radius: var(--radius-md) 0 var(--radius-sm) 0; }
+  .grid .card .body { padding: var(--space-2) var(--space-3) var(--space-3); }
+  .grid .card h3 { margin: 0 0 var(--space-1); }
+  .grid .card h3 .open { display: -webkit-box; min-height: 44px; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+  .grid .actions { padding-top: var(--space-2); row-gap: var(--space-1); }
+  .grid .credit { bottom: 0; left: 0; margin: 0; position: absolute; text-align: center; width: 112px; }
+  .credit a { display: inline-block; line-height: 44px; min-width: 44px; }
   .panel { background: none; box-shadow: none; }
   .wall { gap: var(--space-4) var(--space-2); grid-template-columns: repeat(3, minmax(0, 1fr)); } /* a long word cannot widen a column */
   #detail .card { gap: var(--space-3); padding: var(--space-4); }
@@ -230,6 +270,7 @@ footer { border-top: 1px solid var(--line); color: var(--fg-muted); font-size: 1
 <div id="page">
 <header class="top"><div class="wrap">
   <img class="logo" src="/design/logo-on-dark.svg" alt="ReelRadar" width="145" height="32">
+  <span id="header-end"></span>
   <nav id="views" aria-label="Views"></nav>
 </div></header>
 
@@ -242,7 +283,7 @@ footer { border-top: 1px solid var(--line); color: var(--fg-muted); font-size: 1
   </div>
 </div></section>
 
-<main class="wrap">
+<main class="wrap" id="main">
   <div class="bar" id="bar">
     <button type="button" class="rr-chip" id="filter-toggle" aria-expanded="false" aria-controls="filter">Filter</button>
     <button type="button" class="rr-btn rr-btn--ghost" id="filter-clear" hidden>Clear filter</button>
@@ -251,6 +292,7 @@ footer { border-top: 1px solid var(--line); color: var(--fg-muted); font-size: 1
   </div>
   <div id="active-tags" role="group" aria-label="Active filters"></div>
   <section id="filter" hidden>
+    <div class="sheet-head"><h2 id="filter-title">Filter</h2><button type="button" class="rr-btn rr-btn--ghost x" id="filter-close" aria-label="Close"></button></div>
     <h2>Releases</h2>
     <div id="kinds"></div>
     <h2>Streaming service</h2>
@@ -260,6 +302,7 @@ footer { border-top: 1px solid var(--line); color: var(--fg-muted); font-size: 1
     <h2>Keywords</h2>
     <input type="search" class="rr-field__input" id="keyword-search" placeholder="Search keywords" aria-label="Search keywords">
     <div id="keywords"></div>
+    <div class="sheet-foot"><button type="button" class="rr-btn rr-btn--secondary" id="filter-reset">Clear filter</button><button type="button" class="rr-btn" id="filter-show">Show titles</button></div>
   </section>
   <div id="titles"><p class="empty">Loading titles...</p></div>
 </main>
@@ -319,6 +362,7 @@ document.addEventListener('keydown', function (event) {
   if (event.key !== 'Escape') return;
   if (!player.hidden) closePlayer();
   else if (!detail.hidden) closeDetail();
+  else if (filterOpen()) closeFilter();
 });
 
 function playTrailer(title, trigger) {
@@ -708,19 +752,20 @@ function viewFromHash() {
   return VIEWS.some(function (view) { return view[0] === name; }) ? name : 'upcoming';
 }
 function pushOverlay() {
-  window.history.pushState({ overlays: [detail.hidden ? '' : 'detail', player.hidden ? '' : 'player'].filter(Boolean) }, '');
+  window.history.pushState({ overlays: [filterOpen() ? 'filter' : '', detail.hidden ? '' : 'detail', player.hidden ? '' : 'player'].filter(Boolean) }, '');
 }
 // Back, Forward, a nav link or an edited address. Only closes overlays: Forward does not reopen one.
 window.onpopstate = function (event) {
   var wanted = (event.state && event.state.overlays) || [];
   if (!player.hidden && wanted.indexOf('player') === -1) hidePlayer();
   if (!detail.hidden && wanted.indexOf('detail') === -1) hideDetail();
+  if (filterOpen() && wanted.indexOf('filter') === -1) hideFilter();
   var view = viewFromHash();
   if (view !== currentView) { currentView = view; renderViews(); renderTitles(); }
 };
 // While a dialog is open nothing behind it can be focused or clicked.
 function setModal() {
-  document.getElementById('page').inert = !detail.hidden || !player.hidden;
+  document.getElementById('page').inert = !detail.hidden || !player.hidden || filterOpen();
   detail.inert = !player.hidden;
 }
 // -> a function that puts focus back on the opener; if the list was redrawn meanwhile, on the control in its place.
@@ -754,20 +799,62 @@ function renderViews() {
   document.getElementById('hero-lead').textContent = hero[1];
 }
 
-document.getElementById('filter-toggle').onclick = function () {
-  var panel = document.getElementById('filter');
-  panel.hidden = !panel.hidden;
-  this.setAttribute('aria-expanded', panel.hidden ? 'false' : 'true');
-};
-document.getElementById('filter-clear').onclick = function () {
+// ---- filter panel: inline under the bar; on a phone (the width the CSS uses) a full-screen dialog that Back closes ----
+var narrow = window.matchMedia ? window.matchMedia('(max-width: 720px)') : null;
+function isPhone() { return !!(narrow && narrow.matches); }
+var filterPanel = document.getElementById('filter');
+var filterToggle = document.getElementById('filter-toggle');
+function filterOpen() { return filterPanel.className === 'sheet'; } // as the dialog
+function showPanel(on) {
+  filterPanel.hidden = !on;
+  filterToggle.setAttribute('aria-expanded', on ? 'true' : 'false');
+}
+function openFilter() {
+  filterPanel.className = 'sheet';
+  filterPanel.setAttribute('role', 'dialog');
+  filterPanel.setAttribute('aria-modal', 'true');
+  filterPanel.setAttribute('aria-labelledby', 'filter-title');
+  document.body.appendChild(filterPanel); // out of #page, which turns inert behind it
+  document.body.style.overflow = 'hidden';
+  showPanel(true);
+  setModal();
+  pushOverlay();
+  filterPanel.scrollTop = 0;
+  document.getElementById('filter-close').focus();
+}
+function hideFilter() {
+  filterPanel.className = '';
+  ['role', 'aria-modal', 'aria-labelledby'].forEach(function (name) { filterPanel.removeAttribute(name); });
+  document.getElementById('main').insertBefore(filterPanel, document.getElementById('titles'));
+  document.body.style.overflow = '';
+  showPanel(false);
+  setModal();
+  filterToggle.focus();
+}
+function closeFilter() { if (!filterOpen()) return; hideFilter(); window.history.back(); }
+filterToggle.onclick = function () { if (isPhone()) openFilter(); else showPanel(filterPanel.hidden); };
+document.getElementById('filter-close').appendChild(closeIcon());
+document.getElementById('filter-close').onclick = closeFilter;
+document.getElementById('filter-show').onclick = closeFilter;
+function clearFilter() {
   selection = { v: 1, genres: [], keywords: [], kind: 'all', service: 0 };
   saveSelection();
   renderGenres();
   renderKeywords();
   renderKinds();
   renderTitles();
-  document.getElementById('filter-toggle').focus(); // Clear filter has just hidden itself
+}
+document.getElementById('filter-reset').onclick = clearFilter;
+document.getElementById('filter-clear').onclick = function () {
+  clearFilter();
+  filterToggle.focus(); // Clear filter has just hidden itself
 };
+// On a phone the layout switch sits in the header: moved, not just restyled, so the tab order follows the screen.
+function placeLayout() { document.getElementById(isPhone() ? 'header-end' : 'bar').appendChild(document.getElementById('layout')); }
+if (narrow && narrow.addListener) narrow.addListener(function () { // a rotated phone can be wider than the breakpoint
+  placeLayout();
+  if (!isPhone()) closeFilter();
+});
 document.getElementById('keyword-search').oninput = renderKeywords;
 
 // ---- list ----
@@ -810,6 +897,7 @@ function renderTitles() {
   var total = activeCount() ? viewCount(currentView, viewSections(currentView, allTitles, 'all')) : null;
   document.getElementById('count').textContent = countText(count, total);
   document.getElementById('hero-count').textContent = countText(count, total) + (currentView === 'all' ? ', A to Z' : '');
+  document.getElementById('filter-show').textContent = 'Show ' + countText(count, null);
   renderActive();
   renderHero(sections);
   if (currentView === 'all' && layout === 'list') document.getElementById('hero-lead').textContent = document.getElementById('hero-count').textContent;
@@ -1234,6 +1322,7 @@ currentView = viewFromHash();
 renderViews();
 renderKinds();
 renderLayout();
+placeLayout();
 
 function showLoadError() {
   var root = document.getElementById('titles');
